@@ -285,7 +285,7 @@
         }catch(err){setBackendStatus(false,'Connection failed');alert('Could not load Google Sheets data: '+err.message)}
       }
       function formatHours(h){const mins=Math.round(Number(h)*60);if(mins<60)return mins+' min';const hrs=Math.floor(mins/60),rem=mins%60;return rem?hrs+' hr '+rem+' min':hrs+' hr'}
-      function formatDate(v){const d=new Date(v+'T00:00:00Z');return d.toLocaleDateString(undefined,{month:'short',day:'numeric',timeZone:'UTC'})}
+      function formatDate(v){const d=new Date(v+'T00:00:00Z');return d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',timeZone:'UTC'})}
       function escapeHtml(s){return String(s).replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[m]))}
       document.getElementById('primaryClient').addEventListener('change',()=>{const value=document.getElementById('primaryClient').value;document.getElementById('clientModal').classList.toggle('open',value==='__ADD_CLIENT__');document.getElementById('jobNumberWrap').style.display=value&&value!=='__ADD_CLIENT__'?'block':'none';if(value&&value!=='__ADD_CLIENT__')syncNextId();updateSecondaryVisibility();updateSubs();document.getElementById('dueDate').dataset.manual='';updatePreview()});
       document.getElementById('secondaryClient').addEventListener('change',()=>{const value=document.getElementById('secondaryClient').value;document.getElementById('subclientModal').classList.toggle('open',value==='__ADD_SUBCLIENT__');updatePreview()});
