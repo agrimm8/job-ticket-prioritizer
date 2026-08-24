@@ -152,7 +152,10 @@
         <h3 id="idlePauseModalTitle" class="idle-warning-heading"><span class="idle-warning-icon" aria-hidden="true">⚠</span><span>Work Has Been Paused</span></h3>
         <p>Your timer was paused after 3 minutes without activity.</p>
         <div class="preview idle-warning-box" style="margin-top:12px"><strong>Idle Time</strong><div id="idlePauseDuration" class="ticket-title">3:00</div></div>
-        <div class="actions"><button class="idle-resume" id="resumeIdleTimerBtn" type="button">Resume</button></div>
+        <div class="actions">
+          <button class="idle-resume" id="rollbackIdleTimerBtn" type="button">Roll Back Idle Time &amp; Resume</button>
+          <button class="secondary" id="keepIdleTimerBtn" type="button">Keep Time &amp; Resume</button>
+        </div>
       </div>
     </div>
     <div class="timer-modal-backdrop" id="noJobModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="noJobModalTitle">
@@ -491,7 +494,21 @@
       document.getElementById('reloadBtn').addEventListener('click',loadBackend);
       document.getElementById('continueTimerBtn').addEventListener('click',()=>{if(!completedTimerKey)return;const state=timerState[completedTimerKey];if(!state)return;state.remaining=0;state.overtime=0;state.running=false;document.getElementById('timerModalBackdrop').classList.remove('open');startTimer(completedTimerKey);completedTimerKey=''});
       document.getElementById('reprioritizeBtn').addEventListener('click',()=>{if(completedTimerKey&&timerState[completedTimerKey])timerState[completedTimerKey].running=false;document.getElementById('timerModalBackdrop').classList.remove('open');completedTimerKey='';activeTimerKey='';stopTimerInterval();renderQueue()});
-      document.getElementById('resumeIdleTimerBtn').addEventListener('click',()=>{const key=idlePausedTimerKey;const state=timerState[key];if(!key||!state)return;restoreIdleConsumedTime(state,idleConsumedSeconds);document.getElementById('idlePauseModalBackdrop').classList.remove('open');stopIdleDurationInterval();idlePausedTimerKey='';idlePausedAt=0;idleConsumedSeconds=0;lastActivityAt=Date.now();startTimer(key)});
+      function finishIdleDecision(rollBack){
+        const key=idlePausedTimerKey;
+        const state=timerState[key];
+        if(!key||!state)return;
+        if(rollBack)restoreIdleConsumedTime(state,idleConsumedSeconds);
+        document.getElementById('idlePauseModalBackdrop').classList.remove('open');
+        stopIdleDurationInterval();
+        idlePausedTimerKey='';
+        idlePausedAt=0;
+        idleConsumedSeconds=0;
+        lastActivityAt=Date.now();
+        startTimer(key);
+      }
+      document.getElementById('rollbackIdleTimerBtn').addEventListener('click',()=>finishIdleDecision(true));
+      document.getElementById('keepIdleTimerBtn').addEventListener('click',()=>finishIdleDecision(false));
       document.getElementById('cancelDueDateBtn').addEventListener('click',()=>{dueDateEditTicket='';document.getElementById('dueDateModalBackdrop').classList.remove('open')});
       document.getElementById('cancelFollowUpDateBtn').addEventListener('click',()=>{followUpDateEditTicket='';document.getElementById('followUpDateModalBackdrop').classList.remove('open')});
       document.getElementById('clientReviewSameDayBtn').addEventListener('click',()=>{if(clientReviewMoveTicket)moveClientReviewToTodoWithDue(clientReviewMoveTicket,todayISO())});
