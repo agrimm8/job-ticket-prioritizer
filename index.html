@@ -361,7 +361,7 @@
       function resetBlock(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;const state=ensureTimerState(job);state.remaining=recommendedWorkSeconds(job);state.overtime=0;state.blockStartRemaining=state.remaining;state.committedSeconds=0;renderQueue();renderBoard()}
       function showTimerComplete(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;completedTimerKey=key;document.getElementById('timerModalMessage').textContent=`Allotted Time for ${job.title||job.displayTitle} is Complete.`;document.getElementById('timerModalBackdrop').classList.add('open')}
       function renderQueue(){
-        const q=document.getElementById('queue'); q.innerHTML=''; const active=jobs.filter(j=>priorityScore(j)>-900).sort((a,b)=>priorityScore(b)-priorityScore(a)).slice(0,5);
+        const q=document.getElementById('queue'); q.innerHTML=''; const eligible=jobs.filter(j=>priorityScore(j)>-900).sort((a,b)=>priorityScore(b)-priorityScore(a)); const todayValue=todayISO(); const dueByEndOfDay=eligible.filter(j=>String(j.due||j.dueDate||'')<=todayValue); const laterJobs=eligible.filter(j=>String(j.due||j.dueDate||'')>todayValue); const active=dueByEndOfDay.length>=5?dueByEndOfDay:[...dueByEndOfDay,...laterJobs.slice(0,5-dueByEndOfDay.length)];
         if(!active.length){document.getElementById('eodMessage').style.display='block';q.innerHTML='<div class="muted">No actionable jobs.</div>';return}
         const todayValue=todayISO(); const dueToday=active.filter(j=>(j.due||j.dueDate)===todayValue); const later=active.filter(j=>(j.due||j.dueDate)!==todayValue);
         document.getElementById('eodMessage').style.display=dueToday.length?'none':'block';
