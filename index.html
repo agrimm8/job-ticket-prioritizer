@@ -61,6 +61,7 @@
     #job-priority-app .column h3{font-size:11px;margin:0 0 7px;display:flex;justify-content:space-between;gap:6px}
     #job-priority-app .card{background:light-dark(#fff,#252525);border:1px solid light-dark(#d8d8d4,#373737);border-radius:8px;padding:8px;margin-bottom:6px}
     #job-priority-app .card-title{font-size:11px;font-weight:750;line-height:1.3}
+    #job-priority-app .client-notes-link{display:inline-block;margin-top:3px;font-size:9px;color:inherit;text-decoration:underline;cursor:pointer;opacity:.75}
     #job-priority-app .card-tag{display:inline-block;margin-top:4px;padding:2px 6px;border-radius:999px;background:light-dark(#e8e8e3,#333);font-size:9px;font-weight:800;line-height:1.4}
     #job-priority-app .card-meta{font-size:9px;opacity:.66;margin-top:4px}
     #job-priority-app .muted{font-size:10px;opacity:.65}
@@ -77,6 +78,8 @@
     #job-priority-app .timer-modal{width:min(430px,100%);background:light-dark(#fff,#202020);color:inherit;border:1px solid light-dark(#d8d8d4,#444);border-radius:14px;padding:16px;box-shadow:0 18px 50px rgba(0,0,0,.25)}
     #job-priority-app .timer-modal h3{font-size:15px;margin:0 0 8px}
     #job-priority-app .timer-modal p{font-size:12px;line-height:1.4;margin:0}
+    #job-priority-app .notes-box{width:100%;min-height:180px;resize:vertical;padding:9px;border-radius:8px;border:1px solid light-dark(#cfcfca,#444);background:light-dark(#fff,#171717);color:inherit;font:inherit;line-height:1.4}
+    #job-priority-app .notes-box[readonly]{opacity:.85;cursor:default}
     @media(max-width:980px){#job-priority-app .grid{grid-template-columns:1fr 1fr}}
     @media(max-width:700px){#job-priority-app{padding:16px}#job-priority-app .grid{grid-template-columns:1fr}#job-priority-app .status-panel{grid-column:auto}#job-priority-app .board{grid-template-columns:1fr}#job-priority-app .form-grid{grid-template-columns:1fr}#job-priority-app .full{grid-column:auto}#job-priority-app .client-tools{align-items:stretch;flex-direction:column}}
   </style>
@@ -135,6 +138,14 @@
         <div class="actions"><button class="primary" id="saveDueDateBtn" type="button">Save Due Date</button><button class="secondary" id="cancelDueDateBtn" type="button">Cancel</button></div>
       </div>
     </div>
+    <div class="timer-modal-backdrop" id="clientNotesModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="clientNotesModalTitle">
+      <div class="timer-modal">
+        <h3 id="clientNotesModalTitle">Client Notes</h3>
+        <p id="clientNotesModalClient" style="margin-bottom:10px"></p>
+        <textarea id="clientNotesTextarea" class="notes-box" readonly placeholder="No client notes yet."></textarea>
+        <div class="actions"><button class="primary" id="editClientNotesBtn" type="button">Edit</button><button class="primary" id="doneClientNotesBtn" type="button" style="display:none">Done</button><button class="secondary" id="closeClientNotesBtn" type="button">Close</button></div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -149,7 +160,9 @@
       let activeTimerInterval=null;
       let completedTimerKey='';
       let dueDateEditTicket='';
+      let clientNotesClientId='';
       const timerState={};
+      const clientNotes={};
       function dateParts(d){return new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));}
       function today(){const n=new Date();return dateParts(n)}
       function iso(d){return d.toISOString().slice(0,10)}
@@ -236,11 +249,13 @@
       }
       function renderCards(targetId,list){
         const target=document.getElementById(targetId); target.innerHTML=''; if(!list.length){target.innerHTML='<div class="muted">No jobs.</div>';return}
-        list.forEach(j=>{const c=document.createElement('div');c.className='card';const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const dueValue=j.due||j.dueDate;const ticket=escapeHtml(String(j.ticketNumber||''));const current=escapeHtml(j.status);const statusTag=j.status==='To Be Invoiced'?'<div class="card-tag">To Be Invoiced</div>':j.status==='Completed'?`<div class="card-tag">Completed: ${formatDate((j.completedAt||todayISO()).slice(0,10))}</div>`:'';c.innerHTML=`<div class="card-head"><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}">⋮</button><div class="move-menu" data-move-menu="${ticket}"><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button></div></div><div><div class="card-title">${escapeHtml(title)}</div>${statusTag}<div class="card-meta">${formatHours(j.status==='To Be Invoiced'?.1667:hours)} · due ${formatDate(dueValue)}</div></div></div>`;target.appendChild(c)});
+        list.forEach(j=>{const c=document.createElement('div');c.className='card';const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const dueValue=j.due||j.dueDate;const ticket=escapeHtml(String(j.ticketNumber||''));const current=escapeHtml(j.status);const clientId=escapeHtml(String(j.primaryClientId||j.primaryClientID||j.clientId||''));const statusTag=j.status==='To Be Invoiced'?'<div class="card-tag">To Be Invoiced</div>':j.status==='Completed'?`<div class="card-tag">Completed: ${formatDate((j.completedAt||todayISO()).slice(0,10))}</div>`:'';c.innerHTML=`<div class="card-head"><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}">⋮</button><div class="move-menu" data-move-menu="${ticket}"><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button></div></div><div><div class="card-title">${escapeHtml(title)}</div><a class="client-notes-link" data-client-notes-id="${clientId}">View Client Notes</a>${statusTag}<div class="card-meta">${formatHours(j.status==='To Be Invoiced'?.1667:hours)} · due ${formatDate(dueValue)}</div></div></div>`;target.appendChild(c)});
         target.querySelectorAll('[data-menu-ticket]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const ticket=btn.getAttribute('data-menu-ticket');const menu=target.querySelector(`[data-move-menu="${ticket}"]`);document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>{if(m!==menu)m.classList.remove('open')});menu.classList.toggle('open')}));
         target.querySelectorAll('[data-move-ticket]').forEach(btn=>btn.addEventListener('click',()=>changeJobStatusFromMenu(btn)));
         target.querySelectorAll('[data-change-due-ticket]').forEach(btn=>btn.addEventListener('click',()=>openDueDateModal(btn.getAttribute('data-change-due-ticket'))));
+        target.querySelectorAll('[data-client-notes-id]').forEach(link=>link.addEventListener('click',()=>openClientNotesModal(link.getAttribute('data-client-notes-id'))));
       }
+      function openClientNotesModal(clientId){if(!clientId)return;clientNotesClientId=clientId;const client=clients.find(c=>c.id===clientId);document.getElementById('clientNotesModalClient').textContent=client?client.name+' ('+client.id+')':clientId;const textarea=document.getElementById('clientNotesTextarea');textarea.value=clientNotes[clientId]||'';textarea.readOnly=true;document.getElementById('editClientNotesBtn').style.display='inline-block';document.getElementById('doneClientNotesBtn').style.display='none';document.getElementById('clientNotesModalBackdrop').classList.add('open')}
       function openDueDateModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;dueDateEditTicket=String(ticket);document.getElementById('dueDateModalJob').textContent=job.title||job.displayTitle||'';document.getElementById('dueDateModalInput').value=job.due||job.dueDate||'';document.getElementById('dueDateModalBackdrop').classList.add('open');document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'))}
       function renderTodo(list){renderCards('todoList',list)}
       async function changeJobStatusFromMenu(button){
@@ -263,6 +278,8 @@
         try{
           const data=await apiGet(); if(!data.success)throw new Error(data.error||'Backend error');
           clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[];
+          Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);
+          clients.forEach(c=>{clientNotes[c.id]=String(c.notes||c.clientNotes||'')});
           nextId=getNextSequentialId();
           populateClients(); syncNextId(); renderQueue(); renderBoard(); setBackendStatus(true,'Live Google Sheets connection');
         }catch(err){setBackendStatus(false,'Connection failed');alert('Could not load Google Sheets data: '+err.message)}
@@ -305,6 +322,9 @@
       document.getElementById('continueTimerBtn').addEventListener('click',()=>{if(!completedTimerKey)return;const state=timerState[completedTimerKey];if(!state)return;state.remaining=0;state.overtime=0;state.running=false;document.getElementById('timerModalBackdrop').classList.remove('open');startTimer(completedTimerKey);completedTimerKey=''});
       document.getElementById('reprioritizeBtn').addEventListener('click',()=>{if(completedTimerKey&&timerState[completedTimerKey])timerState[completedTimerKey].running=false;document.getElementById('timerModalBackdrop').classList.remove('open');completedTimerKey='';activeTimerKey='';stopTimerInterval();renderQueue()});
       document.getElementById('cancelDueDateBtn').addEventListener('click',()=>{dueDateEditTicket='';document.getElementById('dueDateModalBackdrop').classList.remove('open')});
+      document.getElementById('editClientNotesBtn').addEventListener('click',()=>{const textarea=document.getElementById('clientNotesTextarea');textarea.readOnly=false;textarea.focus();document.getElementById('editClientNotesBtn').style.display='none';document.getElementById('doneClientNotesBtn').style.display='inline-block'});
+      document.getElementById('doneClientNotesBtn').addEventListener('click',async()=>{if(!clientNotesClientId)return;const textarea=document.getElementById('clientNotesTextarea');const notes=textarea.value;try{const data=await apiPost({action:'updateClientNotes',clientId:clientNotesClientId,notes});if(!data.success)throw new Error(data.error||'Unable to save client notes');clientNotes[clientNotesClientId]=notes;const client=clients.find(c=>c.id===clientNotesClientId);if(client)client.notes=notes;textarea.readOnly=true;document.getElementById('editClientNotesBtn').style.display='inline-block';document.getElementById('doneClientNotesBtn').style.display='none'}catch(err){alert(err.message)}});
+      document.getElementById('closeClientNotesBtn').addEventListener('click',()=>{clientNotesClientId='';document.getElementById('clientNotesModalBackdrop').classList.remove('open')});
       document.getElementById('saveDueDateBtn').addEventListener('click',async()=>{const job=jobs.find(j=>String(j.ticketNumber||'')===dueDateEditTicket);const newDue=document.getElementById('dueDateModalInput').value;if(!job||!newDue)return;try{const data=await apiPost({action:'updateJob',ticketNumber:dueDateEditTicket,status:job.status,dueDate:newDue});if(!data.success)throw new Error(data.error||'Unable to update due date');job.dueDate=newDue;job.due=newDue;document.getElementById('dueDateModalBackdrop').classList.remove('open');dueDateEditTicket='';renderQueue();renderBoard()}catch(err){alert(err.message)}});
       document.getElementById('jobForm').addEventListener('submit',async e=>{
         e.preventDefault(); const desc=document.getElementById('description').value.trim(); const primary=document.getElementById('primaryClient').value; const requestedTicketNumber=Number(document.getElementById('jobNumber').value); if(!desc||!clients.length||!primary||primary==='__ADD_CLIENT__'||!validateJobNumber())return;
