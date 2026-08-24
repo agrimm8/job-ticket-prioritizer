@@ -82,7 +82,7 @@
             <div id="secondaryWrap" class="full" style="display:none"><label for="secondaryClient">Secondary Client</label><select id="secondaryClient"></select><div class="client-modal open" style="margin-top:8px"><div class="form-grid"><div><label for="newSubclientName">New Secondary Client Name</label><input id="newSubclientName" placeholder="e.g. Marcel & Vanessa"></div><div><label for="newSubclientId">3-Letter Secondary Client ID</label><input id="newSubclientId" maxlength="3" placeholder="e.g. MVA"><div id="subclientIdAlert" class="meta" style="display:none;color:#b42318;font-weight:700"></div></div></div><div class="actions"><button class="secondary" id="saveSubclientBtn" type="button">+ Add Secondary Client</button></div></div></div>
             <div><label for="designType">Design Type</label><select id="designType"><option value="basic">Basic Design</option><option value="listing">Listing Design</option><option value="complex">Complex Design</option></select></div>
             <div class="full"><label for="description">Brief Job Description</label><input id="description" required placeholder="e.g. Just Listed Postcard"></div>
-            <div><label for="hours">Estimated Time Remaining (hours)</label><input id="hours" type="number" min="0.5" step="0.5" value="1" required></div>
+            <div><label for="hours">Budgeted Time (hours)</label><input id="hours" type="number" min="0.5" step="0.5" value="1" required></div>
             <div><label for="status">Status</label><select id="status"><option>To Do</option><option>Client Review</option><option>In Production / Awaiting Vendor</option><option>To Be Invoiced</option><option>Completed</option></select></div>
             <div><label for="dueDate">Due Date</label><input id="dueDate" type="date" required></div>
           </div>
@@ -93,12 +93,12 @@
 
       <section class="panel">
         <h2>To Do</h2>
-        <div id="eodMessage" class="eod-message" style="display:none">End of Day Jobs Complete</div>
         <div id="todoList"></div>
       </section>
 
       <section class="panel">
         <h2>What Should I Work On Next?</h2>
+        <div id="eodMessage" class="eod-message" style="display:none">End of Day Jobs Complete</div>
         <div id="queue"></div>
       </section>
 
@@ -187,13 +187,8 @@
       }
       function timerKeyFor(j){return String(j.ticketNumber||j.displayTitle||j.title)}
       function recommendedWorkSeconds(j){
-        const dueValue=j.due||j.dueDate; const dueDays=Math.max(0,Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000)); const h=j.status==='To Be Invoiced'?.1667:Number(j.hours??j.estimatedHoursRemaining??0);
-        if(h<=.25)return Math.max(300,Math.round(h*3600));
-        if(dueDays<=0)return Math.min(Math.round(h*3600),7200);
-        if(dueDays===1)return Math.min(Math.round(h*3600),5400);
-        if(h>=6)return 3600;
-        if(h>=3)return 2700;
-        return Math.min(Math.round(h*3600),1800);
+        const h=j.status==='To Be Invoiced'?.1667:Number(j.hours??j.estimatedHoursRemaining??0);
+        return Math.max(300,Math.min(Math.round(h*3600),3600));
       }
       function ensureTimerState(j){const key=timerKeyFor(j);if(!timerState[key])timerState[key]={remaining:recommendedWorkSeconds(j),running:false};return timerState[key]}
       function formatCountdown(seconds){const s=Math.max(0,Math.ceil(seconds));const m=Math.floor(s/60);const r=s%60;return `${m}:${String(r).padStart(2,'0')}`}
@@ -207,29 +202,23 @@
       function showTimerComplete(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;completedTimerKey=key;document.getElementById('timerModalMessage').textContent=`Allotted Time for ${job.title||job.displayTitle} is Complete.`;document.getElementById('timerModalBackdrop').classList.add('open')}
       function renderQueue(){
         const q=document.getElementById('queue'); q.innerHTML=''; const active=jobs.filter(j=>priorityScore(j)>-900).sort((a,b)=>priorityScore(b)-priorityScore(a)).slice(0,5);
-        if(!active.length){q.innerHTML='<div class="muted">No actionable jobs.</div>';return}
-        active.forEach((j,i)=>{
-          const dueValue=j.due||j.dueDate; const dueDays=Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000); let cls='normal',label='On Schedule'; if(dueDays<=0){cls='urgent';label='Due Today'} else if(dueDays<=1){cls='soon';label='Due Soon'}
-          const title=j.title||j.displayTitle; const hours=j.hours??j.estimatedHoursRemaining??0; const key=timerKeyFor(j); const timer=ensureTimerState(j); const timerLabel=timer.running?'Pause':'▶';
-          const row=document.createElement('div');row.className='queue-item'+(timer.running?' timer-active':'');row.innerHTML=`<div class="rank">${i+1}</div><div><div class="qtitle">${escapeHtml(title)}</div><div class="qmeta">${j.status} · ${formatHours(j.status==='To Be Invoiced'?.1667:hours)} remaining · due ${formatDate(dueValue)}</div><div class="timer-tools"><span class="timer-readout">${formatCountdown(timer.remaining)}</span><span class="muted">recommended work block</span><button class="secondary timer-btn" type="button" data-timer-key="${escapeHtml(key)}">${timerLabel}</button></div></div><div class="badge ${cls}">${label}</div>`;q.appendChild(row)
-        })
+        if(!active.length){document.getElementById('eodMessage').style.display='block';q.innerHTML='<div class="muted">No actionable jobs.</div>';return}
+        const todayValue=todayISO(); const dueToday=active.filter(j=>(j.due||j.dueDate)===todayValue); const later=active.filter(j=>(j.due||j.dueDate)!==todayValue);
+        document.getElementById('eodMessage').style.display=dueToday.length?'none':'block';
+        const addQueueItem=(j,i)=>{const dueValue=j.due||j.dueDate; const dueDays=Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000); let cls='normal',label='On Schedule'; if(dueDays<=0){cls='urgent';label='Due Today'} else if(dueDays<=1){cls='soon';label='Due Soon'} const title=j.title||j.displayTitle; const hours=j.status==='To Be Invoiced'?.1667:Number(j.hours??j.estimatedHoursRemaining??0); const key=timerKeyFor(j); const timer=ensureTimerState(j); const timerLabel=timer.running?'Pause':'▶'; const row=document.createElement('div');row.className='queue-item'+(timer.running?' timer-active':'');row.innerHTML=`<div class="rank">${i+1}</div><div><div class="qtitle">${escapeHtml(title)}</div><div class="qmeta">Budgeted Time Remaining: ${formatHours(hours)} · due ${formatDate(dueValue)}</div><div class="timer-tools"><span class="timer-readout">${formatCountdown(timer.remaining)}</span><span class="muted">current active block · max 1 hour</span><button class="secondary timer-btn" type="button" data-timer-key="${escapeHtml(key)}">${timerLabel}</button></div></div><div class="badge ${cls}">${label}</div>`;q.appendChild(row)};
+        dueToday.forEach((j,i)=>addQueueItem(j,i)); const divider=document.createElement('div');divider.className='eod-divider';divider.textContent='End of Day · 10:00 PM';q.appendChild(divider); later.forEach((j,i)=>addQueueItem(j,dueToday.length+i));
         q.querySelectorAll('[data-timer-key]').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.getAttribute('data-timer-key');const state=timerState[key];if(state&&state.running)pauseTimer(key);else startTimer(key)}));
       }
       function renderCards(targetId,list){
         const target=document.getElementById(targetId); target.innerHTML=''; if(!list.length){target.innerHTML='<div class="muted">No jobs.</div>';return}
-        list.forEach(j=>{const c=document.createElement('div');c.className='card';const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const dueValue=j.due||j.dueDate;c.innerHTML=`<div class="card-title">${escapeHtml(title)}</div><div class="card-meta">${formatHours(j.status==='To Be Invoiced'?.1667:hours)} · due ${formatDate(dueValue)}</div>`;target.appendChild(c)});
+        list.forEach(j=>{const c=document.createElement('div');c.className='card';const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const dueValue=j.due||j.dueDate;c.innerHTML=`<div class="card-title">${escapeHtml(title)}</div><div class="card-meta">${formatHours(j.status==='To Be Invoiced'?.1667:hours)} · due ${formatDate(dueValue)}</div><div class="actions"><select data-status-ticket="${escapeHtml(String(j.ticketNumber||''))}" data-current-status="${escapeHtml(j.status)}"><option${j.status==='To Do'?' selected':''}>To Do</option><option${j.status==='Client Review'?' selected':''}>Client Review</option><option${j.status==='In Production / Awaiting Vendor'?' selected':''}>In Production / Awaiting Vendor</option><option${j.status==='To Be Invoiced'?' selected':''}>To Be Invoiced</option><option${j.status==='Completed'?' selected':''}>Completed</option></select></div>`;target.appendChild(c)});
+        target.querySelectorAll('[data-status-ticket]').forEach(sel=>sel.addEventListener('change',()=>changeJobStatus(sel)));
       }
-      function renderTodo(list){
-        const target=document.getElementById('todoList'); target.innerHTML='';
-        const todayValue=todayISO();
-        const dueToday=list.filter(j=>(j.due||j.dueDate)===todayValue);
-        const later=list.filter(j=>(j.due||j.dueDate)!==todayValue);
-        document.getElementById('eodMessage').style.display=dueToday.length?'none':'block';
-        const addCard=j=>{const c=document.createElement('div');c.className='card';const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const dueValue=j.due||j.dueDate;c.innerHTML=`<div class="card-title">${escapeHtml(title)}</div><div class="card-meta">${formatHours(j.status==='To Be Invoiced'?.1667:hours)} · due ${formatDate(dueValue)}</div>`;target.appendChild(c)};
-        dueToday.forEach(addCard);
-        const divider=document.createElement('div');divider.className='eod-divider';divider.textContent='End of Day · 10:00 PM';target.appendChild(divider);
-        later.forEach(addCard);
-        if(!dueToday.length&&!later.length) target.innerHTML='<div class="eod-divider">End of Day · 10:00 PM</div><div class="muted">No jobs.</div>';
+      function renderTodo(list){renderCards('todoList',list)}
+      async function changeJobStatus(select){
+        const ticket=select.getAttribute('data-status-ticket'); const oldStatus=select.getAttribute('data-current-status'); const newStatus=select.value; const job=jobs.find(j=>String(j.ticketNumber||'')===ticket); if(!job)return;
+        let newDue=job.due||job.dueDate||''; if(newStatus==='To Do'&&(oldStatus==='Client Review'||oldStatus==='In Production / Awaiting Vendor'))newDue=iso(addWorkdays(today(),1));
+        try{const data=await apiPost({action:'updateJob',ticketNumber:ticket,status:newStatus,dueDate:newDue});if(!data.success)throw new Error(data.error||'Unable to update job');job.status=newStatus;job.dueDate=newDue;job.due=newDue;renderQueue();renderBoard()}catch(err){select.value=oldStatus;alert(err.message)}
       }
       function renderBoard(){
         const todo=jobs.filter(j=>j.status==='To Do'||j.status==='In Progress'||j.status==='To Be Invoiced').sort((a,b)=>new Date((a.due||a.dueDate)+'T00:00:00Z')-new Date((b.due||b.dueDate)+'T00:00:00Z'));
