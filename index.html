@@ -6,51 +6,51 @@
   <title>Job Ticket Prioritizer</title>
 </head>
 <body style="margin:0;">
-<div id="job-priority-app" style="background-color:light-dark(#f5f5f3,#161616);color:light-dark(#171717,#f2f2f2);min-height:100%;padding:24px;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;border-radius:0;">
+<div id="job-priority-app" style="background-color:light-dark(#f5f5f3,#161616);color:light-dark(#171717,#f2f2f2);min-height:100%;padding:18px;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;border-radius:0;font-size:13px;">
   <style>
     #job-priority-app *{box-sizing:border-box}
     #job-priority-app .wrap{max-width:1180px;margin:0 auto}
-    #job-priority-app .top{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:22px}
-    #job-priority-app h1{font-size:28px;line-height:1.1;margin:0 0 6px;font-weight:750}
-    #job-priority-app .sub{opacity:.7;font-size:14px;margin:0}
-    #job-priority-app .backend-status{display:inline-flex;align-items:center;gap:7px;margin-top:9px;padding:6px 9px;border-radius:999px;background:light-dark(#e9f6ee,#173a29);font-size:12px;font-weight:700}
+    #job-priority-app .top{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:16px}
+    #job-priority-app h1{font-size:23px;line-height:1.1;margin:0 0 4px;font-weight:750}
+    #job-priority-app .sub{opacity:.7;font-size:12px;margin:0}
+    #job-priority-app .backend-status{display:inline-flex;align-items:center;gap:6px;margin-top:7px;padding:5px 8px;border-radius:999px;background:light-dark(#e9f6ee,#173a29);font-size:10px;font-weight:700}
     #job-priority-app .backend-dot{width:8px;height:8px;border-radius:999px;background:#b66a00}
     #job-priority-app .backend-status a{color:inherit;text-decoration:underline;text-underline-offset:2px}
-    #job-priority-app .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr);gap:18px;align-items:start}
-    #job-priority-app .panel{background:light-dark(#fff,#202020);border:1px solid light-dark(#d8d8d4,#333);border-radius:16px;padding:18px}
-    #job-priority-app .panel h2{font-size:17px;margin:0 0 14px}
-    #job-priority-app .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-    #job-priority-app label{display:block;font-size:12px;font-weight:700;margin-bottom:6px;opacity:.82}
-    #job-priority-app input,#job-priority-app select{width:100%;min-height:44px;padding:10px 11px;border-radius:10px;border:1px solid light-dark(#cfcfca,#444);background:light-dark(#fff,#171717);color:inherit;font-size:16px}
+    #job-priority-app .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr);gap:14px;align-items:start}
+    #job-priority-app .panel{background:light-dark(#fff,#202020);border:1px solid light-dark(#d8d8d4,#333);border-radius:13px;padding:14px}
+    #job-priority-app .panel h2{font-size:15px;margin:0 0 11px}
+    #job-priority-app .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+    #job-priority-app label{display:block;font-size:10px;font-weight:700;margin-bottom:4px;opacity:.82}
+    #job-priority-app input,#job-priority-app select{width:100%;min-height:36px;padding:7px 9px;border-radius:8px;border:1px solid light-dark(#cfcfca,#444);background:light-dark(#fff,#171717);color:inherit;font-size:13px}
     #job-priority-app .full{grid-column:1/-1}
-    #job-priority-app .preview{margin-top:14px;padding:12px 14px;border-radius:12px;background:light-dark(#f0f0ec,#292929);border:1px dashed light-dark(#c7c7c1,#454545)}
-    #job-priority-app .preview strong{display:block;font-size:13px;margin-bottom:4px;opacity:.65;text-transform:uppercase;letter-spacing:.05em}
-    #job-priority-app .ticket-title{font-size:15px;font-weight:750;word-break:break-word}
-    #job-priority-app .meta{font-size:12px;opacity:.68;margin-top:6px}
-    #job-priority-app .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-    #job-priority-app button{min-height:44px;border:0;border-radius:10px;padding:10px 14px;font-size:14px;font-weight:750;cursor:pointer}
+    #job-priority-app .preview{margin-top:10px;padding:9px 11px;border-radius:10px;background:light-dark(#f0f0ec,#292929);border:1px dashed light-dark(#c7c7c1,#454545)}
+    #job-priority-app .preview strong{display:block;font-size:11px;margin-bottom:3px;opacity:.65;text-transform:uppercase;letter-spacing:.05em}
+    #job-priority-app .ticket-title{font-size:13px;font-weight:750;word-break:break-word}
+    #job-priority-app .meta{font-size:10px;opacity:.68;margin-top:4px}
+    #job-priority-app .actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+    #job-priority-app button{min-height:34px;border:0;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:750;cursor:pointer}
     #job-priority-app .primary{background:#1f7a4d;color:#fff}
     #job-priority-app .secondary{background:light-dark(#e9e9e5,#303030);color:inherit;border:1px solid light-dark(#d0d0cb,#444)}
-    #job-priority-app .queue-item{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:start;padding:12px 0;border-bottom:1px solid light-dark(#ecece8,#323232)}
+    #job-priority-app .queue-item{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:8px;align-items:start;padding:9px 0;border-bottom:1px solid light-dark(#ecece8,#323232)}
     #job-priority-app .queue-item:last-child{border-bottom:0}
-    #job-priority-app .rank{width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:light-dark(#e8e8e3,#303030);font-weight:800;font-size:12px}
-    #job-priority-app .qtitle{font-size:14px;font-weight:750;line-height:1.3}
-    #job-priority-app .qmeta{font-size:12px;opacity:.68;margin-top:4px}
-    #job-priority-app .badge{font-size:11px;font-weight:800;padding:5px 8px;border-radius:999px;white-space:nowrap}
+    #job-priority-app .rank{width:24px;height:24px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:light-dark(#e8e8e3,#303030);font-weight:800;font-size:10px}
+    #job-priority-app .qtitle{font-size:12px;font-weight:750;line-height:1.3}
+    #job-priority-app .qmeta{font-size:10px;opacity:.68;margin-top:3px}
+    #job-priority-app .badge{font-size:9px;font-weight:800;padding:4px 6px;border-radius:999px;white-space:nowrap}
     #job-priority-app .urgent{background:#b42318;color:#fff}
     #job-priority-app .soon{background:#b66a00;color:#fff}
     #job-priority-app .normal{background:#3a6ea5;color:#fff}
-    #job-priority-app .board{display:grid;grid-template-columns:1fr;gap:14px;margin-top:0}
-    #job-priority-app .column{background:light-dark(#ecece8,#1d1d1d);border-radius:14px;padding:12px;min-height:190px}
-    #job-priority-app .column h3{font-size:13px;margin:0 0 10px;display:flex;justify-content:space-between;gap:8px}
-    #job-priority-app .card{background:light-dark(#fff,#252525);border:1px solid light-dark(#d8d8d4,#373737);border-radius:10px;padding:10px;margin-bottom:8px}
-    #job-priority-app .card-title{font-size:12px;font-weight:750;line-height:1.3}
-    #job-priority-app .card-meta{font-size:11px;opacity:.66;margin-top:5px}
-    #job-priority-app .muted{font-size:12px;opacity:.65}
+    #job-priority-app .board{display:grid;grid-template-columns:1fr;gap:10px;margin-top:0}
+    #job-priority-app .column{background:light-dark(#ecece8,#1d1d1d);border-radius:11px;padding:9px;min-height:155px}
+    #job-priority-app .column h3{font-size:11px;margin:0 0 7px;display:flex;justify-content:space-between;gap:6px}
+    #job-priority-app .card{background:light-dark(#fff,#252525);border:1px solid light-dark(#d8d8d4,#373737);border-radius:8px;padding:8px;margin-bottom:6px}
+    #job-priority-app .card-title{font-size:11px;font-weight:750;line-height:1.3}
+    #job-priority-app .card-meta{font-size:9px;opacity:.66;margin-top:4px}
+    #job-priority-app .muted{font-size:10px;opacity:.65}
     #job-priority-app .client-tools{display:flex;gap:8px;align-items:end}
     #job-priority-app .client-tools>div{flex:1;min-width:0}
     #job-priority-app .client-tools button{white-space:nowrap}
-    #job-priority-app .client-modal{display:none;margin:14px 0;padding:14px;border-radius:12px;background:light-dark(#f0f0ec,#292929);border:1px solid light-dark(#d8d8d4,#444)}
+    #job-priority-app .client-modal{display:none;margin:10px 0;padding:10px;border-radius:10px;background:light-dark(#f0f0ec,#292929);border:1px solid light-dark(#d8d8d4,#444)}
     #job-priority-app .client-modal.open{display:block}
     @media(max-width:980px){#job-priority-app .grid{grid-template-columns:1fr 1fr}#job-priority-app .status-panel{grid-column:1/-1}#job-priority-app .board{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:700px){#job-priority-app{padding:16px}#job-priority-app .grid{grid-template-columns:1fr}#job-priority-app .status-panel{grid-column:auto}#job-priority-app .board{grid-template-columns:1fr}#job-priority-app .form-grid{grid-template-columns:1fr}#job-priority-app .full{grid-column:auto}#job-priority-app .client-tools{align-items:stretch;flex-direction:column}}
@@ -66,8 +66,7 @@
         <h2>New Job</h2>
         <form id="jobForm">
           <div class="form-grid">
-            <div class="full"><label for="primaryClient">Primary Client</label><select id="primaryClient"></select><div class="actions" style="margin-top:8px"><button class="secondary" id="addClientBtn" type="button">+ Add Client</button></div><div class="client-modal" id="clientModal"><div class="form-grid"><div><label for="newClientName">New Client Name</label><input id="newClientName" placeholder="e.g. Sari Ward"></div><div><label for="newClientId">3-Letter Client ID</label><input id="newClientId" maxlength="3" placeholder="e.g. SWD"><div id="clientIdAlert" class="meta" style="display:none;color:#b42318;font-weight:700"></div></div></div><div class="actions"><button class="primary" id="saveClientBtn" type="button">Save Client</button><button class="secondary" id="cancelClientBtn" type="button">Cancel</button></div></div></div>
-            <div><label for="clientType">Client Type</label><select id="clientType"><option value="direct">Direct Client</option><option value="secondary">Secondary Client</option></select></div>
+            <div class="full"><label for="primaryClient">Primary Client</label><select id="primaryClient"></select><div class="actions" style="margin-top:8px"><button class="secondary" id="addClientBtn" type="button">+ Add Client</button></div><div class="client-modal" id="clientModal"><div class="form-grid"><div><label for="newClientName">New Client Name</label><input id="newClientName" placeholder="e.g. Sari Ward"></div><div><label for="newClientId">3-Letter Client ID</label><input id="newClientId" maxlength="3" placeholder="e.g. SWD"><div id="clientIdAlert" class="meta" style="display:none;color:#b42318;font-weight:700"></div></div><div class="full"><label for="newClientType">Client Setup</label><select id="newClientType"><option value="Primary Only">Primary Client Only</option><option value="Has Secondary Clients">Has Secondary Clients</option></select></div></div><div class="actions"><button class="primary" id="saveClientBtn" type="button">Save Client</button><button class="secondary" id="cancelClientBtn" type="button">Cancel</button></div></div></div>
             <div id="secondaryWrap" class="full" style="display:none"><label for="secondaryClient">Secondary Client</label><select id="secondaryClient"></select><div class="client-modal open" style="margin-top:8px"><div class="form-grid"><div><label for="newSubclientName">New Secondary Client Name</label><input id="newSubclientName" placeholder="e.g. Marcel & Vanessa"></div><div><label for="newSubclientId">3-Letter Secondary Client ID</label><input id="newSubclientId" maxlength="3" placeholder="e.g. MVA"><div id="subclientIdAlert" class="meta" style="display:none;color:#b42318;font-weight:700"></div></div></div><div class="actions"><button class="secondary" id="saveSubclientBtn" type="button">+ Add Secondary Client</button></div></div></div>
             <div><label for="designType">Design Type</label><select id="designType"><option value="basic">Basic Design</option><option value="listing">Listing Design</option><option value="complex">Complex Design</option></select></div>
             <div class="full"><label for="description">Brief Job Description</label><input id="description" required placeholder="e.g. Just Listed Postcard"></div>
@@ -120,20 +119,24 @@
         return {date:todayISO(),reason:''};
       }
       function populateClients(){
-        const type=document.getElementById('clientType').value; const pc=document.getElementById('primaryClient'); pc.innerHTML='';
+        const pc=document.getElementById('primaryClient'); pc.innerHTML='';
         const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent=clients.length?'Select a client':'Add a client to begin';placeholder.selected=true;pc.appendChild(placeholder);
         clients.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name+' ('+c.id+')';pc.appendChild(o)});
-        document.getElementById('secondaryWrap').style.display=type==='secondary'?'block':'none';
+        updateSecondaryVisibility();
         updateSubs(); updatePreview();
+      }
+      function updateSecondaryVisibility(){
+        const selected=clients.find(c=>c.id===document.getElementById('primaryClient').value); const hasSecondary=selected&&(selected.type==='Has Secondary Clients'||selected.id==='TPT');
+        document.getElementById('secondaryWrap').style.display=hasSecondary?'block':'none';
       }
       function updateSubs(){
         const parent=document.getElementById('primaryClient').value; const sc=document.getElementById('secondaryClient'); sc.innerHTML='';
         subclients.filter(s=>s.parentClientId===parent).forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name+' ('+s.id+')';sc.appendChild(o)});
       }
       function titleFor(num){
-        const type=document.getElementById('clientType').value, pid=document.getElementById('primaryClient').value, desc=document.getElementById('description').value.trim()||'Brief Description';
+        const pid=document.getElementById('primaryClient').value, desc=document.getElementById('description').value.trim()||'Brief Description';
         const primary=clients.find(c=>c.id===pid); if(!primary)return 'Add a client to generate a ticket title';
-        if(type==='secondary'){
+        if(primary.type==='Has Secondary Clients'||primary.id==='TPT'){
           const sid=document.getElementById('secondaryClient').value; const sub=subclients.find(s=>s.id===sid&&s.parentClientId===pid); if(sub)return `${pid}${num}-${sid} - ${sub.name} - ${desc}`;
         }
         return `${pid}${num} - ${primary.name} - ${desc}`;
@@ -178,8 +181,7 @@
       function formatHours(h){const mins=Math.round(Number(h)*60);if(mins<60)return mins+' min';const hrs=Math.floor(mins/60),rem=mins%60;return rem?hrs+' hr '+rem+' min':hrs+' hr'}
       function formatDate(v){const d=new Date(v+'T00:00:00Z');return d.toLocaleDateString(undefined,{month:'short',day:'numeric',timeZone:'UTC'})}
       function escapeHtml(s){return String(s).replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[m]))}
-      document.getElementById('clientType').addEventListener('change',()=>{populateClients()});
-      document.getElementById('primaryClient').addEventListener('change',()=>{updateSubs();document.getElementById('dueDate').dataset.manual='';updatePreview()});
+      document.getElementById('primaryClient').addEventListener('change',()=>{updateSecondaryVisibility();updateSubs();document.getElementById('dueDate').dataset.manual='';updatePreview()});
       document.getElementById('secondaryClient').addEventListener('change',updatePreview);
       document.getElementById('designType').addEventListener('change',()=>{document.getElementById('dueDate').dataset.manual='';updatePreview()});
       document.getElementById('description').addEventListener('input',updatePreview);
@@ -194,7 +196,7 @@
         if(!name||id.length!==3){alert('Enter a client name and a unique 3-letter client ID.');return}
         if(clients.some(c=>c.id===id)){alert('That client ID is already in use.');return}
         try{
-          const data=await apiPost({action:'addClient',clientId:id,clientName:name,clientType:'Direct',defaultDueRule:''}); if(!data.success)throw new Error(data.error||'Unable to save client');
+          const data=await apiPost({action:'addClient',clientId:id,clientName:name,clientType:document.getElementById('newClientType').value,defaultDueRule:''}); if(!data.success)throw new Error(data.error||'Unable to save client');
           clients.push(data.client); document.getElementById('clientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; document.getElementById('clientIdAlert').style.display='none'; document.getElementById('clientIdAlert').textContent=''; populateClients(); document.getElementById('primaryClient').value=id; updatePreview();
         }catch(err){alert(err.message)}
       });
@@ -212,7 +214,7 @@
       document.getElementById('reloadBtn').addEventListener('click',loadBackend);
       document.getElementById('jobForm').addEventListener('submit',async e=>{
         e.preventDefault(); const desc=document.getElementById('description').value.trim(); const primary=document.getElementById('primaryClient').value; if(!desc||!clients.length||!primary)return;
-        const status=document.getElementById('status').value; const secondary=document.getElementById('clientType').value==='secondary'?document.getElementById('secondaryClient').value:'';
+        const status=document.getElementById('status').value; const selectedClient=clients.find(c=>c.id===primary); const secondary=selectedClient&&(selectedClient.type==='Has Secondary Clients'||selectedClient.id==='TPT')?document.getElementById('secondaryClient').value:'';
         try{
           const data=await apiPost({action:'createJob',primaryClientId:primary,secondaryClientId:secondary,description:desc,designType:({basic:'Basic Design',listing:'Listing Design',complex:'Complex Design'})[document.getElementById('designType').value],estimatedHoursRemaining:Number(document.getElementById('hours').value),status,dueDate:document.getElementById('dueDate').dataset.manual?document.getElementById('dueDate').value:''});
           if(!data.success)throw new Error(data.error||'Unable to create job'); jobs.push(data.job); nextId=Number(data.job.ticketNumber)+1; renderQueue(); renderBoard(); document.getElementById('description').value=''; document.getElementById('hours').value='1'; document.getElementById('status').value='To Do'; document.getElementById('dueDate').dataset.manual=''; updatePreview();
