@@ -32,6 +32,10 @@
     #job-priority-app .primary{background:#1f7a4d;color:#fff}
     #job-priority-app .secondary{background:light-dark(#e9e9e5,#303030);color:inherit;border:1px solid light-dark(#d0d0cb,#444)}
     #job-priority-app .queue-item{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:8px;align-items:start;padding:9px 0;border-bottom:1px solid light-dark(#ecece8,#323232)}
+    #job-priority-app .timer-tools{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap}
+    #job-priority-app .timer-readout{font-size:10px;font-weight:800;min-width:54px}
+    #job-priority-app .timer-btn{min-height:26px;padding:4px 7px;font-size:10px}
+    #job-priority-app .timer-active{box-shadow:inset 0 0 0 1px #1f7a4d}
     #job-priority-app .queue-item:last-child{border-bottom:0}
     #job-priority-app .rank{width:24px;height:24px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:light-dark(#e8e8e3,#303030);font-weight:800;font-size:10px}
     #job-priority-app .qtitle{font-size:12px;font-weight:750;line-height:1.3}
@@ -47,11 +51,19 @@
     #job-priority-app .card-title{font-size:11px;font-weight:750;line-height:1.3}
     #job-priority-app .card-meta{font-size:9px;opacity:.66;margin-top:4px}
     #job-priority-app .muted{font-size:10px;opacity:.65}
+    #job-priority-app .eod-message{font-size:10px;font-weight:800;margin:-4px 0 9px;color:#1f7a4d}
+    #job-priority-app .eod-divider{display:flex;align-items:center;gap:8px;margin:10px 0;color:light-dark(#666,#aaa);font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+    #job-priority-app .eod-divider:before,#job-priority-app .eod-divider:after{content:'';height:1px;background:light-dark(#cfcfca,#444);flex:1}
     #job-priority-app .client-tools{display:flex;gap:8px;align-items:end}
     #job-priority-app .client-tools>div{flex:1;min-width:0}
     #job-priority-app .client-tools button{white-space:nowrap}
     #job-priority-app .client-modal{display:none;margin:10px 0;padding:10px;border-radius:10px;background:light-dark(#f0f0ec,#292929);border:1px solid light-dark(#d8d8d4,#444)}
     #job-priority-app .client-modal.open{display:block}
+    #job-priority-app .timer-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999}
+    #job-priority-app .timer-modal-backdrop.open{display:flex}
+    #job-priority-app .timer-modal{width:min(430px,100%);background:light-dark(#fff,#202020);color:inherit;border:1px solid light-dark(#d8d8d4,#444);border-radius:14px;padding:16px;box-shadow:0 18px 50px rgba(0,0,0,.25)}
+    #job-priority-app .timer-modal h3{font-size:15px;margin:0 0 8px}
+    #job-priority-app .timer-modal p{font-size:12px;line-height:1.4;margin:0}
     @media(max-width:980px){#job-priority-app .grid{grid-template-columns:1fr 1fr}}
     @media(max-width:700px){#job-priority-app{padding:16px}#job-priority-app .grid{grid-template-columns:1fr}#job-priority-app .status-panel{grid-column:auto}#job-priority-app .board{grid-template-columns:1fr}#job-priority-app .form-grid{grid-template-columns:1fr}#job-priority-app .full{grid-column:auto}#job-priority-app .client-tools{align-items:stretch;flex-direction:column}}
   </style>
@@ -81,6 +93,7 @@
 
       <section class="panel">
         <h2>To Do</h2>
+        <div id="eodMessage" class="eod-message" style="display:none">End of Day Jobs Complete</div>
         <div id="todoList"></div>
       </section>
 
@@ -93,6 +106,13 @@
       <section class="panel"><h2>In Production / Awaiting Vendor</h2><div id="productionList"></div></section>
       <section class="panel"><h2>Completed</h2><div id="completedList"></div></section>
     </div>
+    <div class="timer-modal-backdrop" id="timerModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="timerModalTitle">
+      <div class="timer-modal">
+        <h3 id="timerModalTitle">Allotted Time Complete</h3>
+        <p id="timerModalMessage"></p>
+        <div class="actions"><button class="primary" id="continueTimerBtn" type="button">Continue Working</button><button class="secondary" id="reprioritizeBtn" type="button">Re-Prioritize and Move to Next Job</button></div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -103,6 +123,10 @@
       let subclients=[];
       let nextId=1;
       let jobs=[];
+      let activeTimerKey='';
+      let activeTimerInterval=null;
+      let completedTimerKey='';
+      const timerState={};
       function dateParts(d){return new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));}
       function today(){const n=new Date();return dateParts(n)}
       function iso(d){return d.toISOString().slice(0,10)}
@@ -161,22 +185,55 @@
         const earlyTouchPressure=Math.max(0,h-(Math.max(1,days)*2))*5;
         return 40+urgency+workloadPressure+earlyTouchPressure+(h*2);
       }
+      function timerKeyFor(j){return String(j.ticketNumber||j.displayTitle||j.title)}
+      function recommendedWorkSeconds(j){
+        const dueValue=j.due||j.dueDate; const dueDays=Math.max(0,Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000)); const h=j.status==='To Be Invoiced'?.1667:Number(j.hours??j.estimatedHoursRemaining??0);
+        if(h<=.25)return Math.max(300,Math.round(h*3600));
+        if(dueDays<=0)return Math.min(Math.round(h*3600),7200);
+        if(dueDays===1)return Math.min(Math.round(h*3600),5400);
+        if(h>=6)return 3600;
+        if(h>=3)return 2700;
+        return Math.min(Math.round(h*3600),1800);
+      }
+      function ensureTimerState(j){const key=timerKeyFor(j);if(!timerState[key])timerState[key]={remaining:recommendedWorkSeconds(j),running:false};return timerState[key]}
+      function formatCountdown(seconds){const s=Math.max(0,Math.ceil(seconds));const m=Math.floor(s/60);const r=s%60;return `${m}:${String(r).padStart(2,'0')}`}
+      function stopTimerInterval(){if(activeTimerInterval){clearInterval(activeTimerInterval);activeTimerInterval=null}}
+      function startTimer(key){
+        if(activeTimerKey&&activeTimerKey!==key&&timerState[activeTimerKey])timerState[activeTimerKey].running=false;
+        stopTimerInterval(); activeTimerKey=key; if(!timerState[key])return; timerState[key].running=true;
+        activeTimerInterval=setInterval(()=>{const state=timerState[key];if(!state||!state.running)return;state.remaining=Math.max(0,state.remaining-1);renderQueue();if(state.remaining<=0){state.running=false;stopTimerInterval();showTimerComplete(key)}},1000); renderQueue();
+      }
+      function pauseTimer(key){if(timerState[key])timerState[key].running=false;if(activeTimerKey===key){stopTimerInterval();activeTimerKey=''}renderQueue()}
+      function showTimerComplete(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;completedTimerKey=key;document.getElementById('timerModalMessage').textContent=`Allotted Time for ${job.title||job.displayTitle} is Complete.`;document.getElementById('timerModalBackdrop').classList.add('open')}
       function renderQueue(){
         const q=document.getElementById('queue'); q.innerHTML=''; const active=jobs.filter(j=>priorityScore(j)>-900).sort((a,b)=>priorityScore(b)-priorityScore(a)).slice(0,5);
         if(!active.length){q.innerHTML='<div class="muted">No actionable jobs.</div>';return}
         active.forEach((j,i)=>{
           const dueValue=j.due||j.dueDate; const dueDays=Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000); let cls='normal',label='On Schedule'; if(dueDays<=0){cls='urgent';label='Due Today'} else if(dueDays<=1){cls='soon';label='Due Soon'}
-          const title=j.title||j.displayTitle; const hours=j.hours??j.estimatedHoursRemaining??0;
-          const row=document.createElement('div');row.className='queue-item';row.innerHTML=`<div class="rank">${i+1}</div><div><div class="qtitle">${escapeHtml(title)}</div><div class="qmeta">${j.status} · ${formatHours(j.status==='To Be Invoiced'?.1667:hours)} remaining · due ${formatDate(dueValue)}</div></div><div class="badge ${cls}">${label}</div>`;q.appendChild(row)
+          const title=j.title||j.displayTitle; const hours=j.hours??j.estimatedHoursRemaining??0; const key=timerKeyFor(j); const timer=ensureTimerState(j); const timerLabel=timer.running?'Pause':'▶';
+          const row=document.createElement('div');row.className='queue-item'+(timer.running?' timer-active':'');row.innerHTML=`<div class="rank">${i+1}</div><div><div class="qtitle">${escapeHtml(title)}</div><div class="qmeta">${j.status} · ${formatHours(j.status==='To Be Invoiced'?.1667:hours)} remaining · due ${formatDate(dueValue)}</div><div class="timer-tools"><span class="timer-readout">${formatCountdown(timer.remaining)}</span><span class="muted">recommended work block</span><button class="secondary timer-btn" type="button" data-timer-key="${escapeHtml(key)}">${timerLabel}</button></div></div><div class="badge ${cls}">${label}</div>`;q.appendChild(row)
         })
+        q.querySelectorAll('[data-timer-key]').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.getAttribute('data-timer-key');const state=timerState[key];if(state&&state.running)pauseTimer(key);else startTimer(key)}));
       }
       function renderCards(targetId,list){
         const target=document.getElementById(targetId); target.innerHTML=''; if(!list.length){target.innerHTML='<div class="muted">No jobs.</div>';return}
         list.forEach(j=>{const c=document.createElement('div');c.className='card';const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const dueValue=j.due||j.dueDate;c.innerHTML=`<div class="card-title">${escapeHtml(title)}</div><div class="card-meta">${formatHours(j.status==='To Be Invoiced'?.1667:hours)} · due ${formatDate(dueValue)}</div>`;target.appendChild(c)});
       }
+      function renderTodo(list){
+        const target=document.getElementById('todoList'); target.innerHTML='';
+        const todayValue=todayISO();
+        const dueToday=list.filter(j=>(j.due||j.dueDate)===todayValue);
+        const later=list.filter(j=>(j.due||j.dueDate)!==todayValue);
+        document.getElementById('eodMessage').style.display=dueToday.length?'none':'block';
+        const addCard=j=>{const c=document.createElement('div');c.className='card';const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const dueValue=j.due||j.dueDate;c.innerHTML=`<div class="card-title">${escapeHtml(title)}</div><div class="card-meta">${formatHours(j.status==='To Be Invoiced'?.1667:hours)} · due ${formatDate(dueValue)}</div>`;target.appendChild(c)};
+        dueToday.forEach(addCard);
+        const divider=document.createElement('div');divider.className='eod-divider';divider.textContent='End of Day · 10:00 PM';target.appendChild(divider);
+        later.forEach(addCard);
+        if(!dueToday.length&&!later.length) target.innerHTML='<div class="eod-divider">End of Day · 10:00 PM</div><div class="muted">No jobs.</div>';
+      }
       function renderBoard(){
         const todo=jobs.filter(j=>j.status==='To Do'||j.status==='In Progress'||j.status==='To Be Invoiced').sort((a,b)=>new Date((a.due||a.dueDate)+'T00:00:00Z')-new Date((b.due||b.dueDate)+'T00:00:00Z'));
-        renderCards('todoList',todo);
+        renderTodo(todo);
         renderCards('clientReviewList',jobs.filter(j=>j.status==='Client Review'));
         renderCards('productionList',jobs.filter(j=>j.status==='In Production / Awaiting Vendor'));
         renderCards('completedList',jobs.filter(j=>j.status==='Completed'));
@@ -227,6 +284,8 @@
       });
       document.getElementById('clearBtn').addEventListener('click',()=>{document.getElementById('jobForm').reset();document.getElementById('dueDate').dataset.manual='';populateClients()});
       document.getElementById('reloadBtn').addEventListener('click',loadBackend);
+      document.getElementById('continueTimerBtn').addEventListener('click',()=>{if(!completedTimerKey)return;const job=jobs.find(j=>timerKeyFor(j)===completedTimerKey);if(!job)return;timerState[completedTimerKey]={remaining:recommendedWorkSeconds(job),running:false};document.getElementById('timerModalBackdrop').classList.remove('open');startTimer(completedTimerKey);completedTimerKey=''});
+      document.getElementById('reprioritizeBtn').addEventListener('click',()=>{if(completedTimerKey&&timerState[completedTimerKey])timerState[completedTimerKey].running=false;document.getElementById('timerModalBackdrop').classList.remove('open');completedTimerKey='';activeTimerKey='';stopTimerInterval();renderQueue()});
       document.getElementById('jobForm').addEventListener('submit',async e=>{
         e.preventDefault(); const desc=document.getElementById('description').value.trim(); const primary=document.getElementById('primaryClient').value; if(!desc||!clients.length||!primary)return;
         const status=document.getElementById('status').value; const selectedClient=clients.find(c=>c.id===primary); const secondary=selectedClient&&(selectedClient.type==='Has Secondary Clients'||selectedClient.id==='TPT')?document.getElementById('secondaryClient').value:'';
