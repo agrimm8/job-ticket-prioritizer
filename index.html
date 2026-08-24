@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -67,15 +66,14 @@
         <h2>New Job</h2>
         <form id="jobForm">
           <div class="form-grid">
+            <div class="full"><label for="primaryClient">Primary Client</label><select id="primaryClient"></select><div class="actions" style="margin-top:8px"><button class="secondary" id="addClientBtn" type="button">+ Add Client</button></div></div>
             <div><label for="clientType">Client Type</label><select id="clientType"><option value="direct">Direct Client</option><option value="secondary">Secondary Client</option></select></div>
-            <div><label for="primaryClient">Primary Client</label><div class="client-tools"><div><select id="primaryClient"></select></div><button class="secondary" id="addClientBtn" type="button">+ Add Client</button></div></div>
             <div id="secondaryWrap" style="display:none"><label for="secondaryClient">Secondary Client</label><select id="secondaryClient"></select></div>
             <div><label for="designType">Design Type</label><select id="designType"><option value="basic">Basic Design</option><option value="listing">Listing Design</option><option value="complex">Complex Design</option></select></div>
             <div class="full"><label for="description">Brief Job Description</label><input id="description" required placeholder="e.g. Just Listed Postcard"></div>
-            <div><label for="hours">Estimated Time Remaining (hours)</label><input id="hours" type="number" min="0.1" step="0.1" value="1.0" required></div>
+            <div><label for="hours">Estimated Time Remaining (hours)</label><input id="hours" type="number" min="0.5" step="0.5" value="1" required></div>
             <div><label for="status">Status</label><select id="status"><option>To Do</option><option>In Progress</option><option>Client Review</option><option>In Production / Awaiting Vendor</option><option>To Be Invoiced</option><option>Completed</option></select></div>
-            <div><label for="suggestedDue">Suggested Due Date</label><input id="suggestedDue" type="date" disabled></div>
-            <div><label for="dueDate">Due Date (editable)</label><input id="dueDate" type="date" required></div>
+            <div><label for="dueDate">Due Date</label><input id="dueDate" type="date" required></div>
           </div>
           <div class="client-modal" id="clientModal">
             <div class="form-grid">
@@ -115,6 +113,7 @@
       function todayISO(){return iso(today())}
       function isWorkday(d){const day=d.getUTCDay();return day!==0&&day!==6}
       function addWorkdays(start,count){let d=new Date(start.getTime());let added=0;while(added<count){d.setUTCDate(d.getUTCDate()+1);if(isWorkday(d))added++;}return d}
+      function offsetDate(days){let d=today();d.setUTCDate(d.getUTCDate()+days);return iso(d)}
       function suggestedDue(){
         const primary=document.getElementById('primaryClient').value; const design=document.getElementById('designType').value; const now=new Date(); const t=today();
         const client=clients.find(c=>c.id===primary);
@@ -147,7 +146,7 @@
         return `${pid}${num} - ${primary.name} - ${desc}`;
       }
       function updatePreview(){
-        const sug=suggestedDue(); document.getElementById('suggestedDue').value=sug.date;
+        const sug=suggestedDue();
         const due=document.getElementById('dueDate'); if(!due.dataset.manual) due.value=sug.date;
         document.getElementById('titlePreview').textContent=titleFor(nextId);
         document.getElementById('rulePreview').textContent=clients.length?('Due-date rule: '+sug.reason+(due.dataset.manual?' · manually overridden':'')):'Add your first client to begin.';
@@ -210,7 +209,7 @@
         const status=document.getElementById('status').value; const secondary=document.getElementById('clientType').value==='secondary'?document.getElementById('secondaryClient').value:'';
         try{
           const data=await apiPost({action:'createJob',primaryClientId:primary,secondaryClientId:secondary,description:desc,designType:({basic:'Basic Design',listing:'Listing Design',complex:'Complex Design'})[document.getElementById('designType').value],estimatedHoursRemaining:Number(document.getElementById('hours').value),status,dueDate:document.getElementById('dueDate').dataset.manual?document.getElementById('dueDate').value:''});
-          if(!data.success)throw new Error(data.error||'Unable to create job'); jobs.push(data.job); nextId=Number(data.job.ticketNumber)+1; renderQueue(); renderBoard(); document.getElementById('description').value=''; document.getElementById('hours').value='1.0'; document.getElementById('status').value='To Do'; document.getElementById('dueDate').dataset.manual=''; updatePreview();
+          if(!data.success)throw new Error(data.error||'Unable to create job'); jobs.push(data.job); nextId=Number(data.job.ticketNumber)+1; renderQueue(); renderBoard(); document.getElementById('description').value=''; document.getElementById('hours').value='1'; document.getElementById('status').value='To Do'; document.getElementById('dueDate').dataset.manual=''; updatePreview();
         }catch(err){alert(err.message)}
       });
       populateClients();renderQueue();renderBoard();loadBackend();
