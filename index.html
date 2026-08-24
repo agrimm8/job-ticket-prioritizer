@@ -68,7 +68,7 @@
           <div class="form-grid">
             <div class="full"><label for="primaryClient">Primary Client</label><select id="primaryClient"></select><div class="actions" style="margin-top:8px"><button class="secondary" id="addClientBtn" type="button">+ Add Client</button></div><div class="client-modal" id="clientModal"><div class="form-grid"><div><label for="newClientName">New Client Name</label><input id="newClientName" placeholder="e.g. Sari Ward"></div><div><label for="newClientId">3-Letter Client ID</label><input id="newClientId" maxlength="3" placeholder="e.g. SWD"><div id="clientIdAlert" class="meta" style="display:none;color:#b42318;font-weight:700"></div></div></div><div class="actions"><button class="primary" id="saveClientBtn" type="button">Save Client</button><button class="secondary" id="cancelClientBtn" type="button">Cancel</button></div></div></div>
             <div><label for="clientType">Client Type</label><select id="clientType"><option value="direct">Direct Client</option><option value="secondary">Secondary Client</option></select></div>
-            <div id="secondaryWrap" style="display:none"><label for="secondaryClient">Secondary Client</label><select id="secondaryClient"></select></div>
+            <div id="secondaryWrap" class="full" style="display:none"><label for="secondaryClient">Secondary Client</label><select id="secondaryClient"></select><div class="client-modal open" style="margin-top:8px"><div class="form-grid"><div><label for="newSubclientName">New Secondary Client Name</label><input id="newSubclientName" placeholder="e.g. Marcel & Vanessa"></div><div><label for="newSubclientId">3-Letter Secondary Client ID</label><input id="newSubclientId" maxlength="3" placeholder="e.g. MVA"><div id="subclientIdAlert" class="meta" style="display:none;color:#b42318;font-weight:700"></div></div></div><div class="actions"><button class="secondary" id="saveSubclientBtn" type="button">+ Add Secondary Client</button></div></div></div>
             <div><label for="designType">Design Type</label><select id="designType"><option value="basic">Basic Design</option><option value="listing">Listing Design</option><option value="complex">Complex Design</option></select></div>
             <div class="full"><label for="description">Brief Job Description</label><input id="description" required placeholder="e.g. Just Listed Postcard"></div>
             <div><label for="hours">Estimated Time Remaining (hours)</label><input id="hours" type="number" min="0.5" step="0.5" value="1" required></div>
@@ -188,6 +188,7 @@
       document.getElementById('addClientBtn').addEventListener('click',()=>{document.getElementById('clientModal').classList.add('open');document.getElementById('newClientName').focus()});
       document.getElementById('cancelClientBtn').addEventListener('click',()=>{document.getElementById('clientModal').classList.remove('open');document.getElementById('newClientName').value='';document.getElementById('newClientId').value='';document.getElementById('clientIdAlert').style.display='none';document.getElementById('clientIdAlert').textContent=''});
       document.getElementById('newClientId').addEventListener('input',e=>{const id=e.currentTarget.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);e.currentTarget.value=id;const alert=document.getElementById('clientIdAlert');if(id.length===3&&clients.some(c=>c.id===id)){alert.textContent='That 3-letter Client ID is already in use.';alert.style.display='block'}else{alert.textContent='';alert.style.display='none'}});
+      document.getElementById('newSubclientId').addEventListener('input',e=>{const id=e.currentTarget.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);e.currentTarget.value=id;const parent=document.getElementById('primaryClient').value;const alert=document.getElementById('subclientIdAlert');if(id.length===3&&subclients.some(s=>s.parentClientId===parent&&s.id===id)){alert.textContent='That 3-letter Secondary Client ID is already in use for this client.';alert.style.display='block'}else{alert.textContent='';alert.style.display='none'}});
       document.getElementById('saveClientBtn').addEventListener('click',async()=>{
         const name=document.getElementById('newClientName').value.trim(); const id=document.getElementById('newClientId').value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);
         if(!name||id.length!==3){alert('Enter a client name and a unique 3-letter client ID.');return}
@@ -195,6 +196,16 @@
         try{
           const data=await apiPost({action:'addClient',clientId:id,clientName:name,clientType:'Direct',defaultDueRule:''}); if(!data.success)throw new Error(data.error||'Unable to save client');
           clients.push(data.client); document.getElementById('clientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; document.getElementById('clientIdAlert').style.display='none'; document.getElementById('clientIdAlert').textContent=''; populateClients(); document.getElementById('primaryClient').value=id; updatePreview();
+        }catch(err){alert(err.message)}
+      });
+      document.getElementById('saveSubclientBtn').addEventListener('click',async()=>{
+        const parent=document.getElementById('primaryClient').value; const name=document.getElementById('newSubclientName').value.trim(); const id=document.getElementById('newSubclientId').value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);
+        if(!parent){alert('Select the primary client first.');return}
+        if(!name||id.length!==3){alert('Enter a secondary client name and a unique 3-letter ID.');return}
+        if(subclients.some(s=>s.parentClientId===parent&&s.id===id)){alert('That secondary client ID is already in use for this client.');return}
+        try{
+          const data=await apiPost({action:'addSubclient',parentClientId:parent,subclientId:id,subclientName:name}); if(!data.success)throw new Error(data.error||'Unable to save secondary client');
+          subclients.push(data.subclient); document.getElementById('newSubclientName').value=''; document.getElementById('newSubclientId').value=''; document.getElementById('subclientIdAlert').style.display='none'; document.getElementById('subclientIdAlert').textContent=''; updateSubs(); document.getElementById('secondaryClient').value=id; updatePreview();
         }catch(err){alert(err.message)}
       });
       document.getElementById('clearBtn').addEventListener('click',()=>{document.getElementById('jobForm').reset();document.getElementById('dueDate').dataset.manual='';populateClients()});
