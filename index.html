@@ -1,0 +1,221 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Job Ticket Prioritizer</title>
+</head>
+<body style="margin:0;">
+<div id="job-priority-app" style="background-color:light-dark(#f5f5f3,#161616);color:light-dark(#171717,#f2f2f2);min-height:100%;padding:24px;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;border-radius:0;">
+  <style>
+    #job-priority-app *{box-sizing:border-box}
+    #job-priority-app .wrap{max-width:1180px;margin:0 auto}
+    #job-priority-app .top{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:22px}
+    #job-priority-app h1{font-size:28px;line-height:1.1;margin:0 0 6px;font-weight:750}
+    #job-priority-app .sub{opacity:.7;font-size:14px;margin:0}
+    #job-priority-app .backend-status{display:inline-flex;align-items:center;gap:7px;margin-top:9px;padding:6px 9px;border-radius:999px;background:light-dark(#e9f6ee,#173a29);font-size:12px;font-weight:700}
+    #job-priority-app .backend-dot{width:8px;height:8px;border-radius:999px;background:#b66a00}
+    #job-priority-app .backend-status a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+    #job-priority-app .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr);gap:18px;align-items:start}
+    #job-priority-app .panel{background:light-dark(#fff,#202020);border:1px solid light-dark(#d8d8d4,#333);border-radius:16px;padding:18px}
+    #job-priority-app .panel h2{font-size:17px;margin:0 0 14px}
+    #job-priority-app .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    #job-priority-app label{display:block;font-size:12px;font-weight:700;margin-bottom:6px;opacity:.82}
+    #job-priority-app input,#job-priority-app select{width:100%;min-height:44px;padding:10px 11px;border-radius:10px;border:1px solid light-dark(#cfcfca,#444);background:light-dark(#fff,#171717);color:inherit;font-size:16px}
+    #job-priority-app .full{grid-column:1/-1}
+    #job-priority-app .preview{margin-top:14px;padding:12px 14px;border-radius:12px;background:light-dark(#f0f0ec,#292929);border:1px dashed light-dark(#c7c7c1,#454545)}
+    #job-priority-app .preview strong{display:block;font-size:13px;margin-bottom:4px;opacity:.65;text-transform:uppercase;letter-spacing:.05em}
+    #job-priority-app .ticket-title{font-size:15px;font-weight:750;word-break:break-word}
+    #job-priority-app .meta{font-size:12px;opacity:.68;margin-top:6px}
+    #job-priority-app .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    #job-priority-app button{min-height:44px;border:0;border-radius:10px;padding:10px 14px;font-size:14px;font-weight:750;cursor:pointer}
+    #job-priority-app .primary{background:#1f7a4d;color:#fff}
+    #job-priority-app .secondary{background:light-dark(#e9e9e5,#303030);color:inherit;border:1px solid light-dark(#d0d0cb,#444)}
+    #job-priority-app .queue-item{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:start;padding:12px 0;border-bottom:1px solid light-dark(#ecece8,#323232)}
+    #job-priority-app .queue-item:last-child{border-bottom:0}
+    #job-priority-app .rank{width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:light-dark(#e8e8e3,#303030);font-weight:800;font-size:12px}
+    #job-priority-app .qtitle{font-size:14px;font-weight:750;line-height:1.3}
+    #job-priority-app .qmeta{font-size:12px;opacity:.68;margin-top:4px}
+    #job-priority-app .badge{font-size:11px;font-weight:800;padding:5px 8px;border-radius:999px;white-space:nowrap}
+    #job-priority-app .urgent{background:#b42318;color:#fff}
+    #job-priority-app .soon{background:#b66a00;color:#fff}
+    #job-priority-app .normal{background:#3a6ea5;color:#fff}
+    #job-priority-app .board{display:grid;grid-template-columns:1fr;gap:14px;margin-top:0}
+    #job-priority-app .column{background:light-dark(#ecece8,#1d1d1d);border-radius:14px;padding:12px;min-height:190px}
+    #job-priority-app .column h3{font-size:13px;margin:0 0 10px;display:flex;justify-content:space-between;gap:8px}
+    #job-priority-app .card{background:light-dark(#fff,#252525);border:1px solid light-dark(#d8d8d4,#373737);border-radius:10px;padding:10px;margin-bottom:8px}
+    #job-priority-app .card-title{font-size:12px;font-weight:750;line-height:1.3}
+    #job-priority-app .card-meta{font-size:11px;opacity:.66;margin-top:5px}
+    #job-priority-app .muted{font-size:12px;opacity:.65}
+    #job-priority-app .client-tools{display:flex;gap:8px;align-items:end}
+    #job-priority-app .client-tools>div{flex:1;min-width:0}
+    #job-priority-app .client-tools button{white-space:nowrap}
+    #job-priority-app .client-modal{display:none;margin:14px 0;padding:14px;border-radius:12px;background:light-dark(#f0f0ec,#292929);border:1px solid light-dark(#d8d8d4,#444)}
+    #job-priority-app .client-modal.open{display:block}
+    @media(max-width:980px){#job-priority-app .grid{grid-template-columns:1fr 1fr}#job-priority-app .status-panel{grid-column:1/-1}#job-priority-app .board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:700px){#job-priority-app{padding:16px}#job-priority-app .grid{grid-template-columns:1fr}#job-priority-app .status-panel{grid-column:auto}#job-priority-app .board{grid-template-columns:1fr}#job-priority-app .form-grid{grid-template-columns:1fr}#job-priority-app .full{grid-column:auto}#job-priority-app .client-tools{align-items:stretch;flex-direction:column}}
+  </style>
+  <div class="wrap">
+    <div class="top">
+      <div><h1>Job Ticket Prioritizer</h1><p class="sub">Live ticket creation, automatic due-date rules, statuses, and priority ranking.</p><div class="backend-status"><span class="backend-dot" id="backendDot"></span><span id="backendText">Connecting to Google Sheets…</span><span>· <a href="https://docs.google.com/spreadsheets/d/11PBs4KyIzJFDdBXQAWEXuKaxWxCrQJtmUhB7-PYmp14/edit" target="_blank" rel="noopener noreferrer">open sheet</a></span></div></div>
+      <button class="secondary" id="reloadBtn" type="button">Reload Data</button>
+    </div>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>New Job</h2>
+        <form id="jobForm">
+          <div class="form-grid">
+            <div><label for="clientType">Client Type</label><select id="clientType"><option value="direct">Direct Client</option><option value="secondary">Secondary Client</option></select></div>
+            <div><label for="primaryClient">Primary Client</label><div class="client-tools"><div><select id="primaryClient"></select></div><button class="secondary" id="addClientBtn" type="button">+ Add Client</button></div></div>
+            <div id="secondaryWrap" style="display:none"><label for="secondaryClient">Secondary Client</label><select id="secondaryClient"></select></div>
+            <div><label for="designType">Design Type</label><select id="designType"><option value="basic">Basic Design</option><option value="listing">Listing Design</option><option value="complex">Complex Design</option></select></div>
+            <div class="full"><label for="description">Brief Job Description</label><input id="description" required placeholder="e.g. Just Listed Postcard"></div>
+            <div><label for="hours">Estimated Time Remaining (hours)</label><input id="hours" type="number" min="0.1" step="0.1" value="1.0" required></div>
+            <div><label for="status">Status</label><select id="status"><option>To Do</option><option>In Progress</option><option>Client Review</option><option>In Production / Awaiting Vendor</option><option>To Be Invoiced</option><option>Completed</option></select></div>
+            <div><label for="suggestedDue">Suggested Due Date</label><input id="suggestedDue" type="date" disabled></div>
+            <div><label for="dueDate">Due Date (editable)</label><input id="dueDate" type="date" required></div>
+          </div>
+          <div class="client-modal" id="clientModal">
+            <div class="form-grid">
+              <div><label for="newClientName">New Client Name</label><input id="newClientName" placeholder="e.g. Sari Ward"></div>
+              <div><label for="newClientId">3-Letter Client ID</label><input id="newClientId" maxlength="3" placeholder="e.g. SWD"></div>
+            </div>
+            <div class="actions"><button class="primary" id="saveClientBtn" type="button">Save Client</button><button class="secondary" id="cancelClientBtn" type="button">Cancel</button></div>
+          </div>
+          <div class="preview"><strong>Generated ticket title</strong><div id="titlePreview" class="ticket-title">—</div><div id="rulePreview" class="meta"></div></div>
+          <div class="actions"><button class="primary" type="submit">Create Job</button><button class="secondary" type="button" id="clearBtn">Clear</button></div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>What Should I Work On Next?</h2>
+        <div id="queue"></div>
+      </section>
+
+      <section class="panel status-panel">
+        <h2>Status Board</h2>
+        <div class="board" id="board"></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    (()=>{
+      const root=document.getElementById('job-priority-app'); if(!root||root.dataset.ready) return; root.dataset.ready='1';
+      const API_URL='https://script.google.com/macros/s/AKfycbzYSX6Lhyd2mwmYA1Qv1ozEM8_hd0vGndpVwv4lvzy-OUKNkFyElLVmKkfq9sGfMB5PeQ/exec';
+      let clients=[];
+      let subclients=[];
+      let nextId=1;
+      let jobs=[];
+      function dateParts(d){return new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));}
+      function today(){const n=new Date();return dateParts(n)}
+      function iso(d){return d.toISOString().slice(0,10)}
+      function todayISO(){return iso(today())}
+      function isWorkday(d){const day=d.getUTCDay();return day!==0&&day!==6}
+      function addWorkdays(start,count){let d=new Date(start.getTime());let added=0;while(added<count){d.setUTCDate(d.getUTCDate()+1);if(isWorkday(d))added++;}return d}
+      function suggestedDue(){
+        const primary=document.getElementById('primaryClient').value; const design=document.getElementById('designType').value; const now=new Date(); const t=today();
+        const client=clients.find(c=>c.id===primary);
+        if(client&&client.defaultDueRule==='NEXT_WORKDAY') return {date:iso(addWorkdays(t,1)),reason:client.name+' rule: next working day'};
+        if(design==='basic') return {date:iso(addWorkdays(t,1)),reason:'Basic Design: next working day'};
+        if(design==='complex') return {date:iso(addWorkdays(t,2)),reason:'Complex Design: two working days'};
+        if(design==='listing'){
+          const before1=now.getHours()<13;
+          return before1?{date:todayISO(),reason:'Listing Design: same day when entered before 1:00 PM'}:{date:iso(addWorkdays(t,1)),reason:'Listing Design: next working day when entered after 1:00 PM'};
+        }
+        return {date:todayISO(),reason:''};
+      }
+      function populateClients(){
+        const type=document.getElementById('clientType').value; const pc=document.getElementById('primaryClient'); pc.innerHTML='';
+        if(!clients.length){const o=document.createElement('option');o.value='';o.textContent='Add a client to begin';o.disabled=true;o.selected=true;pc.appendChild(o)}
+        clients.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name+' ('+c.id+')';pc.appendChild(o)});
+        document.getElementById('secondaryWrap').style.display=type==='secondary'?'block':'none';
+        updateSubs(); updatePreview();
+      }
+      function updateSubs(){
+        const parent=document.getElementById('primaryClient').value; const sc=document.getElementById('secondaryClient'); sc.innerHTML='';
+        subclients.filter(s=>s.parentClientId===parent).forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name+' ('+s.id+')';sc.appendChild(o)});
+      }
+      function titleFor(num){
+        const type=document.getElementById('clientType').value, pid=document.getElementById('primaryClient').value, desc=document.getElementById('description').value.trim()||'Brief Description';
+        const primary=clients.find(c=>c.id===pid); if(!primary)return 'Add a client to generate a ticket title';
+        if(type==='secondary'){
+          const sid=document.getElementById('secondaryClient').value; const sub=subclients.find(s=>s.id===sid&&s.parentClientId===pid); if(sub)return `${pid}${num}-${sid} - ${sub.name} - ${desc}`;
+        }
+        return `${pid}${num} - ${primary.name} - ${desc}`;
+      }
+      function updatePreview(){
+        const sug=suggestedDue(); document.getElementById('suggestedDue').value=sug.date;
+        const due=document.getElementById('dueDate'); if(!due.dataset.manual) due.value=sug.date;
+        document.getElementById('titlePreview').textContent=titleFor(nextId);
+        document.getElementById('rulePreview').textContent=clients.length?('Due-date rule: '+sug.reason+(due.dataset.manual?' · manually overridden':'')):'Add your first client to begin.';
+      }
+      function priorityScore(j){
+        if(['Client Review','In Production / Awaiting Vendor','Completed'].includes(j.status))return -999;
+        const dueValue=j.due||j.dueDate; const due=new Date(dueValue+'T00:00:00Z'); const days=Math.max(0,(due-today())/86400000); const h=j.status==='To Be Invoiced'?.1667:Number(j.hours??j.estimatedHoursRemaining??0);
+        return 100-(days*12)-(Math.max(0,2-h)*2)+(h*4);
+      }
+      function renderQueue(){
+        const q=document.getElementById('queue'); q.innerHTML=''; const active=jobs.filter(j=>priorityScore(j)>-900).sort((a,b)=>priorityScore(b)-priorityScore(a));
+        if(!active.length){q.innerHTML='<div class="muted">No actionable jobs.</div>';return}
+        active.forEach((j,i)=>{
+          const dueValue=j.due||j.dueDate; const dueDays=Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000); let cls='normal',label='On Schedule'; if(dueDays<=0){cls='urgent';label='Due Today'} else if(dueDays<=1){cls='soon';label='Due Soon'}
+          const title=j.title||j.displayTitle; const hours=j.hours??j.estimatedHoursRemaining??0;
+          const row=document.createElement('div');row.className='queue-item';row.innerHTML=`<div class="rank">${i+1}</div><div><div class="qtitle">${escapeHtml(title)}</div><div class="qmeta">${j.status} · ${formatHours(j.status==='To Be Invoiced'?.1667:hours)} remaining · due ${formatDate(dueValue)}</div></div><div class="badge ${cls}">${label}</div>`;q.appendChild(row)
+        })
+      }
+      function renderBoard(){
+        const statuses=['To Do','In Progress','Client Review','In Production / Awaiting Vendor','To Be Invoiced','Completed']; const board=document.getElementById('board'); board.innerHTML='';
+        statuses.forEach(s=>{const list=jobs.filter(j=>j.status===s);const col=document.createElement('div');col.className='column';col.innerHTML=`<h3><span>${s}</span><span>${list.length}</span></h3>`;list.forEach(j=>{const c=document.createElement('div');c.className='card';const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const dueValue=j.due||j.dueDate;c.innerHTML=`<div class="card-title">${escapeHtml(title)}</div><div class="card-meta">${formatHours(j.status==='To Be Invoiced'?.1667:hours)} · due ${formatDate(dueValue)}</div>`;col.appendChild(c)});board.appendChild(col)})
+      }
+      function setBackendStatus(ok,text){document.getElementById('backendText').textContent=text;document.getElementById('backendDot').style.background=ok?'#1f7a4d':'#b42318'}
+      async function apiGet(){const res=await fetch(API_URL+'?action=bootstrap',{method:'GET'});if(!res.ok)throw new Error('Unable to reach backend');return res.json()}
+      async function apiPost(payload){const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});if(!res.ok)throw new Error('Backend request failed');return res.json()}
+      async function loadBackend(){
+        setBackendStatus(false,'Connecting to Google Sheets…');
+        try{
+          const data=await apiGet(); if(!data.success)throw new Error(data.error||'Backend error');
+          clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[];
+          const nextSetting=data.settings&&data.settings['Next Ticket Number']; nextId=Number(nextSetting||1);
+          populateClients(); renderQueue(); renderBoard(); setBackendStatus(true,'Live Google Sheets connection');
+        }catch(err){setBackendStatus(false,'Connection failed');alert('Could not load Google Sheets data: '+err.message)}
+      }
+      function formatHours(h){const mins=Math.round(Number(h)*60);if(mins<60)return mins+' min';const hrs=Math.floor(mins/60),rem=mins%60;return rem?hrs+' hr '+rem+' min':hrs+' hr'}
+      function formatDate(v){const d=new Date(v+'T00:00:00Z');return d.toLocaleDateString(undefined,{month:'short',day:'numeric',timeZone:'UTC'})}
+      function escapeHtml(s){return String(s).replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[m]))}
+      document.getElementById('clientType').addEventListener('change',()=>{populateClients()});
+      document.getElementById('primaryClient').addEventListener('change',()=>{updateSubs();document.getElementById('dueDate').dataset.manual='';updatePreview()});
+      document.getElementById('secondaryClient').addEventListener('change',updatePreview);
+      document.getElementById('designType').addEventListener('change',()=>{document.getElementById('dueDate').dataset.manual='';updatePreview()});
+      document.getElementById('description').addEventListener('input',updatePreview);
+      document.getElementById('dueDate').addEventListener('input',e=>{e.currentTarget.dataset.manual='1';updatePreview()});
+      document.getElementById('status').addEventListener('change',e=>{if(e.target.value==='To Be Invoiced')document.getElementById('hours').value='.17'});
+      document.getElementById('addClientBtn').addEventListener('click',()=>{document.getElementById('clientModal').classList.add('open');document.getElementById('newClientName').focus()});
+      document.getElementById('cancelClientBtn').addEventListener('click',()=>{document.getElementById('clientModal').classList.remove('open');document.getElementById('newClientName').value='';document.getElementById('newClientId').value=''});
+      document.getElementById('saveClientBtn').addEventListener('click',async()=>{
+        const name=document.getElementById('newClientName').value.trim(); const id=document.getElementById('newClientId').value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);
+        if(!name||id.length!==3){alert('Enter a client name and a unique 3-letter client ID.');return}
+        if(clients.some(c=>c.id===id)){alert('That client ID is already in use.');return}
+        try{
+          const data=await apiPost({action:'addClient',clientId:id,clientName:name,clientType:'Direct',defaultDueRule:''}); if(!data.success)throw new Error(data.error||'Unable to save client');
+          clients.push(data.client); document.getElementById('clientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; populateClients(); document.getElementById('primaryClient').value=id; updatePreview();
+        }catch(err){alert(err.message)}
+      });
+      document.getElementById('clearBtn').addEventListener('click',()=>{document.getElementById('jobForm').reset();document.getElementById('dueDate').dataset.manual='';populateClients()});
+      document.getElementById('reloadBtn').addEventListener('click',loadBackend);
+      document.getElementById('jobForm').addEventListener('submit',async e=>{
+        e.preventDefault(); const desc=document.getElementById('description').value.trim(); const primary=document.getElementById('primaryClient').value; if(!desc||!clients.length||!primary)return;
+        const status=document.getElementById('status').value; const secondary=document.getElementById('clientType').value==='secondary'?document.getElementById('secondaryClient').value:'';
+        try{
+          const data=await apiPost({action:'createJob',primaryClientId:primary,secondaryClientId:secondary,description:desc,designType:({basic:'Basic Design',listing:'Listing Design',complex:'Complex Design'})[document.getElementById('designType').value],estimatedHoursRemaining:Number(document.getElementById('hours').value),status,dueDate:document.getElementById('dueDate').dataset.manual?document.getElementById('dueDate').value:''});
+          if(!data.success)throw new Error(data.error||'Unable to create job'); jobs.push(data.job); nextId=Number(data.job.ticketNumber)+1; renderQueue(); renderBoard(); document.getElementById('description').value=''; document.getElementById('hours').value='1.0'; document.getElementById('status').value='To Do'; document.getElementById('dueDate').dataset.manual=''; updatePreview();
+        }catch(err){alert(err.message)}
+      });
+      populateClients();renderQueue();renderBoard();loadBackend();
+    })();
+  </script>
+</div>
+</body>
+</html>
