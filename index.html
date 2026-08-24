@@ -66,7 +66,7 @@
         <h2>New Job</h2>
         <form id="jobForm">
           <div class="form-grid">
-            <div class="full"><label for="primaryClient">Primary Client</label><select id="primaryClient"></select><div class="actions" style="margin-top:8px"><button class="secondary" id="addClientBtn" type="button">+ Add Client</button></div></div>
+            <div class="full"><label for="primaryClient">Primary Client</label><select id="primaryClient"></select><div class="actions" style="margin-top:8px"><button class="secondary" id="addClientBtn" type="button">+ Add Client</button></div><div class="client-modal" id="clientModal"><div class="form-grid"><div><label for="newClientName">New Client Name</label><input id="newClientName" placeholder="e.g. Sari Ward"></div><div><label for="newClientId">3-Letter Client ID</label><input id="newClientId" maxlength="3" placeholder="e.g. SWD"><div id="clientIdAlert" class="meta" style="display:none;color:#b42318;font-weight:700"></div></div></div><div class="actions"><button class="primary" id="saveClientBtn" type="button">Save Client</button><button class="secondary" id="cancelClientBtn" type="button">Cancel</button></div></div></div>
             <div><label for="clientType">Client Type</label><select id="clientType"><option value="direct">Direct Client</option><option value="secondary">Secondary Client</option></select></div>
             <div id="secondaryWrap" style="display:none"><label for="secondaryClient">Secondary Client</label><select id="secondaryClient"></select></div>
             <div><label for="designType">Design Type</label><select id="designType"><option value="basic">Basic Design</option><option value="listing">Listing Design</option><option value="complex">Complex Design</option></select></div>
@@ -75,14 +75,7 @@
             <div><label for="status">Status</label><select id="status"><option>To Do</option><option>In Progress</option><option>Client Review</option><option>In Production / Awaiting Vendor</option><option>To Be Invoiced</option><option>Completed</option></select></div>
             <div><label for="dueDate">Due Date</label><input id="dueDate" type="date" required></div>
           </div>
-          <div class="client-modal" id="clientModal">
-            <div class="form-grid">
-              <div><label for="newClientName">New Client Name</label><input id="newClientName" placeholder="e.g. Sari Ward"></div>
-              <div><label for="newClientId">3-Letter Client ID</label><input id="newClientId" maxlength="3" placeholder="e.g. SWD"></div>
-            </div>
-            <div class="actions"><button class="primary" id="saveClientBtn" type="button">Save Client</button><button class="secondary" id="cancelClientBtn" type="button">Cancel</button></div>
-          </div>
-          <div class="preview"><strong>Generated ticket title</strong><div id="titlePreview" class="ticket-title">—</div><div id="rulePreview" class="meta"></div></div>
+          <div class="preview" id="ticketPreview" style="display:none"><strong>Ticket Preview</strong><div id="titlePreview" class="ticket-title">—</div><div id="rulePreview" class="meta"></div></div>
           <div class="actions"><button class="primary" type="submit">Create Job</button><button class="secondary" type="button" id="clearBtn">Clear</button></div>
         </form>
       </section>
@@ -128,7 +121,7 @@
       }
       function populateClients(){
         const type=document.getElementById('clientType').value; const pc=document.getElementById('primaryClient'); pc.innerHTML='';
-        if(!clients.length){const o=document.createElement('option');o.value='';o.textContent='Add a client to begin';o.disabled=true;o.selected=true;pc.appendChild(o)}
+        const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent=clients.length?'Select a client':'Add a client to begin';placeholder.selected=true;pc.appendChild(placeholder);
         clients.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name+' ('+c.id+')';pc.appendChild(o)});
         document.getElementById('secondaryWrap').style.display=type==='secondary'?'block':'none';
         updateSubs(); updatePreview();
@@ -148,8 +141,9 @@
       function updatePreview(){
         const sug=suggestedDue();
         const due=document.getElementById('dueDate'); if(!due.dataset.manual) due.value=sug.date;
-        document.getElementById('titlePreview').textContent=titleFor(nextId);
-        document.getElementById('rulePreview').textContent=clients.length?('Due-date rule: '+sug.reason+(due.dataset.manual?' · manually overridden':'')):'Add your first client to begin.';
+        const hasClient=Boolean(document.getElementById('primaryClient').value);
+        document.getElementById('ticketPreview').style.display=hasClient?'block':'none';
+        if(hasClient){document.getElementById('titlePreview').textContent=titleFor(nextId);document.getElementById('rulePreview').textContent='Due-date rule: '+sug.reason+(due.dataset.manual?' · manually overridden':'');}
       }
       function priorityScore(j){
         if(['Client Review','In Production / Awaiting Vendor','Completed'].includes(j.status))return -999;
@@ -192,14 +186,15 @@
       document.getElementById('dueDate').addEventListener('input',e=>{e.currentTarget.dataset.manual='1';updatePreview()});
       document.getElementById('status').addEventListener('change',e=>{if(e.target.value==='To Be Invoiced')document.getElementById('hours').value='.17'});
       document.getElementById('addClientBtn').addEventListener('click',()=>{document.getElementById('clientModal').classList.add('open');document.getElementById('newClientName').focus()});
-      document.getElementById('cancelClientBtn').addEventListener('click',()=>{document.getElementById('clientModal').classList.remove('open');document.getElementById('newClientName').value='';document.getElementById('newClientId').value=''});
+      document.getElementById('cancelClientBtn').addEventListener('click',()=>{document.getElementById('clientModal').classList.remove('open');document.getElementById('newClientName').value='';document.getElementById('newClientId').value='';document.getElementById('clientIdAlert').style.display='none';document.getElementById('clientIdAlert').textContent=''});
+      document.getElementById('newClientId').addEventListener('input',e=>{const id=e.currentTarget.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);e.currentTarget.value=id;const alert=document.getElementById('clientIdAlert');if(id.length===3&&clients.some(c=>c.id===id)){alert.textContent='That 3-letter Client ID is already in use.';alert.style.display='block'}else{alert.textContent='';alert.style.display='none'}});
       document.getElementById('saveClientBtn').addEventListener('click',async()=>{
         const name=document.getElementById('newClientName').value.trim(); const id=document.getElementById('newClientId').value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);
         if(!name||id.length!==3){alert('Enter a client name and a unique 3-letter client ID.');return}
         if(clients.some(c=>c.id===id)){alert('That client ID is already in use.');return}
         try{
           const data=await apiPost({action:'addClient',clientId:id,clientName:name,clientType:'Direct',defaultDueRule:''}); if(!data.success)throw new Error(data.error||'Unable to save client');
-          clients.push(data.client); document.getElementById('clientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; populateClients(); document.getElementById('primaryClient').value=id; updatePreview();
+          clients.push(data.client); document.getElementById('clientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; document.getElementById('clientIdAlert').style.display='none'; document.getElementById('clientIdAlert').textContent=''; populateClients(); document.getElementById('primaryClient').value=id; updatePreview();
         }catch(err){alert(err.message)}
       });
       document.getElementById('clearBtn').addEventListener('click',()=>{document.getElementById('jobForm').reset();document.getElementById('dueDate').dataset.manual='';populateClients()});
