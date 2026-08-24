@@ -32,9 +32,17 @@
     #job-priority-app .primary{background:#1f7a4d;color:#fff}
     #job-priority-app .secondary{background:light-dark(#e9e9e5,#303030);color:inherit;border:1px solid light-dark(#d0d0cb,#444)}
     #job-priority-app .queue-item{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:8px;align-items:start;padding:9px 0;border-bottom:1px solid light-dark(#ecece8,#323232)}
-    #job-priority-app .timer-tools{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap}
+    #job-priority-app .rank-stack{display:flex;flex-direction:column;align-items:center;gap:5px}
+    #job-priority-app .queue-menu-wrap,#job-priority-app .card-head{position:relative}
+    #job-priority-app .card-head{display:grid;grid-template-columns:22px minmax(0,1fr);gap:6px;align-items:start}
+    #job-priority-app .more-btn{width:22px;min-width:22px;min-height:22px;padding:0;border-radius:6px;font-size:14px;line-height:1;background:light-dark(#ecece8,#303030);color:inherit}
+    #job-priority-app .move-menu{position:absolute;top:24px;left:0;z-index:30;display:none;min-width:190px;padding:5px;background:light-dark(#fff,#252525);border:1px solid light-dark(#d8d8d4,#444);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,0,.2)}
+    #job-priority-app .move-menu.open{display:block}
+    #job-priority-app .move-menu button{display:block;width:100%;text-align:left;min-height:28px;padding:5px 7px;background:transparent;color:inherit;font-size:10px}
+    #job-priority-app .move-menu button:hover{background:light-dark(#f0f0ec,#333)}
+    #job-priority-app .timer-tools{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap}
     #job-priority-app .timer-readout{font-size:10px;font-weight:800;min-width:54px}
-    #job-priority-app .timer-btn{min-height:26px;padding:4px 7px;font-size:10px}
+    #job-priority-app .timer-btn{width:24px;min-width:24px;min-height:24px;padding:0;font-size:10px}
     #job-priority-app .timer-active{box-shadow:inset 0 0 0 1px #1f7a4d}
     #job-priority-app .queue-item:last-child{border-bottom:0}
     #job-priority-app .rank{width:24px;height:24px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:light-dark(#e8e8e3,#303030);font-weight:800;font-size:10px}
@@ -72,7 +80,6 @@
       <div><h1>Job Ticket Prioritizer</h1><p class="sub">Live ticket creation, automatic due-date rules, statuses, and priority ranking.</p><div class="backend-status"><span class="backend-dot" id="backendDot"></span><span id="backendText">Connecting to Google Sheets…</span><span>· <a href="https://docs.google.com/spreadsheets/d/11PBs4KyIzJFDdBXQAWEXuKaxWxCrQJtmUhB7-PYmp14/edit" target="_blank" rel="noopener noreferrer">open sheet</a></span></div></div>
       <button class="secondary" id="reloadBtn" type="button">Reload Data</button>
     </div>
-
     <div class="grid">
       <section class="panel">
         <h2>New Job</h2>
@@ -90,155 +97,52 @@
           <div class="actions"><button class="primary" type="submit">Create Job</button><button class="secondary" type="button" id="clearBtn">Clear</button></div>
         </form>
       </section>
-
-      <section class="panel">
-        <h2>To Do</h2>
-        <div id="todoList"></div>
-      </section>
-
-      <section class="panel">
-        <h2>What Should I Work On Next?</h2>
-        <div id="eodMessage" class="eod-message" style="display:none">End of Day Jobs Complete</div>
-        <div id="queue"></div>
-      </section>
-
+      <section class="panel"><h2>To Do</h2><div id="todoList"></div></section>
+      <section class="panel"><h2>What Should I Work On Next?</h2><div id="eodMessage" class="eod-message" style="display:none">End of Day Jobs Complete</div><div id="queue"></div></section>
       <section class="panel"><h2>Client Review</h2><div id="clientReviewList"></div></section>
       <section class="panel"><h2>In Production / Awaiting Vendor</h2><div id="productionList"></div></section>
       <section class="panel"><h2>Completed</h2><div id="completedList"></div></section>
     </div>
-    <div class="timer-modal-backdrop" id="timerModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="timerModalTitle">
-      <div class="timer-modal">
-        <h3 id="timerModalTitle">Allotted Time Complete</h3>
-        <p id="timerModalMessage"></p>
-        <div class="actions"><button class="primary" id="continueTimerBtn" type="button">Continue Working</button><button class="secondary" id="reprioritizeBtn" type="button">Re-Prioritize and Move to Next Job</button></div>
-      </div>
-    </div>
+    <div class="timer-modal-backdrop" id="timerModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="timerModalTitle"><div class="timer-modal"><h3 id="timerModalTitle">Allotted Time Complete</h3><p id="timerModalMessage"></p><div class="actions"><button class="primary" id="continueTimerBtn" type="button">Continue Working</button><button class="secondary" id="reprioritizeBtn" type="button">Re-Prioritize and Move to Next Job</button></div></div></div>
   </div>
 
   <script>
     (()=>{
       const root=document.getElementById('job-priority-app'); if(!root||root.dataset.ready) return; root.dataset.ready='1';
       const API_URL='https://script.google.com/macros/s/AKfycbzYSX6Lhyd2mwmYA1Qv1ozEM8_hd0vGndpVwv4lvzy-OUKNkFyElLVmKkfq9sGfMB5PeQ/exec';
-      let clients=[];
-      let subclients=[];
-      let nextId=1;
-      let jobs=[];
-      let activeTimerKey='';
-      let activeTimerInterval=null;
-      let completedTimerKey='';
+      let clients=[],subclients=[],nextId=1,jobs=[],activeTimerKey='',activeTimerInterval=null,completedTimerKey='';
       const timerState={};
-      function dateParts(d){return new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));}
+      function dateParts(d){return new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()))}
       function today(){const n=new Date();return dateParts(n)}
       function iso(d){return d.toISOString().slice(0,10)}
       function todayISO(){return iso(today())}
       function isWorkday(d){const day=d.getUTCDay();return day!==0&&day!==6}
-      function addWorkdays(start,count){let d=new Date(start.getTime());let added=0;while(added<count){d.setUTCDate(d.getUTCDate()+1);if(isWorkday(d))added++;}return d}
-      function offsetDate(days){let d=today();d.setUTCDate(d.getUTCDate()+days);return iso(d)}
-      function suggestedDue(){
-        const primary=document.getElementById('primaryClient').value; const design=document.getElementById('designType').value; const now=new Date(); const t=today();
-        const client=clients.find(c=>c.id===primary);
-        if(client&&client.defaultDueRule==='NEXT_WORKDAY') return {date:iso(addWorkdays(t,1)),reason:client.name+' rule: next working day'};
-        if(design==='basic') return {date:iso(addWorkdays(t,1)),reason:'Basic Design: next working day'};
-        if(design==='complex') return {date:iso(addWorkdays(t,2)),reason:'Complex Design: two working days'};
-        if(design==='listing'){
-          const before1=now.getHours()<13;
-          return before1?{date:todayISO(),reason:'Listing Design: same day when entered before 1:00 PM'}:{date:iso(addWorkdays(t,1)),reason:'Listing Design: next working day when entered after 1:00 PM'};
-        }
-        return {date:todayISO(),reason:''};
-      }
-      function populateClients(){
-        const pc=document.getElementById('primaryClient'); pc.innerHTML='';
-        const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent=clients.length?'Select a client':'Add a client to begin';placeholder.selected=true;pc.appendChild(placeholder);
-        clients.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name+' ('+c.id+')';pc.appendChild(o)});
-        updateSecondaryVisibility();
-        updateSubs(); updatePreview();
-      }
-      function updateSecondaryVisibility(){
-        const selected=clients.find(c=>c.id===document.getElementById('primaryClient').value); const hasSecondary=selected&&(selected.type==='Has Secondary Clients'||selected.id==='TPT');
-        document.getElementById('secondaryWrap').style.display=hasSecondary?'block':'none';
-      }
-      function updateSubs(){
-        const parent=document.getElementById('primaryClient').value; const sc=document.getElementById('secondaryClient'); sc.innerHTML='';
-        subclients.filter(s=>s.parentClientId===parent).forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name+' ('+s.id+')';sc.appendChild(o)});
-      }
-      function titleFor(num){
-        const pid=document.getElementById('primaryClient').value, desc=document.getElementById('description').value.trim()||'Brief Description';
-        const primary=clients.find(c=>c.id===pid); if(!primary)return 'Add a client to generate a ticket title';
-        if(primary.type==='Has Secondary Clients'||primary.id==='TPT'){
-          const sid=document.getElementById('secondaryClient').value; const sub=subclients.find(s=>s.id===sid&&s.parentClientId===pid); if(sub)return `${pid}${num}-${sid} - ${sub.name} - ${desc}`;
-        }
-        return `${pid}${num} - ${primary.name} - ${desc}`;
-      }
-      function updatePreview(){
-        const sug=suggestedDue();
-        const due=document.getElementById('dueDate'); if(!due.dataset.manual) due.value=sug.date;
-        const hasClient=Boolean(document.getElementById('primaryClient').value);
-        document.getElementById('ticketPreview').style.display=hasClient?'block':'none';
-        if(hasClient){document.getElementById('titlePreview').textContent=titleFor(nextId);document.getElementById('rulePreview').textContent='Due-date rule: '+sug.reason+(due.dataset.manual?' · manually overridden':'');}
-      }
-      function priorityScore(j){
-        if(['Client Review','In Production / Awaiting Vendor','Completed'].includes(j.status))return -999;
-        const dueValue=j.due||j.dueDate; const due=new Date(dueValue+'T00:00:00Z'); const days=Math.max(0,(due-today())/86400000); const h=j.status==='To Be Invoiced'?.1667:Number(j.hours??j.estimatedHoursRemaining??0);
-        const dailyCapacity=4;
-        const urgency=Math.max(0,5-days)*18;
-        const workloadPressure=Math.max(0,h-(days*dailyCapacity))*14;
-        const earlyTouchPressure=Math.max(0,h-(Math.max(1,days)*2))*5;
-        return 40+urgency+workloadPressure+earlyTouchPressure+(h*2);
-      }
+      function addWorkdays(start,count){let d=new Date(start.getTime()),added=0;while(added<count){d.setUTCDate(d.getUTCDate()+1);if(isWorkday(d))added++}return d}
+      function suggestedDue(){const primary=document.getElementById('primaryClient').value,design=document.getElementById('designType').value,now=new Date(),t=today(),client=clients.find(c=>c.id===primary);if(client&&client.defaultDueRule==='NEXT_WORKDAY')return{date:iso(addWorkdays(t,1)),reason:client.name+' rule: next working day'};if(design==='basic')return{date:iso(addWorkdays(t,1)),reason:'Basic Design: next working day'};if(design==='complex')return{date:iso(addWorkdays(t,2)),reason:'Complex Design: two working days'};if(design==='listing')return now.getHours()<13?{date:todayISO(),reason:'Listing Design: same day when entered before 1:00 PM'}:{date:iso(addWorkdays(t,1)),reason:'Listing Design: next working day when entered after 1:00 PM'};return{date:todayISO(),reason:''}}
+      function populateClients(){const pc=document.getElementById('primaryClient');pc.innerHTML='';const ph=document.createElement('option');ph.value='';ph.textContent=clients.length?'Select a client':'Add a client to begin';ph.selected=true;pc.appendChild(ph);clients.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name+' ('+c.id+')';pc.appendChild(o)});updateSecondaryVisibility();updateSubs();updatePreview()}
+      function updateSecondaryVisibility(){const selected=clients.find(c=>c.id===document.getElementById('primaryClient').value),hasSecondary=selected&&(selected.type==='Has Secondary Clients'||selected.id==='TPT');document.getElementById('secondaryWrap').style.display=hasSecondary?'block':'none'}
+      function updateSubs(){const parent=document.getElementById('primaryClient').value,sc=document.getElementById('secondaryClient');sc.innerHTML='';subclients.filter(s=>s.parentClientId===parent).forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name+' ('+s.id+')';sc.appendChild(o)})}
+      function titleFor(num){const pid=document.getElementById('primaryClient').value,desc=document.getElementById('description').value.trim()||'Brief Description',primary=clients.find(c=>c.id===pid);if(!primary)return'Add a client to generate a ticket title';if(primary.type==='Has Secondary Clients'||primary.id==='TPT'){const sid=document.getElementById('secondaryClient').value,sub=subclients.find(s=>s.id===sid&&s.parentClientId===pid);if(sub)return`${pid}${num}-${sid} - ${sub.name} - ${desc}`}return`${pid}${num} - ${primary.name} - ${desc}`}
+      function updatePreview(){const sug=suggestedDue(),due=document.getElementById('dueDate');if(!due.dataset.manual)due.value=sug.date;const hasClient=Boolean(document.getElementById('primaryClient').value);document.getElementById('ticketPreview').style.display=hasClient?'block':'none';if(hasClient){document.getElementById('titlePreview').textContent=titleFor(nextId);document.getElementById('rulePreview').textContent='Due-date rule: '+sug.reason+(due.dataset.manual?' · manually overridden':'')}}
+      function priorityScore(j){if(['Client Review','In Production / Awaiting Vendor','Completed'].includes(j.status))return-999;const dueValue=j.due||j.dueDate,due=new Date(dueValue+'T00:00:00Z'),days=Math.max(0,(due-today())/86400000),h=j.status==='To Be Invoiced'?.1667:Number(j.hours??j.estimatedHoursRemaining??0),dailyCapacity=4,urgency=Math.max(0,5-days)*18,workloadPressure=Math.max(0,h-(days*dailyCapacity))*14,earlyTouchPressure=Math.max(0,h-(Math.max(1,days)*2))*5;return 40+urgency+workloadPressure+earlyTouchPressure+(h*2)}
       function timerKeyFor(j){return String(j.ticketNumber||j.displayTitle||j.title)}
-      function recommendedWorkSeconds(j){
-        const h=j.status==='To Be Invoiced'?.1667:Number(j.hours??j.estimatedHoursRemaining??0);
-        return Math.max(300,Math.min(Math.round(h*3600),3600));
-      }
-      function ensureTimerState(j){const key=timerKeyFor(j);if(!timerState[key])timerState[key]={remaining:recommendedWorkSeconds(j),running:false};return timerState[key]}
-      function formatCountdown(seconds){const s=Math.max(0,Math.ceil(seconds));const m=Math.floor(s/60);const r=s%60;return `${m}:${String(r).padStart(2,'0')}`}
+      function recommendedWorkSeconds(j){const h=j.status==='To Be Invoiced'?.1667:Number(j.hours??j.estimatedHoursRemaining??0);return Math.max(300,Math.min(Math.round(h*3600),3600))}
+      function ensureTimerState(j){const key=timerKeyFor(j);if(!timerState[key])timerState[key]={remaining:recommendedWorkSeconds(j),running:false,overtime:0};return timerState[key]}
+      function formatCountdown(seconds){const s=Math.max(0,Math.ceil(seconds)),m=Math.floor(s/60),r=s%60;return`${m}:${String(r).padStart(2,'0')}`}
+      function formatBlockTime(state){return state.overtime>0?`+${formatCountdown(state.overtime)}`:formatCountdown(state.remaining)}
       function stopTimerInterval(){if(activeTimerInterval){clearInterval(activeTimerInterval);activeTimerInterval=null}}
-      function startTimer(key){
-        if(activeTimerKey&&activeTimerKey!==key&&timerState[activeTimerKey])timerState[activeTimerKey].running=false;
-        stopTimerInterval(); activeTimerKey=key; if(!timerState[key])return; timerState[key].running=true;
-        activeTimerInterval=setInterval(()=>{const state=timerState[key];if(!state||!state.running)return;state.remaining=Math.max(0,state.remaining-1);renderQueue();if(state.remaining<=0){state.running=false;stopTimerInterval();showTimerComplete(key)}},1000); renderQueue();
-      }
+      function startTimer(key){if(activeTimerKey&&activeTimerKey!==key&&timerState[activeTimerKey])timerState[activeTimerKey].running=false;stopTimerInterval();activeTimerKey=key;if(!timerState[key])return;timerState[key].running=true;activeTimerInterval=setInterval(()=>{const state=timerState[key];if(!state||!state.running)return;if(state.remaining>0){state.remaining=Math.max(0,state.remaining-1);if(state.remaining<=0){state.running=false;stopTimerInterval();renderQueue();showTimerComplete(key);return}}else state.overtime=(state.overtime||0)+1;renderQueue()},1000);renderQueue()}
       function pauseTimer(key){if(timerState[key])timerState[key].running=false;if(activeTimerKey===key){stopTimerInterval();activeTimerKey=''}renderQueue()}
       function showTimerComplete(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;completedTimerKey=key;document.getElementById('timerModalMessage').textContent=`Allotted Time for ${job.title||job.displayTitle} is Complete.`;document.getElementById('timerModalBackdrop').classList.add('open')}
-      function renderQueue(){
-        const q=document.getElementById('queue'); q.innerHTML=''; const active=jobs.filter(j=>priorityScore(j)>-900).sort((a,b)=>priorityScore(b)-priorityScore(a)).slice(0,5);
-        if(!active.length){document.getElementById('eodMessage').style.display='block';q.innerHTML='<div class="muted">No actionable jobs.</div>';return}
-        const todayValue=todayISO(); const dueToday=active.filter(j=>(j.due||j.dueDate)===todayValue); const later=active.filter(j=>(j.due||j.dueDate)!==todayValue);
-        document.getElementById('eodMessage').style.display=dueToday.length?'none':'block';
-        const addQueueItem=(j,i)=>{const dueValue=j.due||j.dueDate; const dueDays=Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000); let cls='normal',label='On Schedule'; if(dueDays<=0){cls='urgent';label='Due Today'} else if(dueDays<=1){cls='soon';label='Due Soon'} const title=j.title||j.displayTitle; const hours=j.status==='To Be Invoiced'?.1667:Number(j.hours??j.estimatedHoursRemaining??0); const key=timerKeyFor(j); const timer=ensureTimerState(j); const timerLabel=timer.running?'Pause':'▶'; const row=document.createElement('div');row.className='queue-item'+(timer.running?' timer-active':'');row.innerHTML=`<div class="rank">${i+1}</div><div><div class="qtitle">${escapeHtml(title)}</div><div class="qmeta">Budgeted Time Remaining: ${formatHours(hours)} · due ${formatDate(dueValue)}</div><div class="timer-tools"><span class="timer-readout">${formatCountdown(timer.remaining)}</span><span class="muted">current active block · max 1 hour</span><button class="secondary timer-btn" type="button" data-timer-key="${escapeHtml(key)}">${timerLabel}</button></div></div><div class="badge ${cls}">${label}</div>`;q.appendChild(row)};
-        dueToday.forEach((j,i)=>addQueueItem(j,i)); const divider=document.createElement('div');divider.className='eod-divider';divider.textContent='End of Day · 10:00 PM';q.appendChild(divider); later.forEach((j,i)=>addQueueItem(j,dueToday.length+i));
-        q.querySelectorAll('[data-timer-key]').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.getAttribute('data-timer-key');const state=timerState[key];if(state&&state.running)pauseTimer(key);else startTimer(key)}));
-      }
-      function renderCards(targetId,list){
-        const target=document.getElementById(targetId); target.innerHTML=''; if(!list.length){target.innerHTML='<div class="muted">No jobs.</div>';return}
-        list.forEach(j=>{const c=document.createElement('div');c.className='card';const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const dueValue=j.due||j.dueDate;c.innerHTML=`<div class="card-title">${escapeHtml(title)}</div><div class="card-meta">${formatHours(j.status==='To Be Invoiced'?.1667:hours)} · due ${formatDate(dueValue)}</div><div class="actions"><select data-status-ticket="${escapeHtml(String(j.ticketNumber||''))}" data-current-status="${escapeHtml(j.status)}"><option${j.status==='To Do'?' selected':''}>To Do</option><option${j.status==='Client Review'?' selected':''}>Client Review</option><option${j.status==='In Production / Awaiting Vendor'?' selected':''}>In Production / Awaiting Vendor</option><option${j.status==='To Be Invoiced'?' selected':''}>To Be Invoiced</option><option${j.status==='Completed'?' selected':''}>Completed</option></select></div>`;target.appendChild(c)});
-        target.querySelectorAll('[data-status-ticket]').forEach(sel=>sel.addEventListener('change',()=>changeJobStatus(sel)));
-      }
+      function renderQueue(){const q=document.getElementById('queue');q.innerHTML='';const active=jobs.filter(j=>priorityScore(j)>-900).sort((a,b)=>priorityScore(b)-priorityScore(a)).slice(0,5);if(!active.length){document.getElementById('eodMessage').style.display='block';q.innerHTML='<div class="muted">No actionable jobs.</div>';return}const todayValue=todayISO(),dueToday=active.filter(j=>(j.due||j.dueDate)===todayValue),later=active.filter(j=>(j.due||j.dueDate)!==todayValue);document.getElementById('eodMessage').style.display=dueToday.length?'none':'block';const addQueueItem=(j,i)=>{const dueValue=j.due||j.dueDate,dueDays=Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000);let cls='normal',label='On Schedule';if(dueDays<=0){cls='urgent';label='Due Today'}else if(dueDays<=1){cls='soon';label='Due Soon'}const title=j.title||j.displayTitle,hours=j.status==='To Be Invoiced'?.1667:Number(j.hours??j.estimatedHoursRemaining??0),key=timerKeyFor(j),timer=ensureTimerState(j),timerLabel=timer.running?'Ⅱ':'▶',row=document.createElement('div');row.className='queue-item'+(timer.running?' timer-active':'');row.innerHTML=`<div class="rank-stack"><div class="rank">${i+1}</div><button class="secondary timer-btn" type="button" data-timer-key="${escapeHtml(key)}">${timerLabel}</button></div><div><div class="qtitle">${escapeHtml(title)}</div><div class="qmeta">Due Date: ${formatDate(dueValue)}</div><div class="qmeta">Budget Time Remaining: ${formatHours(hours)}</div><div class="qmeta">Block Remaining: <span class="timer-readout">${formatBlockTime(timer)}</span></div></div><div class="badge ${cls}">${label}</div>`;q.appendChild(row)};dueToday.forEach((j,i)=>addQueueItem(j,i));const divider=document.createElement('div');divider.className='eod-divider';divider.textContent='End of Day · 10:00 PM';q.appendChild(divider);later.forEach((j,i)=>addQueueItem(j,dueToday.length+i));q.querySelectorAll('[data-timer-key]').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.getAttribute('data-timer-key'),state=timerState[key];if(state&&state.running)pauseTimer(key);else startTimer(key)}))}
+      function renderCards(targetId,list){const target=document.getElementById(targetId);target.innerHTML='';if(!list.length){target.innerHTML='<div class="muted">No jobs.</div>';return}list.forEach(j=>{const c=document.createElement('div');c.className='card';const title=j.title||j.displayTitle,hours=j.hours??j.estimatedHoursRemaining??0,dueValue=j.due||j.dueDate,ticket=escapeHtml(String(j.ticketNumber||'')),current=escapeHtml(j.status);c.innerHTML=`<div class="card-head"><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}">⋮</button><div class="move-menu" data-move-menu="${ticket}"><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button></div></div><div><div class="card-title">${escapeHtml(title)}</div><div class="card-meta">${formatHours(j.status==='To Be Invoiced'?.1667:hours)} · due ${formatDate(dueValue)}</div></div></div>`;target.appendChild(c)});target.querySelectorAll('[data-menu-ticket]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const ticket=btn.getAttribute('data-menu-ticket'),menu=target.querySelector(`[data-move-menu="${ticket}"]`);document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>{if(m!==menu)m.classList.remove('open')});menu.classList.toggle('open')}));target.querySelectorAll('[data-move-ticket]').forEach(btn=>btn.addEventListener('click',()=>changeJobStatusFromMenu(btn)))}
       function renderTodo(list){renderCards('todoList',list)}
-      async function changeJobStatus(select){
-        const ticket=select.getAttribute('data-status-ticket'); const oldStatus=select.getAttribute('data-current-status'); const newStatus=select.value; const job=jobs.find(j=>String(j.ticketNumber||'')===ticket); if(!job)return;
-        let newDue=job.due||job.dueDate||''; if(newStatus==='To Do'&&(oldStatus==='Client Review'||oldStatus==='In Production / Awaiting Vendor'))newDue=iso(addWorkdays(today(),1));
-        try{const data=await apiPost({action:'updateJob',ticketNumber:ticket,status:newStatus,dueDate:newDue});if(!data.success)throw new Error(data.error||'Unable to update job');job.status=newStatus;job.dueDate=newDue;job.due=newDue;renderQueue();renderBoard()}catch(err){select.value=oldStatus;alert(err.message)}
-      }
-      function renderBoard(){
-        const todo=jobs.filter(j=>j.status==='To Do'||j.status==='In Progress'||j.status==='To Be Invoiced').sort((a,b)=>new Date((a.due||a.dueDate)+'T00:00:00Z')-new Date((b.due||b.dueDate)+'T00:00:00Z'));
-        renderTodo(todo);
-        renderCards('clientReviewList',jobs.filter(j=>j.status==='Client Review'));
-        renderCards('productionList',jobs.filter(j=>j.status==='In Production / Awaiting Vendor'));
-        renderCards('completedList',jobs.filter(j=>j.status==='Completed'));
-      }
+      async function changeJobStatusFromMenu(button){const ticket=button.getAttribute('data-move-ticket'),oldStatus=button.getAttribute('data-old-status'),newStatus=button.getAttribute('data-new-status'),job=jobs.find(j=>String(j.ticketNumber||'')===ticket);if(!job)return;let newDue=job.due||job.dueDate||'';if(newStatus==='To Do'&&(oldStatus==='Client Review'||oldStatus==='In Production / Awaiting Vendor'))newDue=iso(addWorkdays(today(),1));try{const data=await apiPost({action:'updateJob',ticketNumber:ticket,status:newStatus,dueDate:newDue});if(!data.success)throw new Error(data.error||'Unable to update job');job.status=newStatus;job.dueDate=newDue;job.due=newDue;renderQueue();renderBoard()}catch(err){alert(err.message)}}
+      function renderBoard(){const todo=jobs.filter(j=>j.status==='To Do'||j.status==='In Progress'||j.status==='To Be Invoiced').sort((a,b)=>new Date((a.due||a.dueDate)+'T00:00:00Z')-new Date((b.due||b.dueDate)+'T00:00:00Z'));renderTodo(todo);renderCards('clientReviewList',jobs.filter(j=>j.status==='Client Review'));renderCards('productionList',jobs.filter(j=>j.status==='In Production / Awaiting Vendor'));renderCards('completedList',jobs.filter(j=>j.status==='Completed'))}
       function setBackendStatus(ok,text){document.getElementById('backendText').textContent=text;document.getElementById('backendDot').style.background=ok?'#1f7a4d':'#b42318'}
       async function apiGet(){const res=await fetch(API_URL+'?action=bootstrap',{method:'GET'});if(!res.ok)throw new Error('Unable to reach backend');return res.json()}
       async function apiPost(payload){const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});if(!res.ok)throw new Error('Backend request failed');return res.json()}
-      async function loadBackend(){
-        setBackendStatus(false,'Connecting to Google Sheets…');
-        try{
-          const data=await apiGet(); if(!data.success)throw new Error(data.error||'Backend error');
-          clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[];
-          const nextSetting=data.settings&&data.settings['Next Ticket Number']; nextId=Number(nextSetting||1);
-          populateClients(); renderQueue(); renderBoard(); setBackendStatus(true,'Live Google Sheets connection');
-        }catch(err){setBackendStatus(false,'Connection failed');alert('Could not load Google Sheets data: '+err.message)}
-      }
+      async function loadBackend(){setBackendStatus(false,'Connecting to Google Sheets…');try{const data=await apiGet();if(!data.success)throw new Error(data.error||'Backend error');clients=data.clients||[];subclients=data.subclients||[];jobs=data.jobs||[];const nextSetting=data.settings&&data.settings['Next Ticket Number'];nextId=Number(nextSetting||1);populateClients();renderQueue();renderBoard();setBackendStatus(true,'Live Google Sheets connection')}catch(err){setBackendStatus(false,'Connection failed');alert('Could not load Google Sheets data: '+err.message)}}
       function formatHours(h){const mins=Math.round(Number(h)*60);if(mins<60)return mins+' min';const hrs=Math.floor(mins/60),rem=mins%60;return rem?hrs+' hr '+rem+' min':hrs+' hr'}
       function formatDate(v){const d=new Date(v+'T00:00:00Z');return d.toLocaleDateString(undefined,{month:'short',day:'numeric',timeZone:'UTC'})}
       function escapeHtml(s){return String(s).replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[m]))}
@@ -250,39 +154,16 @@
       document.getElementById('status').addEventListener('change',e=>{if(e.target.value==='To Be Invoiced')document.getElementById('hours').value='.17'});
       document.getElementById('addClientBtn').addEventListener('click',()=>{document.getElementById('clientModal').classList.add('open');document.getElementById('newClientName').focus()});
       document.getElementById('cancelClientBtn').addEventListener('click',()=>{document.getElementById('clientModal').classList.remove('open');document.getElementById('newClientName').value='';document.getElementById('newClientId').value='';document.getElementById('clientIdAlert').style.display='none';document.getElementById('clientIdAlert').textContent=''});
-      document.getElementById('newClientId').addEventListener('input',e=>{const id=e.currentTarget.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);e.currentTarget.value=id;const alert=document.getElementById('clientIdAlert');if(id.length===3&&clients.some(c=>c.id===id)){alert.textContent='That 3-letter Client ID is already in use.';alert.style.display='block'}else{alert.textContent='';alert.style.display='none'}});
-      document.getElementById('newSubclientId').addEventListener('input',e=>{const id=e.currentTarget.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);e.currentTarget.value=id;const parent=document.getElementById('primaryClient').value;const alert=document.getElementById('subclientIdAlert');if(id.length===3&&subclients.some(s=>s.parentClientId===parent&&s.id===id)){alert.textContent='That 3-letter Secondary Client ID is already in use for this client.';alert.style.display='block'}else{alert.textContent='';alert.style.display='none'}});
-      document.getElementById('saveClientBtn').addEventListener('click',async()=>{
-        const name=document.getElementById('newClientName').value.trim(); const id=document.getElementById('newClientId').value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);
-        if(!name||id.length!==3){alert('Enter a client name and a unique 3-letter client ID.');return}
-        if(clients.some(c=>c.id===id)){alert('That client ID is already in use.');return}
-        try{
-          const data=await apiPost({action:'addClient',clientId:id,clientName:name,clientType:document.getElementById('newClientType').value,defaultDueRule:''}); if(!data.success)throw new Error(data.error||'Unable to save client');
-          clients.push(data.client); document.getElementById('clientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; document.getElementById('clientIdAlert').style.display='none'; document.getElementById('clientIdAlert').textContent=''; populateClients(); document.getElementById('primaryClient').value=id; updatePreview();
-        }catch(err){alert(err.message)}
-      });
-      document.getElementById('saveSubclientBtn').addEventListener('click',async()=>{
-        const parent=document.getElementById('primaryClient').value; const name=document.getElementById('newSubclientName').value.trim(); const id=document.getElementById('newSubclientId').value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);
-        if(!parent){alert('Select the primary client first.');return}
-        if(!name||id.length!==3){alert('Enter a secondary client name and a unique 3-letter ID.');return}
-        if(subclients.some(s=>s.parentClientId===parent&&s.id===id)){alert('That secondary client ID is already in use for this client.');return}
-        try{
-          const data=await apiPost({action:'addSubclient',parentClientId:parent,subclientId:id,subclientName:name}); if(!data.success)throw new Error(data.error||'Unable to save secondary client');
-          subclients.push(data.subclient); document.getElementById('newSubclientName').value=''; document.getElementById('newSubclientId').value=''; document.getElementById('subclientIdAlert').style.display='none'; document.getElementById('subclientIdAlert').textContent=''; updateSubs(); document.getElementById('secondaryClient').value=id; updatePreview();
-        }catch(err){alert(err.message)}
-      });
+      document.getElementById('newClientId').addEventListener('input',e=>{const id=e.currentTarget.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);e.currentTarget.value=id;const a=document.getElementById('clientIdAlert');if(id.length===3&&clients.some(c=>c.id===id)){a.textContent='That 3-letter Client ID is already in use.';a.style.display='block'}else{a.textContent='';a.style.display='none'}});
+      document.getElementById('newSubclientId').addEventListener('input',e=>{const id=e.currentTarget.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);e.currentTarget.value=id;const parent=document.getElementById('primaryClient').value,a=document.getElementById('subclientIdAlert');if(id.length===3&&subclients.some(s=>s.parentClientId===parent&&s.id===id)){a.textContent='That 3-letter Secondary Client ID is already in use for this client.';a.style.display='block'}else{a.textContent='';a.style.display='none'}});
+      document.getElementById('saveClientBtn').addEventListener('click',async()=>{const name=document.getElementById('newClientName').value.trim(),id=document.getElementById('newClientId').value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);if(!name||id.length!==3){alert('Enter a client name and a unique 3-letter client ID.');return}if(clients.some(c=>c.id===id)){alert('That client ID is already in use.');return}try{const data=await apiPost({action:'addClient',clientId:id,clientName:name,clientType:document.getElementById('newClientType').value,defaultDueRule:''});if(!data.success)throw new Error(data.error||'Unable to save client');clients.push(data.client);document.getElementById('clientModal').classList.remove('open');document.getElementById('newClientName').value='';document.getElementById('newClientId').value='';document.getElementById('clientIdAlert').style.display='none';document.getElementById('clientIdAlert').textContent='';populateClients();document.getElementById('primaryClient').value=id;updatePreview()}catch(err){alert(err.message)}});
+      document.getElementById('saveSubclientBtn').addEventListener('click',async()=>{const parent=document.getElementById('primaryClient').value,name=document.getElementById('newSubclientName').value.trim(),id=document.getElementById('newSubclientId').value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);if(!parent){alert('Select the primary client first.');return}if(!name||id.length!==3){alert('Enter a secondary client name and a unique 3-letter ID.');return}if(subclients.some(s=>s.parentClientId===parent&&s.id===id)){alert('That secondary client ID is already in use for this client.');return}try{const data=await apiPost({action:'addSubclient',parentClientId:parent,subclientId:id,subclientName:name});if(!data.success)throw new Error(data.error||'Unable to save secondary client');subclients.push(data.subclient);document.getElementById('newSubclientName').value='';document.getElementById('newSubclientId').value='';document.getElementById('subclientIdAlert').style.display='none';document.getElementById('subclientIdAlert').textContent='';updateSubs();document.getElementById('secondaryClient').value=id;updatePreview()}catch(err){alert(err.message)}});
       document.getElementById('clearBtn').addEventListener('click',()=>{document.getElementById('jobForm').reset();document.getElementById('dueDate').dataset.manual='';populateClients()});
       document.getElementById('reloadBtn').addEventListener('click',loadBackend);
-      document.getElementById('continueTimerBtn').addEventListener('click',()=>{if(!completedTimerKey)return;const job=jobs.find(j=>timerKeyFor(j)===completedTimerKey);if(!job)return;timerState[completedTimerKey]={remaining:recommendedWorkSeconds(job),running:false};document.getElementById('timerModalBackdrop').classList.remove('open');startTimer(completedTimerKey);completedTimerKey=''});
+      document.getElementById('continueTimerBtn').addEventListener('click',()=>{if(!completedTimerKey)return;const state=timerState[completedTimerKey];if(!state)return;state.remaining=0;state.overtime=0;state.running=false;document.getElementById('timerModalBackdrop').classList.remove('open');startTimer(completedTimerKey);completedTimerKey=''});
       document.getElementById('reprioritizeBtn').addEventListener('click',()=>{if(completedTimerKey&&timerState[completedTimerKey])timerState[completedTimerKey].running=false;document.getElementById('timerModalBackdrop').classList.remove('open');completedTimerKey='';activeTimerKey='';stopTimerInterval();renderQueue()});
-      document.getElementById('jobForm').addEventListener('submit',async e=>{
-        e.preventDefault(); const desc=document.getElementById('description').value.trim(); const primary=document.getElementById('primaryClient').value; if(!desc||!clients.length||!primary)return;
-        const status=document.getElementById('status').value; const selectedClient=clients.find(c=>c.id===primary); const secondary=selectedClient&&(selectedClient.type==='Has Secondary Clients'||selectedClient.id==='TPT')?document.getElementById('secondaryClient').value:'';
-        try{
-          const data=await apiPost({action:'createJob',primaryClientId:primary,secondaryClientId:secondary,description:desc,designType:({basic:'Basic Design',listing:'Listing Design',complex:'Complex Design'})[document.getElementById('designType').value],estimatedHoursRemaining:Number(document.getElementById('hours').value),status,dueDate:document.getElementById('dueDate').dataset.manual?document.getElementById('dueDate').value:''});
-          if(!data.success)throw new Error(data.error||'Unable to create job'); jobs.push(data.job); nextId=Number(data.job.ticketNumber)+1; renderQueue(); renderBoard(); document.getElementById('jobForm').reset(); document.getElementById('clientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; document.getElementById('clientIdAlert').style.display='none'; document.getElementById('clientIdAlert').textContent=''; document.getElementById('newSubclientName').value=''; document.getElementById('newSubclientId').value=''; document.getElementById('subclientIdAlert').style.display='none'; document.getElementById('subclientIdAlert').textContent=''; document.getElementById('dueDate').dataset.manual=''; populateClients(); document.getElementById('ticketPreview').style.display='none';
-        }catch(err){alert(err.message)}
-      });
+      document.getElementById('jobForm').addEventListener('submit',async e=>{e.preventDefault();const desc=document.getElementById('description').value.trim(),primary=document.getElementById('primaryClient').value;if(!desc||!clients.length||!primary)return;const status=document.getElementById('status').value,selectedClient=clients.find(c=>c.id===primary),secondary=selectedClient&&(selectedClient.type==='Has Secondary Clients'||selectedClient.id==='TPT')?document.getElementById('secondaryClient').value:'';try{const data=await apiPost({action:'createJob',primaryClientId:primary,secondaryClientId:secondary,description:desc,designType:({basic:'Basic Design',listing:'Listing Design',complex:'Complex Design'})[document.getElementById('designType').value],estimatedHoursRemaining:Number(document.getElementById('hours').value),status,dueDate:document.getElementById('dueDate').dataset.manual?document.getElementById('dueDate').value:''});if(!data.success)throw new Error(data.error||'Unable to create job');jobs.push(data.job);nextId=Number(data.job.ticketNumber)+1;renderQueue();renderBoard();document.getElementById('jobForm').reset();document.getElementById('clientModal').classList.remove('open');document.getElementById('newClientName').value='';document.getElementById('newClientId').value='';document.getElementById('clientIdAlert').style.display='none';document.getElementById('clientIdAlert').textContent='';document.getElementById('newSubclientName').value='';document.getElementById('newSubclientId').value='';document.getElementById('subclientIdAlert').style.display='none';document.getElementById('subclientIdAlert').textContent='';document.getElementById('dueDate').dataset.manual='';populateClients();document.getElementById('ticketPreview').style.display='none'}catch(err){alert(err.message)}});
+      document.addEventListener('click',()=>document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open')));
       populateClients();renderQueue();renderBoard();loadBackend();
     })();
   </script>
