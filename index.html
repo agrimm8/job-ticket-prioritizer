@@ -16,7 +16,7 @@
     #job-priority-app .backend-status{display:inline-flex;align-items:center;gap:6px;margin-top:7px;padding:5px 8px;border-radius:999px;background:light-dark(#e9f6ee,#173a29);font-size:10px;font-weight:700}
     #job-priority-app .backend-dot{width:8px;height:8px;border-radius:999px;background:#b66a00}
     #job-priority-app .backend-status a{color:inherit;text-decoration:underline;text-underline-offset:2px}
-    #job-priority-app .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr);gap:14px;align-items:start}
+    #job-priority-app .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
     #job-priority-app .panel{background:light-dark(#fff,#202020);border:1px solid light-dark(#d8d8d4,#333);border-radius:13px;padding:14px}
     #job-priority-app .panel h2{font-size:15px;margin:0 0 11px}
     #job-priority-app .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
@@ -52,7 +52,7 @@
     #job-priority-app .client-tools button{white-space:nowrap}
     #job-priority-app .client-modal{display:none;margin:10px 0;padding:10px;border-radius:10px;background:light-dark(#f0f0ec,#292929);border:1px solid light-dark(#d8d8d4,#444)}
     #job-priority-app .client-modal.open{display:block}
-    @media(max-width:980px){#job-priority-app .grid{grid-template-columns:1fr 1fr}#job-priority-app .status-panel{grid-column:1/-1}#job-priority-app .board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:980px){#job-priority-app .grid{grid-template-columns:1fr 1fr}}
     @media(max-width:700px){#job-priority-app{padding:16px}#job-priority-app .grid{grid-template-columns:1fr}#job-priority-app .status-panel{grid-column:auto}#job-priority-app .board{grid-template-columns:1fr}#job-priority-app .form-grid{grid-template-columns:1fr}#job-priority-app .full{grid-column:auto}#job-priority-app .client-tools{align-items:stretch;flex-direction:column}}
   </style>
   <div class="wrap">
@@ -71,7 +71,7 @@
             <div><label for="designType">Design Type</label><select id="designType"><option value="basic">Basic Design</option><option value="listing">Listing Design</option><option value="complex">Complex Design</option></select></div>
             <div class="full"><label for="description">Brief Job Description</label><input id="description" required placeholder="e.g. Just Listed Postcard"></div>
             <div><label for="hours">Estimated Time Remaining (hours)</label><input id="hours" type="number" min="0.5" step="0.5" value="1" required></div>
-            <div><label for="status">Status</label><select id="status"><option>To Do</option><option>In Progress</option><option>Client Review</option><option>In Production / Awaiting Vendor</option><option>To Be Invoiced</option><option>Completed</option></select></div>
+            <div><label for="status">Status</label><select id="status"><option>To Do</option><option>Client Review</option><option>In Production / Awaiting Vendor</option><option>To Be Invoiced</option><option>Completed</option></select></div>
             <div><label for="dueDate">Due Date</label><input id="dueDate" type="date" required></div>
           </div>
           <div class="preview" id="ticketPreview" style="display:none"><strong>Ticket Preview</strong><div id="titlePreview" class="ticket-title">—</div><div id="rulePreview" class="meta"></div></div>
@@ -80,14 +80,18 @@
       </section>
 
       <section class="panel">
+        <h2>To Do</h2>
+        <div id="todoList"></div>
+      </section>
+
+      <section class="panel">
         <h2>What Should I Work On Next?</h2>
         <div id="queue"></div>
       </section>
 
-      <section class="panel status-panel">
-        <h2>Status Board</h2>
-        <div class="board" id="board"></div>
-      </section>
+      <section class="panel"><h2>Client Review</h2><div id="clientReviewList"></div></section>
+      <section class="panel"><h2>In Production / Awaiting Vendor</h2><div id="productionList"></div></section>
+      <section class="panel"><h2>Completed</h2><div id="completedList"></div></section>
     </div>
   </div>
 
@@ -151,10 +155,14 @@
       function priorityScore(j){
         if(['Client Review','In Production / Awaiting Vendor','Completed'].includes(j.status))return -999;
         const dueValue=j.due||j.dueDate; const due=new Date(dueValue+'T00:00:00Z'); const days=Math.max(0,(due-today())/86400000); const h=j.status==='To Be Invoiced'?.1667:Number(j.hours??j.estimatedHoursRemaining??0);
-        return 100-(days*12)-(Math.max(0,2-h)*2)+(h*4);
+        const dailyCapacity=4;
+        const urgency=Math.max(0,5-days)*18;
+        const workloadPressure=Math.max(0,h-(days*dailyCapacity))*14;
+        const earlyTouchPressure=Math.max(0,h-(Math.max(1,days)*2))*5;
+        return 40+urgency+workloadPressure+earlyTouchPressure+(h*2);
       }
       function renderQueue(){
-        const q=document.getElementById('queue'); q.innerHTML=''; const active=jobs.filter(j=>priorityScore(j)>-900).sort((a,b)=>priorityScore(b)-priorityScore(a));
+        const q=document.getElementById('queue'); q.innerHTML=''; const active=jobs.filter(j=>priorityScore(j)>-900).sort((a,b)=>priorityScore(b)-priorityScore(a)).slice(0,5);
         if(!active.length){q.innerHTML='<div class="muted">No actionable jobs.</div>';return}
         active.forEach((j,i)=>{
           const dueValue=j.due||j.dueDate; const dueDays=Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000); let cls='normal',label='On Schedule'; if(dueDays<=0){cls='urgent';label='Due Today'} else if(dueDays<=1){cls='soon';label='Due Soon'}
@@ -162,9 +170,16 @@
           const row=document.createElement('div');row.className='queue-item';row.innerHTML=`<div class="rank">${i+1}</div><div><div class="qtitle">${escapeHtml(title)}</div><div class="qmeta">${j.status} · ${formatHours(j.status==='To Be Invoiced'?.1667:hours)} remaining · due ${formatDate(dueValue)}</div></div><div class="badge ${cls}">${label}</div>`;q.appendChild(row)
         })
       }
+      function renderCards(targetId,list){
+        const target=document.getElementById(targetId); target.innerHTML=''; if(!list.length){target.innerHTML='<div class="muted">No jobs.</div>';return}
+        list.forEach(j=>{const c=document.createElement('div');c.className='card';const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const dueValue=j.due||j.dueDate;c.innerHTML=`<div class="card-title">${escapeHtml(title)}</div><div class="card-meta">${formatHours(j.status==='To Be Invoiced'?.1667:hours)} · due ${formatDate(dueValue)}</div>`;target.appendChild(c)});
+      }
       function renderBoard(){
-        const statuses=['To Do','In Progress','Client Review','In Production / Awaiting Vendor','To Be Invoiced','Completed']; const board=document.getElementById('board'); board.innerHTML='';
-        statuses.forEach(s=>{const list=jobs.filter(j=>j.status===s);const col=document.createElement('div');col.className='column';col.innerHTML=`<h3><span>${s}</span><span>${list.length}</span></h3>`;list.forEach(j=>{const c=document.createElement('div');c.className='card';const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const dueValue=j.due||j.dueDate;c.innerHTML=`<div class="card-title">${escapeHtml(title)}</div><div class="card-meta">${formatHours(j.status==='To Be Invoiced'?.1667:hours)} · due ${formatDate(dueValue)}</div>`;col.appendChild(c)});board.appendChild(col)})
+        const todo=jobs.filter(j=>j.status==='To Do'||j.status==='In Progress'||j.status==='To Be Invoiced').sort((a,b)=>new Date((a.due||a.dueDate)+'T00:00:00Z')-new Date((b.due||b.dueDate)+'T00:00:00Z'));
+        renderCards('todoList',todo);
+        renderCards('clientReviewList',jobs.filter(j=>j.status==='Client Review'));
+        renderCards('productionList',jobs.filter(j=>j.status==='In Production / Awaiting Vendor'));
+        renderCards('completedList',jobs.filter(j=>j.status==='Completed'));
       }
       function setBackendStatus(ok,text){document.getElementById('backendText').textContent=text;document.getElementById('backendDot').style.background=ok?'#1f7a4d':'#b42318'}
       async function apiGet(){const res=await fetch(API_URL+'?action=bootstrap',{method:'GET'});if(!res.ok)throw new Error('Unable to reach backend');return res.json()}
