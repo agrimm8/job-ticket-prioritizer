@@ -237,6 +237,9 @@
       let idlePausedAt=0;
       let idleConsumedSeconds=0;
       let idleDurationInterval=null;
+      let systemIdleDetector=null;
+      let systemIdleDetectionState='uninitialized';
+      let systemIdlePermissionRequested=false;
       let noJobTimerStartedAt=Date.now();
       let noJobAlertOpen=false;
       let timeEditTicket='';
@@ -329,6 +332,31 @@
       }
       function stopIdleDurationInterval(){if(idleDurationInterval){clearInterval(idleDurationInterval);idleDurationInterval=null}}
       function updateIdleDuration(){if(!idlePausedAt)return;document.getElementById('idlePauseDuration').textContent=formatCountdown((Date.now()-idlePausedAt)/1000)}
+      async function ensureSystemIdleDetection(){
+        if(systemIdleDetectionState==='active'||systemIdleDetectionState==='fallback')return;
+        if(!('IdleDetector' in window)||!window.isSecureContext){systemIdleDetectionState='fallback';return}
+        if(systemIdlePermissionRequested)return;
+        systemIdlePermissionRequested=true;
+        try{
+          const permission=await IdleDetector.requestPermission();
+          if(permission!=='granted'){systemIdleDetectionState='fallback';return}
+          systemIdleDetector=new IdleDetector();
+          systemIdleDetector.addEventListener('change',()=>{
+            const isSystemIdle=systemIdleDetector.userState==='idle'||systemIdleDetector.screenState==='locked';
+            if(!isSystemIdle){lastActivityAt=Date.now();return}
+            if(activeTimerKey&&timerState[activeTimerKey]&&timerState[activeTimerKey].running){
+              lastActivityAt=Date.now()-180000;
+              showIdlePause(activeTimerKey);
+            }
+          });
+          await systemIdleDetector.start({threshold:180000});
+          systemIdleDetectionState='active';
+          lastActivityAt=Date.now();
+        }catch(e){
+          systemIdleDetector=null;
+          systemIdleDetectionState='fallback';
+        }
+      }
       function showIdlePause(key){
         const state=timerState[key];if(!state||!state.running)return;
         const idleSeconds=Math.max(180,Math.floor((Date.now()-lastActivityAt)/1000));
@@ -352,7 +380,8 @@
         try{const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,dueDate:job.due||job.dueDate,estimatedHoursRemaining:newEstimated,timeAccruedHours:newAccrued});if(!data.success)throw new Error(data.error||'Unable to save elapsed time')}catch(err){alert(err.message)}
       }
       function resetNoJobTimer(){noJobTimerStartedAt=Date.now();noJobAlertOpen=false}
-      function startTimer(key){
+      async function startTimer(key){
+        await ensureSystemIdleDetection();
         if(activeTimerKey&&activeTimerKey!==key&&timerState[activeTimerKey])timerState[activeTimerKey].running=false;
         stopTimerInterval(); activeTimerKey=key; if(!timerState[key])return; lastActivityAt=Date.now(); resetNoJobTimer(); const state=timerState[key];state.running=true;state.blockStartRemaining=state.remaining;state.committedSeconds=0;
         activeTimerInterval=setInterval(async()=>{const state=timerState[key];if(!state||!state.running)return;if(state.remaining>0){state.remaining=Math.max(0,state.remaining-1);if(state.remaining<=0){state.running=false;stopTimerInterval();await commitElapsedTime(key);activeTimerKey='';resetNoJobTimer();renderQueue();renderBoard();showTimerComplete(key);return}}else{state.overtime=(state.overtime||0)+1}renderQueue()},1000); renderQueue();
@@ -486,9 +515,9 @@
           if(!data.success)throw new Error(data.error||'Unable to create job'); jobs.push(data.job); renderQueue(); renderBoard(); document.getElementById('jobForm').reset(); document.getElementById('clientModal').classList.remove('open'); document.getElementById('subclientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; document.getElementById('clientIdAlert').style.display='none'; document.getElementById('clientIdAlert').textContent=''; document.getElementById('newSubclientName').value=''; document.getElementById('newSubclientId').value=''; document.getElementById('subclientIdAlert').style.display='none'; document.getElementById('subclientIdAlert').textContent=''; document.getElementById('dueDate').dataset.manual=''; populateClients(); syncNextId(); document.getElementById('ticketPreview').style.display='none'; document.getElementById('jobNumberWrap').style.display='none';
         }catch(err){alert(err.message)}
       });
-      const markActivity=()=>{lastActivityAt=Date.now()};
+      const markActivity=()=>{if(systemIdleDetectionState!=='active')lastActivityAt=Date.now()};
       ['mousemove','mousedown','keydown','touchstart','scroll'].forEach(eventName=>document.addEventListener(eventName,markActivity,{passive:true}));
-      setInterval(()=>{if(activeTimerKey&&timerState[activeTimerKey]&&timerState[activeTimerKey].running&&Date.now()-lastActivityAt>=180000)showIdlePause(activeTimerKey)},1000);
+      setInterval(()=>{if(systemIdleDetectionState!=='active'&&activeTimerKey&&timerState[activeTimerKey]&&timerState[activeTimerKey].running&&Date.now()-lastActivityAt>=180000)showIdlePause(activeTimerKey)},1000);
       setInterval(()=>{const activeRunning=activeTimerKey&&timerState[activeTimerKey]&&timerState[activeTimerKey].running;if(activeRunning){resetNoJobTimer();return}if(!noJobAlertOpen&&Date.now()-noJobTimerStartedAt>=300000){noJobAlertOpen=true;playIdleAlertTone();document.getElementById('noJobModalBackdrop').classList.add('open')}},1000);
       document.addEventListener('click',()=>document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open')));
       populateClients();renderQueue();renderBoard();loadBackend();
