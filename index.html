@@ -134,10 +134,10 @@
           <div class="kpi-note">To Do / WSIWON only · max 10 hrs per calendar day · To Be Invoiced excluded</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Jobs Hit Overdue</div>
-          <div><span class="kpi-value" id="overdueKpiCurrent">—</span><span class="kpi-unit">this month</span></div>
+          <div class="kpi-label">Overdue Job-Days</div>
+          <div><span class="kpi-value" id="overdueKpiCurrent">—</span><span class="kpi-unit">days this month</span></div>
           <div class="kpi-comparison" id="overdueKpiPrevious">Last month: —</div>
-          <div class="kpi-note">Counts each job once, only after it actually becomes overdue.</div>
+          <div class="kpi-note">Counts each working day a job remains overdue. Weekends and To Be Invoiced time are excluded.</div>
         </div>
       </div>
 
@@ -440,14 +440,38 @@
         if(!values.length)return {average:null,count:0};
         return {average:values.reduce((a,b)=>a+b,0)/values.length,count:values.length};
       }
-      function overdueJobsForMonth(monthKey){
-        const tickets=new Set();
+      function isWeekdayDate(d){
+        const day=d.getDay();
+        return day!==0&&day!==6;
+      }
+      function overdueJobDaysForMonth(monthKey){
+        const parts=monthKey.split('-').map(Number);
+        const monthStart=new Date(parts[0],parts[1]-1,1);
+        const monthEnd=new Date(parts[0],parts[1],0,23,59,59,999);
+        const todayEnd=new Date();
+        todayEnd.setHours(23,59,59,999);
+        let total=0;
+
         overdueHistory.forEach(event=>{
-          if(timestampMonthKey(event.overdueAt)===monthKey){
-            tickets.add(String(event.ticketNumber||''));
+          if(!event.overdueAt)return;
+          const startRaw=new Date(event.overdueAt);
+          if(Number.isNaN(startRaw.getTime()))return;
+          const endRaw=event.resolvedAt?new Date(event.resolvedAt):todayEnd;
+          if(Number.isNaN(endRaw.getTime()))return;
+
+          const start=startRaw>monthStart?new Date(startRaw):new Date(monthStart);
+          const end=endRaw<monthEnd?new Date(endRaw):new Date(monthEnd);
+          if(end<start)return;
+
+          const cursor=new Date(start.getFullYear(),start.getMonth(),start.getDate());
+          const last=new Date(end.getFullYear(),end.getMonth(),end.getDate());
+          while(cursor<=last){
+            if(isWeekdayDate(cursor))total++;
+            cursor.setDate(cursor.getDate()+1);
           }
         });
-        return tickets.size;
+
+        return total;
       }
       function renderKpis(){
         const currentKey=currentMonthKey();
@@ -473,10 +497,10 @@
             : 'Based on '+currentQueue.count+' completed tracked job'+(currentQueue.count===1?'':'s')+' this month · max 10 hrs per calendar day · To Be Invoiced excluded';
         }
 
-        const currentOverdue=overdueJobsForMonth(currentKey);
-        const previousOverdue=overdueJobsForMonth(previousKey);
+        const currentOverdue=overdueJobDaysForMonth(currentKey);
+        const previousOverdue=overdueJobDaysForMonth(previousKey);
         document.getElementById('overdueKpiCurrent').textContent=String(currentOverdue);
-        document.getElementById('overdueKpiPrevious').textContent='Last month: '+previousOverdue;
+        document.getElementById('overdueKpiPrevious').textContent='Last month: '+previousOverdue+' days';
       }
       function rawDueDate(j){return String(j.due||j.dueDate||'')}
       function isOverdueJob(j){
