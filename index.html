@@ -582,7 +582,11 @@
       function resetBlock(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;const state=ensureTimerState(job);state.remaining=recommendedWorkSeconds(job);state.overtime=0;state.blockStartRemaining=state.remaining;state.blockStartOvertime=0;state.committedSeconds=0;renderQueue();renderBoard()}
       function showTimerComplete(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;completedTimerKey=key;document.getElementById('timerModalMessage').textContent=`Allotted Time for ${job.title||job.displayTitle} is Complete.`;document.getElementById('timerModalBackdrop').classList.add('open')}
       function getWSIWONJobs(){
-        const eligible=jobs.filter(j=>priorityScore(j)>-900).sort((a,b)=>priorityScore(b)-priorityScore(a));
+        const eligible=jobs.filter(j=>priorityScore(j)>-900).sort((a,b)=>{
+          const overdueDiff=Number(isOverdueJob(b))-Number(isOverdueJob(a));
+          if(overdueDiff!==0)return overdueDiff;
+          return priorityScore(b)-priorityScore(a);
+        });
         const todayValue=todayISO();
         const dueByEndOfDay=eligible.filter(j=>effectiveDueDate(j)<=todayValue);
         const laterJobs=eligible.filter(j=>effectiveDueDate(j)>todayValue);
