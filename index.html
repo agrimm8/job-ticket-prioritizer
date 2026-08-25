@@ -197,9 +197,22 @@
     </div>
     <div class="timer-modal-backdrop" id="clientReviewDueChoiceBackdrop" role="dialog" aria-modal="true" aria-labelledby="clientReviewDueChoiceTitle">
       <div class="timer-modal">
-        <h3 id="clientReviewDueChoiceTitle">Select Due Date</h3>
+        <h3 id="clientReviewDueChoiceTitle">Return Job to To Do</h3>
         <p id="clientReviewDueChoiceJob" style="margin-bottom:10px"></p>
-        <div class="actions"><button class="primary" id="clientReviewSameDayBtn" type="button">Set as Same Day</button><button class="secondary" id="clientReviewNextDayBtn" type="button">Set as Next Day</button></div>
+        <div class="preview" style="margin-top:12px">
+          <strong>Estimated Time Remaining</strong>
+          <div class="actions" style="margin-top:10px">
+            <button class="primary" id="clientReviewEtrHalfBtn" type="button">0.5 Hours</button>
+            <button class="secondary" id="clientReviewEtrOneBtn" type="button">1.0 Hour</button>
+          </div>
+        </div>
+        <div class="preview" style="margin-top:12px">
+          <strong>Due Date</strong>
+          <div class="actions" style="margin-top:10px">
+            <button class="primary" id="clientReviewSameDayBtn" type="button">Set as Same Day</button>
+            <button class="secondary" id="clientReviewNextDayBtn" type="button">Set as Next Day</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="timer-modal-backdrop" id="timeEditModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="timeEditModalTitle">
@@ -247,6 +260,7 @@
       let followUpDateEditTicket='';
       let jobTitleEditTicket='';
       let clientReviewMoveTicket='';
+      let clientReviewReturnEtr=null;
       let clientNotesTarget=null;
       let lastActivityAt=Date.now();
       let idlePausedTimerKey='';
@@ -465,8 +479,8 @@
       }
       function openDueDateModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;dueDateEditTicket=String(ticket);document.getElementById('dueDateModalJob').textContent=job.title||job.displayTitle||'';document.getElementById('dueDateModalInput').value=job.due||job.dueDate||'';document.getElementById('dueDateModalBackdrop').classList.add('open');document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'))}
       function openFollowUpDateModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;followUpDateEditTicket=String(ticket);document.getElementById('followUpDateModalJob').textContent=job.title||job.displayTitle||'';document.getElementById('followUpDateModalInput').value=job.followUpDate||defaultFollowUpDate();document.getElementById('followUpDateModalBackdrop').classList.add('open');document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'))}
-      function openClientReviewDueChoice(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;clientReviewMoveTicket=String(ticket);document.getElementById('clientReviewDueChoiceJob').textContent=job.title||job.displayTitle||'';document.getElementById('clientReviewDueChoiceBackdrop').classList.add('open');document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'))}
-      async function moveClientReviewToTodoWithDue(ticket,newDue){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;try{const data=await apiPost({action:'updateJob',ticketNumber:ticket,status:'To Do',dueDate:newDue,followUpDate:job.followUpDate||''});if(!data.success)throw new Error(data.error||'Unable to update job');job.status='To Do';job.dueDate=newDue;job.due=newDue;document.getElementById('clientReviewDueChoiceBackdrop').classList.remove('open');clientReviewMoveTicket='';renderQueue();renderBoard()}catch(err){alert(err.message)}}
+      function openClientReviewDueChoice(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;clientReviewMoveTicket=String(ticket);clientReviewReturnEtr=null;document.getElementById('clientReviewDueChoiceJob').textContent=job.title||job.displayTitle||'';document.getElementById('clientReviewEtrHalfBtn').classList.remove('selected');document.getElementById('clientReviewEtrOneBtn').classList.remove('selected');document.getElementById('clientReviewDueChoiceBackdrop').classList.add('open');document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'))}
+      async function moveClientReviewToTodoWithDue(ticket,newDue){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;if(clientReviewReturnEtr===null){alert('Please select Estimated Time Remaining first.');return}const newHours=clientReviewReturnEtr;try{const data=await apiPost({action:'updateJob',ticketNumber:ticket,status:'To Do',dueDate:newDue,followUpDate:job.followUpDate||'',estimatedHoursRemaining:newHours});if(!data.success)throw new Error(data.error||'Unable to update job');job.status='To Do';job.dueDate=newDue;job.due=newDue;job.hours=newHours;job.estimatedHoursRemaining=newHours;const state=ensureTimerState(job);state.running=false;state.remaining=Math.round(newHours*3600);state.overtime=0;state.blockStartRemaining=state.remaining;state.blockStartOvertime=0;state.committedSeconds=0;document.getElementById('clientReviewDueChoiceBackdrop').classList.remove('open');clientReviewMoveTicket='';clientReviewReturnEtr=null;renderQueue();renderBoard()}catch(err){alert(err.message)}}
       function renderTodo(list){renderCards('todoList',list)}
       async function changeJobStatusFromMenu(button){
         const ticket=button.getAttribute('data-move-ticket'); const oldStatus=button.getAttribute('data-old-status'); const newStatus=button.getAttribute('data-new-status'); const job=jobs.find(j=>String(j.ticketNumber||'')===ticket); if(!job)return;
@@ -601,6 +615,8 @@
         }catch(err){alert(err.message)}
       });
       document.getElementById('cancelFollowUpDateBtn').addEventListener('click',()=>{followUpDateEditTicket='';document.getElementById('followUpDateModalBackdrop').classList.remove('open')});
+      document.getElementById('clientReviewEtrHalfBtn').addEventListener('click',()=>{clientReviewReturnEtr=0.5;document.getElementById('clientReviewEtrHalfBtn').classList.add('selected');document.getElementById('clientReviewEtrOneBtn').classList.remove('selected')});
+      document.getElementById('clientReviewEtrOneBtn').addEventListener('click',()=>{clientReviewReturnEtr=1;document.getElementById('clientReviewEtrOneBtn').classList.add('selected');document.getElementById('clientReviewEtrHalfBtn').classList.remove('selected')});
       document.getElementById('clientReviewSameDayBtn').addEventListener('click',()=>{if(clientReviewMoveTicket)moveClientReviewToTodoWithDue(clientReviewMoveTicket,todayISO())});
       document.getElementById('clientReviewNextDayBtn').addEventListener('click',()=>{if(clientReviewMoveTicket)moveClientReviewToTodoWithDue(clientReviewMoveTicket,iso(addWorkdays(today(),1)))});
       document.getElementById('noJobOkBtn').addEventListener('click',()=>{document.getElementById('noJobModalBackdrop').classList.remove('open');resetNoJobTimer()});
