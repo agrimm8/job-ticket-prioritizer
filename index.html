@@ -420,8 +420,17 @@
       async function pauseTimer(key){if(timerState[key])timerState[key].running=false;if(activeTimerKey===key){stopTimerInterval();activeTimerKey=''}await commitElapsedTime(key);resetNoJobTimer();renderQueue();renderBoard()}
       function resetBlock(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;const state=ensureTimerState(job);state.remaining=recommendedWorkSeconds(job);state.overtime=0;state.blockStartRemaining=state.remaining;state.blockStartOvertime=0;state.committedSeconds=0;renderQueue();renderBoard()}
       function showTimerComplete(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;completedTimerKey=key;document.getElementById('timerModalMessage').textContent=`Allotted Time for ${job.title||job.displayTitle} is Complete.`;document.getElementById('timerModalBackdrop').classList.add('open')}
+      function getWSIWONJobs(){
+        const eligible=jobs.filter(j=>priorityScore(j)>-900).sort((a,b)=>priorityScore(b)-priorityScore(a));
+        const todayValue=todayISO();
+        const dueByEndOfDay=eligible.filter(j=>String(j.due||j.dueDate||'')<=todayValue);
+        const laterJobs=eligible.filter(j=>String(j.due||j.dueDate||'')>todayValue);
+        return dueByEndOfDay.length>=5
+          ? dueByEndOfDay
+          : [...dueByEndOfDay,...laterJobs.slice(0,5-dueByEndOfDay.length)];
+      }
       function renderQueue(){
-        const q=document.getElementById('queue'); q.innerHTML=''; const eligible=jobs.filter(j=>priorityScore(j)>-900).sort((a,b)=>priorityScore(b)-priorityScore(a)); const todayValue=todayISO(); const dueByEndOfDay=eligible.filter(j=>String(j.due||j.dueDate||'')<=todayValue); const laterJobs=eligible.filter(j=>String(j.due||j.dueDate||'')>todayValue); const active=dueByEndOfDay.length>=5?dueByEndOfDay:[...dueByEndOfDay,...laterJobs.slice(0,5-dueByEndOfDay.length)];
+        const q=document.getElementById('queue'); q.innerHTML=''; const active=getWSIWONJobs(); const todayValue=todayISO();
         if(!active.length){document.getElementById('eodMessage').style.display='block';q.innerHTML='<div class="muted">No actionable jobs.</div>';return}
         const dueToday=active.filter(j=>(j.due||j.dueDate)===todayValue); const later=active.filter(j=>(j.due||j.dueDate)!==todayValue);
         document.getElementById('eodMessage').style.display=dueToday.length?'none':'block';
@@ -511,7 +520,10 @@
         }catch(err){alert(err.message)}
       }
       function renderBoard(){
-        const todo=jobs.filter(j=>j.status==='To Do'||j.status==='In Progress'||j.status==='To Be Invoiced').sort((a,b)=>new Date((a.due||a.dueDate)+'T00:00:00Z')-new Date((b.due||b.dueDate)+'T00:00:00Z'));
+        const wsiwonTickets=new Set(getWSIWONJobs().map(j=>String(j.ticketNumber||'')));
+        const todo=jobs
+          .filter(j=>(j.status==='To Do'||j.status==='In Progress'||j.status==='To Be Invoiced')&&!wsiwonTickets.has(String(j.ticketNumber||'')))
+          .sort((a,b)=>new Date((a.due||a.dueDate)+'T00:00:00Z')-new Date((b.due||b.dueDate)+'T00:00:00Z'));
         renderTodo(todo);
         renderCards('clientReviewList',jobs.filter(j=>j.status==='Client Review').sort((a,b)=>String(a.followUpDate||'9999-12-31').localeCompare(String(b.followUpDate||'9999-12-31'))));
         renderCards('productionList',jobs.filter(j=>j.status==='In Production / Awaiting Vendor'));
