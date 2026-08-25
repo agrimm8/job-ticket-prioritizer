@@ -17,8 +17,7 @@
     #job-priority-app .backend-dot{width:8px;height:8px;border-radius:999px;background:#b66a00}
     #job-priority-app .backend-status a{color:inherit;text-decoration:underline;text-underline-offset:2px}
     #job-priority-app .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
-    #job-priority-app .kpi-strip{grid-column:1/3;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-    #job-priority-app .grid-spacer{grid-column:3;min-height:1px}
+    #job-priority-app .kpi-strip{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
     #job-priority-app .new-job-panel{grid-column:1}
     #job-priority-app .todo-panel{grid-column:2}
     #job-priority-app .wsiwon-panel{grid-column:3}
@@ -111,7 +110,7 @@
     #job-priority-app .idle-resume{background:#b42318;color:#fff}
     #job-priority-app .notes-box{width:100%;min-height:180px;resize:vertical;padding:9px;border-radius:8px;border:1px solid light-dark(#cfcfca,#444);background:light-dark(#fff,#171717);color:inherit;font:inherit;line-height:1.4}
     #job-priority-app .notes-box[readonly]{opacity:.85;cursor:default}
-    @media(max-width:980px){#job-priority-app .grid{grid-template-columns:1fr 1fr}#job-priority-app .kpi-strip{grid-column:1/-1}#job-priority-app .grid-spacer{display:none}#job-priority-app .new-job-panel,#job-priority-app .todo-panel,#job-priority-app .wsiwon-panel{grid-column:auto}}
+    @media(max-width:980px){#job-priority-app .grid{grid-template-columns:1fr 1fr}#job-priority-app .kpi-strip{grid-column:1/-1}#job-priority-app .new-job-panel,#job-priority-app .todo-panel,#job-priority-app .wsiwon-panel{grid-column:auto}}
     @media(max-width:700px){#job-priority-app{padding:16px}#job-priority-app .grid{grid-template-columns:1fr}#job-priority-app .kpi-strip{grid-template-columns:1fr}#job-priority-app .status-panel{grid-column:auto}#job-priority-app .board{grid-template-columns:1fr}#job-priority-app .form-grid{grid-template-columns:1fr}#job-priority-app .full{grid-column:auto}#job-priority-app .client-tools{align-items:stretch;flex-direction:column}}
   </style>
   <div class="wrap">
@@ -133,8 +132,13 @@
           <div class="kpi-comparison" id="queueTimeKpiPrevious">Last month: —</div>
           <div class="kpi-note">To Do / WSIWON only · max 10 hrs per calendar day · To Be Invoiced excluded</div>
         </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Jobs Hit Overdue</div>
+          <div><span class="kpi-value" id="overdueKpiCurrent">—</span><span class="kpi-unit">this month</span></div>
+          <div class="kpi-comparison" id="overdueKpiPrevious">Last month: —</div>
+          <div class="kpi-note">Counts each job once, only after it actually becomes overdue.</div>
+        </div>
       </div>
-      <div class="grid-spacer" aria-hidden="true"></div>
 
       <section class="panel new-job-panel">
         <h2>New Job</h2>
@@ -298,6 +302,7 @@
       let nextId=1564;
       let jobs=[];
       let statusHistory=[];
+      let overdueHistory=[];
       let activeTimerKey='';
       let activeTimerInterval=null;
       let completedTimerKey='';
@@ -434,6 +439,15 @@
         if(!values.length)return {average:null,count:0};
         return {average:values.reduce((a,b)=>a+b,0)/values.length,count:values.length};
       }
+      function overdueJobsForMonth(monthKey){
+        const tickets=new Set();
+        overdueHistory.forEach(event=>{
+          if(timestampMonthKey(event.overdueAt)===monthKey){
+            tickets.add(String(event.ticketNumber||''));
+          }
+        });
+        return tickets.size;
+      }
       function renderKpis(){
         const currentKey=currentMonthKey();
         const previousKey=previousMonthKey();
@@ -450,12 +464,18 @@
           ? 'Last month: No tracked history'
           : 'Last month: '+previousQueue.average.toFixed(1)+' hrs / job ('+previousQueue.count+' jobs)';
 
-        const note=document.querySelector('#kpiStrip .kpi-note');
-        if(note){
-          note.textContent=currentQueue.average===null
+        const notes=document.querySelectorAll('#kpiStrip .kpi-note');
+        const queueNote=notes[1];
+        if(queueNote){
+          queueNote.textContent=currentQueue.average===null
             ? 'Queue-time tracking begins with tickets that have complete Status History. To Be Invoiced time is excluded.'
             : 'Based on '+currentQueue.count+' completed tracked job'+(currentQueue.count===1?'':'s')+' this month · max 10 hrs per calendar day · To Be Invoiced excluded';
         }
+
+        const currentOverdue=overdueJobsForMonth(currentKey);
+        const previousOverdue=overdueJobsForMonth(previousKey);
+        document.getElementById('overdueKpiCurrent').textContent=String(currentOverdue);
+        document.getElementById('overdueKpiPrevious').textContent='Last month: '+previousOverdue;
       }
       function rawDueDate(j){return String(j.due||j.dueDate||'')}
       function isOverdueJob(j){
@@ -744,7 +764,7 @@
         setBackendStatus(false,'Connecting to Google Sheets…');
         try{
           const data=await apiGet(); if(!data.success)throw new Error(data.error||'Backend error');
-          clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[]; statusHistory=data.statusHistory||[];
+          clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[]; statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[];
           Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);
           clients.forEach(c=>{clientNotes[clientNotesKey(c.id)]=String(c.notes||c.clientNotes||'')});
           subclients.forEach(s=>{clientNotes[clientNotesKey(s.parentClientId,s.id)]=String(s.notes||s.clientNotes||'')});
