@@ -108,6 +108,7 @@
     #job-priority-app .idle-warning-box{border:1px solid #b42318;background:light-dark(#fff1f0,#3a1715)}
     #job-priority-app .idle-warning-box strong,#job-priority-app .idle-warning-box .ticket-title{color:#b42318}
     #job-priority-app .idle-resume{background:#b42318;color:#fff}
+    #job-priority-app .edit-notes-btn{background:#b42318;color:#fff}
     #job-priority-app .notes-box{width:100%;min-height:180px;resize:vertical;padding:9px;border-radius:8px;border:1px solid light-dark(#cfcfca,#444);background:light-dark(#fff,#171717);color:inherit;font:inherit;line-height:1.4}
     #job-priority-app .notes-box[readonly]{opacity:.85;cursor:default}
     @media(max-width:980px){#job-priority-app .grid{grid-template-columns:1fr 1fr}#job-priority-app .kpi-strip{grid-column:1/-1}#job-priority-app .new-job-panel,#job-priority-app .todo-panel,#job-priority-app .wsiwon-panel{grid-column:auto}}
@@ -279,7 +280,7 @@
         <h3 id="clientNotesModalTitle">Client Notes</h3>
         <p id="clientNotesModalClient" style="margin-bottom:10px"></p>
         <textarea id="clientNotesTextarea" class="notes-box" readonly placeholder="No client notes yet."></textarea>
-        <div class="actions"><button class="primary" id="editClientNotesBtn" type="button">Edit</button><button class="primary" id="doneClientNotesBtn" type="button" style="display:none">Done</button><button class="secondary" id="closeClientNotesBtn" type="button">Close</button></div>
+        <div class="actions"><button class="edit-notes-btn" id="editClientNotesBtn" type="button">Edit</button><button class="primary" id="doneClientNotesBtn" type="button" style="display:none">Done</button><button class="secondary" id="closeClientNotesBtn" type="button">Close</button></div>
       </div>
     </div>
     <div class="timer-modal-backdrop" id="jobNotesModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="jobNotesModalTitle">
@@ -287,7 +288,7 @@
         <h3 id="jobNotesModalTitle">Job Notes</h3>
         <p id="jobNotesModalJob" style="margin-bottom:10px"></p>
         <textarea id="jobNotesTextarea" class="notes-box" readonly placeholder="No job notes yet."></textarea>
-        <div class="actions"><button class="primary" id="editJobNotesBtn" type="button">Edit</button><button class="primary" id="doneJobNotesBtn" type="button" style="display:none">Done</button><button class="secondary" id="closeJobNotesBtn" type="button">Close</button></div>
+        <div class="actions"><button class="edit-notes-btn" id="editJobNotesBtn" type="button">Edit</button><button class="primary" id="doneJobNotesBtn" type="button" style="display:none">Done</button><button class="secondary" id="closeJobNotesBtn" type="button">Close</button></div>
       </div>
     </div>
     <div class="copy-toast" id="copyToast" role="status" aria-live="polite">Job Ticket Title Copied!</div>
