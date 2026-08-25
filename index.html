@@ -453,8 +453,28 @@
         if(oldStatus==='Client Review'&&newStatus==='To Do'){openClientReviewDueChoice(ticket);return}
         let newDue=job.due||job.dueDate||''; if(newStatus==='To Do'&&oldStatus==='In Production / Awaiting Vendor')newDue=iso(addWorkdays(today(),1));
         const newFollowUp=newStatus==='Client Review'&&oldStatus!=='Client Review'?defaultFollowUpDate():(job.followUpDate||'');
-        const effectiveHours=newStatus==='Client Review'?0:Number(job.hours??job.estimatedHoursRemaining??0);
-        try{const data=await apiPost({action:'updateJob',ticketNumber:ticket,status:newStatus,dueDate:newDue,followUpDate:newFollowUp,estimatedHoursRemaining:effectiveHours});if(!data.success)throw new Error(data.error||'Unable to update job');job.status=newStatus;job.dueDate=newDue;job.due=newDue;job.followUpDate=newFollowUp;job.hours=effectiveHours;job.estimatedHoursRemaining=effectiveHours;if(newStatus==='Client Review'){const state=ensureTimerState(job);state.running=false;state.remaining=0;state.overtime=0;state.blockStartRemaining=0;state.blockStartOvertime=0;state.committedSeconds=0;if(activeTimerKey===timerKey(job))activeTimerKey=''}if(newStatus==='Completed')job.completedAt=(data.job&&data.job.completedAt)||new Date().toISOString();else if(oldStatus==='Completed')job.completedAt='';renderQueue();renderBoard()}catch(err){alert(err.message)}
+        try{
+          if(newStatus==='Client Review'){
+            const key=timerKeyFor(job);
+            const state=ensureTimerState(job);
+            if(state.running||activeTimerKey===key){
+              state.running=false;
+              if(activeTimerKey===key){stopTimerInterval();activeTimerKey=''}
+              await commitElapsedTime(key);
+            }
+          }
+          const effectiveHours=newStatus==='Client Review'?0:Number(job.hours??job.estimatedHoursRemaining??0);
+          const data=await apiPost({action:'updateJob',ticketNumber:ticket,status:newStatus,dueDate:newDue,followUpDate:newFollowUp,estimatedHoursRemaining:effectiveHours});
+          if(!data.success)throw new Error(data.error||'Unable to update job');
+          job.status=newStatus;job.dueDate=newDue;job.due=newDue;job.followUpDate=newFollowUp;job.hours=effectiveHours;job.estimatedHoursRemaining=effectiveHours;
+          if(newStatus==='Client Review'){
+            const state=ensureTimerState(job);
+            state.running=false;state.remaining=0;state.overtime=0;state.blockStartRemaining=0;state.blockStartOvertime=0;state.committedSeconds=0;
+            if(activeTimerKey===timerKeyFor(job))activeTimerKey='';
+          }
+          if(newStatus==='Completed')job.completedAt=(data.job&&data.job.completedAt)||new Date().toISOString();else if(oldStatus==='Completed')job.completedAt='';
+          renderQueue();renderBoard()
+        }catch(err){alert(err.message)}
       }
       function renderBoard(){
         const todo=jobs.filter(j=>j.status==='To Do'||j.status==='In Progress'||j.status==='To Be Invoiced').sort((a,b)=>new Date((a.due||a.dueDate)+'T00:00:00Z')-new Date((b.due||b.dueDate)+'T00:00:00Z'));
