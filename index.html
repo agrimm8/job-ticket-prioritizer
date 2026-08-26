@@ -204,18 +204,28 @@
       <div class="timer-modal">
         <h3 id="punchInModalTitle">Punch In</h3>
         <label for="punchInWorkType">Work Type</label>
-        <select id="punchInWorkType">
-          <option value="">Select Work Type</option>
-          <option value="Initial Draft">Initial Draft</option>
-          <option value="Resuming Initial Draft">Resuming Initial Draft</option>
-          <option value="New Change Order">New Change Order</option>
-          <option value="Resuming Change Order">Resuming Change Order</option>
-        </select>
+        <select id="punchInWorkType"></select>
+        <div id="punchInWorkSetWrap" style="display:none;margin-top:12px">
+          <label for="punchInWorkSet">Which Change Order?</label>
+          <select id="punchInWorkSet"></select>
+        </div>
         <label for="punchInWorkDescription" style="margin-top:12px">Work Description:</label>
         <textarea id="punchInWorkDescription" class="notes-box" style="min-height:110px" placeholder="Describe the work you are starting..."></textarea>
         <div class="actions" style="margin-top:16px">
           <button class="primary" id="punchInStartBtn" type="button" disabled>Punch In &amp; Start Timer</button>
           <button class="secondary" id="punchInCancelBtn" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div class="timer-modal-backdrop" id="openSessionRecoveryBackdrop" role="dialog" aria-modal="true" aria-labelledby="openSessionRecoveryTitle">
+      <div class="timer-modal">
+        <h3 id="openSessionRecoveryTitle">Open Work Session Found</h3>
+        <p id="openSessionRecoveryMessage"></p>
+        <div class="preview" style="margin-top:12px"><div id="openSessionRecoveryDetails" class="meta"></div></div>
+        <p class="muted" style="margin-top:10px">Punch-time editing and corrections will be added in Stage 1.6.</p>
+        <div class="actions" style="margin-top:16px">
+          <button class="primary" id="resumeOpenSessionBtn" type="button">Resume Session</button>
+          <button class="secondary" id="endOpenSessionBtn" type="button">End Session Now</button>
         </div>
       </div>
     </div>
@@ -350,6 +360,8 @@
       let statusHistory=[];
       let overdueHistory=[];
       let workSessions=[];
+      let workSets=[];
+      let recoveryOpenSession=null;
       let holidayCalendar=[];
       let activeWorkSession=null;
       let pendingPunchTimerKey='';
@@ -723,96 +735,68 @@
         startIdleAlarm();
       }
       function activeWorkSessionStorageKey(){return 'jtp-active-work-session'}
+      function activeTimerSnapshotStorageKey(){return 'jtp-active-timer-snapshot'}
       function saveActiveWorkSession(session){
-        activeWorkSession=session||null;
-        try{
-          if(activeWorkSession)localStorage.setItem(activeWorkSessionStorageKey(),JSON.stringify(activeWorkSession));
-          else localStorage.removeItem(activeWorkSessionStorageKey());
-        }catch(e){}
+        activeWorkSession=session?{...session,lastSeenAt:Date.now()}:null;
+        try{if(activeWorkSession)localStorage.setItem(activeWorkSessionStorageKey(),JSON.stringify(activeWorkSession));else localStorage.removeItem(activeWorkSessionStorageKey())}catch(e){}
       }
-      function restoreActiveWorkSession(){
-        try{
-          const raw=localStorage.getItem(activeWorkSessionStorageKey());
-          activeWorkSession=raw?JSON.parse(raw):null;
-        }catch(e){activeWorkSession=null}
-        if(activeWorkSession&&activeWorkSession.timerKey){
-          workContextByKey[activeWorkSession.timerKey]={
-            workType:activeWorkSession.workType||'',
-            workDescription:activeWorkSession.workDescription||''
-          };
-        }
+      function getLocalActiveWorkSession(){try{const raw=localStorage.getItem(activeWorkSessionStorageKey());return raw?JSON.parse(raw):null}catch(e){return null}}
+      function clearTimerSnapshot(){try{localStorage.removeItem(activeTimerSnapshotStorageKey())}catch(e){}}
+      function saveTimerSnapshot(key){
+        const state=timerState[key];if(!state||!activeWorkSession||activeWorkSession.timerKey!==key)return;
+        const snapshot={key,sessionId:activeWorkSession.sessionId,remaining:Number(state.remaining||0),overtime:Number(state.overtime||0),blockStartRemaining:Number(state.blockStartRemaining||0),blockStartOvertime:Number(state.blockStartOvertime||0),committedSeconds:Number(state.committedSeconds||0),savedAt:Date.now()};
+        try{localStorage.setItem(activeTimerSnapshotStorageKey(),JSON.stringify(snapshot))}catch(e){}
+        saveActiveWorkSession(activeWorkSession);
       }
-      function updatePunchInSubmitState(){
-        const type=document.getElementById('punchInWorkType').value;
-        const description=document.getElementById('punchInWorkDescription').value.trim();
-        document.getElementById('punchInStartBtn').disabled=!(type&&description);
-      }
-      async function closeActiveWorkSession(punchOutAt){
-        clearIdleWarning(true);
-        if(!activeWorkSession||!activeWorkSession.sessionId)return true;
+      function restoreTimerSnapshot(key,sessionId){
         try{
-          const payload={action:'endWorkSession',sessionId:activeWorkSession.sessionId};
-          if(punchOutAt)payload.punchOutAt=punchOutAt;
-          const data=await apiPost(payload);
-          if(!data.success)throw new Error(data.error||'Unable to punch out');
-          const localSession=activeWorkSession;
-          const found=workSessions.find(s=>s.sessionId===localSession.sessionId);
-          if(found){found.punchOut=data.punchOut||'';found.durationMinutes=Number(data.durationMinutes||0)}
-          saveActiveWorkSession(null);
+          const raw=localStorage.getItem(activeTimerSnapshotStorageKey());if(!raw)return false;const snap=JSON.parse(raw);if(snap.key!==key||snap.sessionId!==sessionId)return false;
+          const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return false;const state=ensureTimerState(job);
+          state.remaining=Math.max(0,Number(snap.remaining||0));state.overtime=Math.max(0,Number(snap.overtime||0));state.blockStartRemaining=Math.max(0,Number(snap.blockStartRemaining||0));state.blockStartOvertime=Math.max(0,Number(snap.blockStartOvertime||0));state.committedSeconds=Math.max(0,Number(snap.committedSeconds||0));
+          const elapsed=Math.max(0,Math.floor((Date.now()-Number(snap.savedAt||Date.now()))/1000));if(elapsed>0){if(state.remaining>elapsed)state.remaining-=elapsed;else{const extra=elapsed-state.remaining;state.remaining=0;state.overtime+=extra}}
           return true;
-        }catch(err){
-          alert('Punch Out could not be saved: '+err.message);
-          return false;
-        }
+        }catch(e){return false}
       }
-      async function beginWorkSessionForKey(key,workType,workDescription){
-        const job=jobs.find(j=>timerKeyFor(j)===key);
-        if(!job)return false;
-        try{
-          const data=await apiPost({
-            action:'beginWorkSession',
-            ticketNumber:job.ticketNumber,
-            workType,
-            workDescription
-          });
-          if(!data.success)throw new Error(data.error||'Unable to punch in');
-          const session=data.session;
-          workSessions.push(session);
-          workContextByKey[key]={workType,workDescription};
-          saveActiveWorkSession({
-            sessionId:session.sessionId,
-            ticketNumber:job.ticketNumber,
-            timerKey:key,
-            workType,
-            workDescription,
-            punchIn:session.punchIn||''
-          });
-          return true;
-        }catch(err){
-          alert('Punch In could not be saved: '+err.message);
-          return false;
-        }
+      function continuationTypeForSession(session){return session&&session.workSetType==='Change Order'?'Continuing Change Order':'Continuing Initial Draft'}
+      function applyWorkSessionContext(session,key){if(!session||!key)return;workContextByKey[key]={workSetId:session.workSetId||'',workSetType:session.workSetType||'',changeOrderNumber:Number(session.changeOrderNumber||0),workType:continuationTypeForSession(session),workDescription:session.workDescription||''}}
+      function workSetsForTicket(ticketNumber){return workSets.filter(set=>Number(set.ticketNumber)===Number(ticketNumber))}
+      function workSetLabel(set){return set.workSetType==='Change Order'?`Change Order #${set.changeOrderNumber} — ${set.workDescription}`:`Initial Draft — ${set.workDescription}`}
+      function populatePunchInChoices(job){
+        const typeSelect=document.getElementById('punchInWorkType');const sets=workSetsForTicket(job.ticketNumber);const initial=sets.find(set=>set.workSetType==='Initial Draft');const changeOrders=sets.filter(set=>set.workSetType==='Change Order').sort((a,b)=>Number(a.changeOrderNumber)-Number(b.changeOrderNumber));const options=[];
+        if(!initial)options.push(['Initial Draft','Initial Draft']);else options.push(['Continuing Initial Draft','Continuing Initial Draft']);options.push(['New Change Order','New Change Order']);if(changeOrders.length)options.push(['Continuing Change Order','Continuing Change Order']);
+        typeSelect.innerHTML='<option value="">Select Work Type</option>'+options.map(([v,l])=>`<option value="${escapeHtml(v)}">${escapeHtml(l)}</option>`).join('');
+        const setSelect=document.getElementById('punchInWorkSet');setSelect.innerHTML='<option value="">Select Change Order</option>'+changeOrders.map(set=>`<option value="${escapeHtml(set.workSetId)}">${escapeHtml(workSetLabel(set))}</option>`).join('');
       }
-      async function resumeWorkSessionForKey(key){
-        const context=workContextByKey[key];
-        if(!context||!context.workType||!context.workDescription)return false;
-        return beginWorkSessionForKey(key,context.workType,context.workDescription);
-      }
-      async function requestStartTimer(key){
-        const job=jobs.find(j=>timerKeyFor(j)===key);
-        if(!job)return;
-        if(activeWorkSession&&activeWorkSession.sessionId){
-          const ok=confirm('An open Punch In was found. Click OK to punch it out now before starting a new work session.');
-          if(!ok)return;
-          const closed=await closeActiveWorkSession();
-          if(!closed)return;
-        }
-        pendingPunchTimerKey=key;
-        document.getElementById('punchInModalTitle').textContent=job.title||job.displayTitle||'Punch In';
-        document.getElementById('punchInWorkType').value='';
-        document.getElementById('punchInWorkDescription').value='';
+      function updatePunchInFields(){
+        const job=jobs.find(j=>timerKeyFor(j)===pendingPunchTimerKey);const type=document.getElementById('punchInWorkType').value;const description=document.getElementById('punchInWorkDescription');const setWrap=document.getElementById('punchInWorkSetWrap');const setSelect=document.getElementById('punchInWorkSet');
+        setWrap.style.display=type==='Continuing Change Order'?'block':'none';if(type!=='Continuing Change Order')setSelect.value='';
+        if(!job){description.readOnly=false;description.value='';updatePunchInSubmitState();return}
+        const sets=workSetsForTicket(job.ticketNumber);
+        if(type==='Continuing Initial Draft'){const initial=sets.find(set=>set.workSetType==='Initial Draft');description.value=initial?initial.workDescription:'';description.readOnly=true}
+        else if(type==='Continuing Change Order'){const selected=sets.find(set=>set.workSetId===setSelect.value);description.value=selected?selected.workDescription:'';description.readOnly=true}
+        else{if(description.readOnly)description.value='';description.readOnly=false;description.placeholder=type==='New Change Order'?'Describe the new client change request...':'Describe the work you are starting...'}
         updatePunchInSubmitState();
-        document.getElementById('punchInModalBackdrop').classList.add('open');
+      }
+      function updatePunchInSubmitState(){const type=document.getElementById('punchInWorkType').value;const description=document.getElementById('punchInWorkDescription').value.trim();const workSetId=document.getElementById('punchInWorkSet').value;let valid=!!type;if(type==='Initial Draft'||type==='New Change Order'||type==='Continuing Initial Draft')valid=valid&&!!description;if(type==='Continuing Change Order')valid=valid&&!!workSetId&&!!description;document.getElementById('punchInStartBtn').disabled=!valid}
+      async function closeActiveWorkSession(punchOutAt){
+        clearIdleWarning(true);if(!activeWorkSession||!activeWorkSession.sessionId)return true;
+        try{const payload={action:'endWorkSession',sessionId:activeWorkSession.sessionId};if(punchOutAt)payload.punchOutAt=punchOutAt;const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch out');const localSession=activeWorkSession;const found=workSessions.find(s=>s.sessionId===localSession.sessionId);if(found){found.punchOut=data.punchOut||'';found.durationMinutes=Number(data.durationMinutes||0)}saveActiveWorkSession(null);clearTimerSnapshot();return true}catch(err){alert('Punch Out could not be saved: '+err.message);return false}
+      }
+      async function beginWorkSessionForKey(key,workType,workDescription,workSetId=''){
+        const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return false;
+        try{const data=await apiPost({action:'beginWorkSession',ticketNumber:job.ticketNumber,workType,workDescription,workSetId});if(!data.success)throw new Error(data.error||'Unable to punch in');const session=data.session;if(data.workSet&&!workSets.some(set=>set.workSetId===data.workSet.workSetId))workSets.push(data.workSet);workSessions.push(session);applyWorkSessionContext(session,key);saveActiveWorkSession({...session,timerKey:key});return true}catch(err){alert('Punch In could not be saved: '+err.message);return false}
+      }
+      async function resumeWorkSessionForKey(key){const context=workContextByKey[key];if(!context||!context.workSetId)return false;return beginWorkSessionForKey(key,context.workType,context.workDescription,context.workSetId)}
+      async function requestStartTimer(key){
+        const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;if(activeWorkSession&&activeWorkSession.sessionId){alert(`Ticket ${activeWorkSession.ticketNumber} already has an active punch. Punch out of that session before starting another job.`);return}
+        pendingPunchTimerKey=key;document.getElementById('punchInModalTitle').textContent=job.title||job.displayTitle||'Punch In';document.getElementById('punchInWorkDescription').readOnly=false;document.getElementById('punchInWorkDescription').value='';populatePunchInChoices(job);document.getElementById('punchInWorkType').value='';document.getElementById('punchInWorkSet').value='';updatePunchInFields();document.getElementById('punchInModalBackdrop').classList.add('open');
+      }
+      function sessionRecoveryKey(session){return String(session&&session.ticketNumber||'')}
+      async function reconcileOpenWorkSession(openSession){
+        const local=getLocalActiveWorkSession();if(!openSession){if(local)saveActiveWorkSession(null);clearTimerSnapshot();return}
+        const key=sessionRecoveryKey(openSession);const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;const recentMatch=local&&local.sessionId===openSession.sessionId&&Date.now()-Number(local.lastSeenAt||0)<=120000;const restored={...openSession,timerKey:key};applyWorkSessionContext(openSession,key);
+        if(recentMatch){saveActiveWorkSession(restored);ensureTimerState(job);if(!restoreTimerSnapshot(key,openSession.sessionId)){const state=timerState[key];state.remaining=recommendedWorkSeconds(job);state.overtime=0;state.blockStartRemaining=state.remaining;state.blockStartOvertime=0;state.committedSeconds=0}await startTimerInternal(key,true);return}
+        recoveryOpenSession=restored;const set=workSets.find(item=>item.workSetId===openSession.workSetId);document.getElementById('openSessionRecoveryMessage').textContent='The backend still has an open punch. This may be from a closed browser, crash, or longer interruption.';document.getElementById('openSessionRecoveryDetails').innerHTML=`<strong>${escapeHtml(job.title||job.displayTitle||('Ticket '+openSession.ticketNumber))}</strong><br>${escapeHtml(set?workSetLabel(set):(openSession.workDescription||openSession.workType||'Work Session'))}<br>Punched In: ${escapeHtml(openSession.punchIn||'Unknown')}`;document.getElementById('openSessionRecoveryBackdrop').classList.add('open');
       }
       async function commitElapsedTime(key){
         const job=jobs.find(j=>timerKeyFor(j)===key);const state=timerState[key];if(!job||!state)return;
@@ -824,11 +808,11 @@
         try{const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,dueDate:job.due||job.dueDate,estimatedHoursRemaining:newEstimated,timeAccruedHours:newAccrued});if(!data.success)throw new Error(data.error||'Unable to save elapsed time')}catch(err){alert(err.message)}
       }
       function resetNoJobTimer(){noJobTimerStartedAt=Date.now();noJobAlertOpen=false}
-      async function startTimerInternal(key){
+      async function startTimerInternal(key,resumeExisting=false){
         await ensureSystemIdleDetection();
         if(activeTimerKey&&activeTimerKey!==key&&timerState[activeTimerKey])timerState[activeTimerKey].running=false;
-        stopTimerInterval(); activeTimerKey=key; if(!timerState[key])return; lastActivityAt=Date.now(); resetNoJobTimer(); const state=timerState[key];state.running=true;state.blockStartRemaining=state.remaining;state.blockStartOvertime=state.overtime||0;state.committedSeconds=0;
-        activeTimerInterval=setInterval(async()=>{const state=timerState[key];if(!state||!state.running)return;if(state.remaining>0){state.remaining=Math.max(0,state.remaining-1);if(state.remaining<=0){state.running=false;stopTimerInterval();await commitElapsedTime(key);await closeActiveWorkSession();activeTimerKey='';resetNoJobTimer();renderQueue();renderBoard();showTimerComplete(key);return}}else{state.overtime=(state.overtime||0)+1}renderQueue()},1000); renderQueue();
+        stopTimerInterval();activeTimerKey=key;if(!timerState[key])return;lastActivityAt=Date.now();resetNoJobTimer();const state=timerState[key];state.running=true;if(!resumeExisting){state.blockStartRemaining=state.remaining;state.blockStartOvertime=state.overtime||0;state.committedSeconds=0}saveTimerSnapshot(key);
+        activeTimerInterval=setInterval(async()=>{const state=timerState[key];if(!state||!state.running)return;if(state.remaining>0){state.remaining=Math.max(0,state.remaining-1);if(state.remaining<=0){state.running=false;saveTimerSnapshot(key);stopTimerInterval();await commitElapsedTime(key);await closeActiveWorkSession();activeTimerKey='';resetNoJobTimer();renderQueue();renderBoard();showTimerComplete(key);return}}else{state.overtime=(state.overtime||0)+1}saveTimerSnapshot(key);renderQueue()},1000);renderQueue();renderBoard();
       }
       async function pauseTimer(key){
         if(pendingPunchKeys.has(key))return false;
@@ -843,7 +827,7 @@
           await commitElapsedTime(key);
           const closed=await closeActiveWorkSession();
           if(!closed){
-            if(wasRunning)await startTimerInternal(key);
+            if(wasRunning)await startTimerInternal(key,true);
             return false;
           }
           resetNoJobTimer();
@@ -854,7 +838,7 @@
           renderBoard();
         }
       }
-      function resetBlock(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;const state=ensureTimerState(job);state.remaining=recommendedWorkSeconds(job);state.overtime=0;state.blockStartRemaining=state.remaining;state.blockStartOvertime=0;state.committedSeconds=0;renderQueue();renderBoard()}
+      function resetBlock(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;const state=ensureTimerState(job);state.remaining=recommendedWorkSeconds(job);state.overtime=0;state.blockStartRemaining=state.remaining;state.blockStartOvertime=0;state.committedSeconds=0;if(state.running)saveTimerSnapshot(key);renderQueue();renderBoard()}
       function showTimerComplete(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;completedTimerKey=key;document.getElementById('timerModalMessage').textContent=`Allotted Time for ${job.title||job.displayTitle} is Complete.`;document.getElementById('timerModalBackdrop').classList.add('open')}
       function getWSIWONJobs(){
         const eligible=jobs.filter(j=>priorityScore(j)>-900).sort((a,b)=>{
@@ -1042,7 +1026,7 @@
         setBackendStatus(false,'Connecting to Google Sheets…');
         try{
           const data=await apiGet(); if(!data.success)throw new Error(data.error||'Backend error');
-          clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[]; statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; holidayCalendar=data.holidayCalendar||[]; restoreActiveWorkSession();
+          clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[]; statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; workSets=data.workSets||[]; holidayCalendar=data.holidayCalendar||[]; await reconcileOpenWorkSession(data.openWorkSession||null);
           Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);
           clients.forEach(c=>{clientNotes[clientNotesKey(c.id)]=String(c.notes||c.clientNotes||'')});
           subclients.forEach(s=>{clientNotes[clientNotesKey(s.parentClientId,s.id)]=String(s.notes||s.clientNotes||'')});
@@ -1127,18 +1111,33 @@
         clientReviewMoveTicket='';
         document.getElementById('clientReviewDueChoiceBackdrop').classList.remove('open');
       });
-      document.getElementById('punchInWorkType').addEventListener('change',updatePunchInSubmitState);
+      document.getElementById('punchInWorkType').addEventListener('change',updatePunchInFields);
+      document.getElementById('punchInWorkSet').addEventListener('change',updatePunchInFields);
       document.getElementById('punchInWorkDescription').addEventListener('input',updatePunchInSubmitState);
       document.getElementById('punchInCancelBtn').addEventListener('click',()=>{
         pendingPunchTimerKey='';
         document.getElementById('punchInModalBackdrop').classList.remove('open');
+      });
+      document.getElementById('resumeOpenSessionBtn').addEventListener('click',async()=>{
+        if(!recoveryOpenSession)return;
+        const session=recoveryOpenSession;const key=sessionRecoveryKey(session);const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;
+        document.getElementById('openSessionRecoveryBackdrop').classList.remove('open');recoveryOpenSession=null;applyWorkSessionContext(session,key);saveActiveWorkSession({...session,timerKey:key});
+        const state=ensureTimerState(job);state.remaining=recommendedWorkSeconds(job);state.overtime=0;state.blockStartRemaining=state.remaining;state.blockStartOvertime=0;state.committedSeconds=0;
+        await startTimerInternal(key,false);
+      });
+      document.getElementById('endOpenSessionBtn').addEventListener('click',async()=>{
+        if(!recoveryOpenSession)return;
+        const session=recoveryOpenSession;const key=sessionRecoveryKey(session);saveActiveWorkSession({...session,timerKey:key});
+        const closed=await closeActiveWorkSession();
+        if(closed){recoveryOpenSession=null;document.getElementById('openSessionRecoveryBackdrop').classList.remove('open');activeTimerKey='';stopTimerInterval();renderQueue();renderBoard()}
       });
       document.getElementById('punchInStartBtn').addEventListener('click',async()=>{
         const key=pendingPunchTimerKey;
         if(!key||pendingPunchKeys.has(key))return;
         const workType=document.getElementById('punchInWorkType').value;
         const workDescription=document.getElementById('punchInWorkDescription').value.trim();
-        if(!workType||!workDescription)return;
+        const workSetId=document.getElementById('punchInWorkSet').value;
+        if(!workType||!workDescription||(workType==='Continuing Change Order'&&!workSetId))return;
         const startBtn=document.getElementById('punchInStartBtn');
         const cancelBtn=document.getElementById('punchInCancelBtn');
         pendingPunchKeys.add(key);
@@ -1152,7 +1151,7 @@
             const paused=await pauseTimer(oldKey);
             if(!paused)return;
           }
-          const started=await beginWorkSessionForKey(key,workType,workDescription);
+          const started=await beginWorkSessionForKey(key,workType,workDescription,workSetId);
           if(!started)return;
           document.getElementById('punchInModalBackdrop').classList.remove('open');
           pendingPunchTimerKey='';
@@ -1215,7 +1214,8 @@
       // If unavailable or permission is denied, no idle warning is triggered.
       setInterval(()=>{const activeRunning=activeTimerKey&&timerState[activeTimerKey]&&timerState[activeTimerKey].running;if(activeRunning){resetNoJobTimer();return}if(!noJobAlertOpen&&Date.now()-noJobTimerStartedAt>=300000){noJobAlertOpen=true;playNotificationTone();document.getElementById('noJobModalBackdrop').classList.add('open')}},1000);
       document.addEventListener('click',()=>document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open')));
-      loadIdleAlarmPreference();restoreActiveWorkSession();populateClients();renderQueue();renderBoard();loadBackend();
+      window.addEventListener('beforeunload',event=>{if(!activeWorkSession||!activeWorkSession.sessionId)return;if(activeTimerKey)saveTimerSnapshot(activeTimerKey);saveActiveWorkSession(activeWorkSession);event.preventDefault();event.returnValue=''});
+      loadIdleAlarmPreference();populateClients();renderQueue();renderBoard();loadBackend();
     })();
   </script>
 </div>
