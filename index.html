@@ -131,6 +131,22 @@
     #job-priority-app .notes-box[readonly]{opacity:.85;cursor:default}
     @media(max-width:980px){#job-priority-app .grid{grid-template-columns:1fr 1fr}#job-priority-app .kpi-strip{grid-column:1/-1}#job-priority-app .new-job-panel,#job-priority-app .todo-panel,#job-priority-app .wsiwon-panel{grid-column:auto}}
     @media(max-width:700px){#job-priority-app{padding:16px}#job-priority-app .grid{grid-template-columns:1fr}#job-priority-app .kpi-strip{grid-template-columns:1fr}#job-priority-app .status-panel{grid-column:auto}#job-priority-app .board{grid-template-columns:1fr}#job-priority-app .form-grid{grid-template-columns:1fr}#job-priority-app .full{grid-column:auto}#job-priority-app .client-tools{align-items:stretch;flex-direction:column}}
+  
+    #job-priority-app .time-record-modal{width:min(760px,calc(100vw - 32px));max-height:86vh;overflow:auto}
+    #job-priority-app .time-record-summary{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 12px;margin:10px 0 14px;background:#f6f8fb;border:1px solid #dde4ed;border-radius:8px}
+    #job-priority-app .time-record-set{border:1px solid #dfe5ec;border-radius:9px;margin:12px 0;overflow:hidden;background:#fff}
+    #job-priority-app .time-record-set-head{padding:11px 13px;background:#f7f9fc;border-bottom:1px solid #e3e8ef}
+    #job-priority-app .time-record-set-title{font-weight:700}
+    #job-priority-app .time-record-description{font-size:12px;color:#59636f;margin-top:3px;white-space:pre-wrap}
+    #job-priority-app .time-record-session{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:9px 13px;border-top:1px solid #edf0f4;font-size:12px}
+    #job-priority-app .time-record-session:first-child{border-top:0}
+    #job-priority-app .time-record-session-time{font-weight:600}
+    #job-priority-app .time-record-session-duration{white-space:nowrap;color:#59636f}
+    #job-priority-app .time-record-edit{border:0;background:none;padding:0;color:#2f67b2;text-decoration:underline;cursor:pointer;font:inherit}
+    #job-priority-app .time-record-active{display:inline-block;padding:2px 6px;border-radius:999px;background:#dff5e7;color:#17633a;font-weight:700;font-size:11px}
+    #job-priority-app .time-record-set-total{padding:8px 13px;text-align:right;font-size:12px;font-weight:700;background:#fbfcfd;border-top:1px solid #e7ebf0}
+    #job-priority-app .time-record-empty{padding:18px;text-align:center;color:#6b7280}
+    #job-priority-app .time-record-edit-note{font-size:11px;color:#6b7280;margin:8px 0 0}
   </style>
   <div class="wrap">
     <div class="top">
@@ -346,6 +362,26 @@
         <div class="actions"><button class="edit-notes-btn" id="editJobNotesBtn" type="button">Edit</button><button class="primary" id="doneJobNotesBtn" type="button" style="display:none">Done</button><button class="secondary" id="closeJobNotesBtn" type="button">Close</button></div>
       </div>
     </div>
+    <div class="timer-modal-backdrop" id="timeRecordModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="timeRecordModalTitle">
+      <div class="timer-modal time-record-modal">
+        <h3 id="timeRecordModalTitle">Time Record</h3>
+        <p id="timeRecordModalJob" style="margin-bottom:6px"></p>
+        <div id="timeRecordModalBody"></div>
+        <div class="actions"><button class="secondary" id="closeTimeRecordBtn" type="button">Close</button></div>
+      </div>
+    </div>
+    <div class="timer-modal-backdrop" id="editPunchModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="editPunchModalTitle">
+      <div class="timer-modal">
+        <h3 id="editPunchModalTitle">Edit Punch</h3>
+        <p id="editPunchModalJob" style="margin-bottom:10px"></p>
+        <label for="editPunchInInput">Punch In</label>
+        <input id="editPunchInInput" type="datetime-local" step="1">
+        <label for="editPunchOutInput" style="margin-top:10px">Punch Out</label>
+        <input id="editPunchOutInput" type="datetime-local" step="1">
+        <p class="time-record-edit-note">Saving recalculates this session's duration and adjusts the job's Time Accrued by the same difference.</p>
+        <div class="actions"><button class="primary" id="savePunchEditBtn" type="button">Save</button><button class="secondary" id="cancelPunchEditBtn" type="button">Cancel</button></div>
+      </div>
+    </div>
     <div class="copy-toast" id="copyToast" role="status" aria-live="polite">Job Ticket Title Copied!</div>
   </div>
 
@@ -388,6 +424,8 @@
       let idleAlarmMuted=false;
       let idleAlarmRepeatInterval=null;
       let timeEditTicket='';
+      let timeRecordTicket='';
+      let editPunchSessionId='';
       let jobNotesTicket='';
       let copyToastTimer=null;
       const timerState={};
@@ -858,7 +896,7 @@
         if(!active.length){document.getElementById('eodMessage').style.display='block';q.innerHTML='<div class="muted">No actionable jobs.</div>';return}
         const dueToday=active.filter(j=>effectiveDueDate(j)===todayValue); const later=active.filter(j=>effectiveDueDate(j)!==todayValue);
         document.getElementById('eodMessage').style.display=dueToday.length?'none':'block';
-        const addQueueItem=(j,i)=>{const overdue=isOverdueJob(j); const dueValue=effectiveDueDate(j); const dueDays=Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000); let urgencyTag=''; if(overdue){urgencyTag='<span class="card-tag overdue">Overdue</span>'} else if(dueDays<=0){urgencyTag='<span class="card-tag urgent">Due Today</span>'} else if(dueDays<=1){urgencyTag='<span class="card-tag soon">Due Soon</span>'} const invoiceTag=j.status==='To Be Invoiced'?'<span class="card-tag invoice">To Be Invoiced</span>':''; const tags=invoiceTag+urgencyTag; const title=j.title||j.displayTitle; const hours=j.status==='To Be Invoiced'?.1667:Number(j.hours??j.estimatedHoursRemaining??0); const accrued=getTimeAccruedHours(j); const key=timerKeyFor(j); const jobTimer=ensureTimerState(j); const punchPending=pendingPunchKeys.has(key); const isActivelyPunched=!!(activeWorkSession&&activeWorkSession.sessionId&&activeWorkSession.timerKey===key); const timerLabel=punchPending?PUNCH_LOADING_ICON:((jobTimer.running||isActivelyPunched)?PUNCH_OUT_ICON:PUNCH_IN_ICON); const timerActionLabel=punchPending?'Saving…':((jobTimer.running||isActivelyPunched)?'Punch Out':'Punch In'); const ticket=escapeHtml(String(j.ticketNumber||'')); const current=escapeHtml(j.status); const clientId=escapeHtml(String(j.primaryClientId||j.primaryClientID||j.clientId||'')); const secondaryClientId=escapeHtml(String(j.secondaryClientId||'')); const row=document.createElement('div');row.className='queue-item'+((jobTimer.running||isActivelyPunched)?' timer-active':'');row.innerHTML=`<div class="rank-stack"><div class="rank">${i+1}</div><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}"><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button><button type="button" data-edit-time-ticket="${ticket}">Edit Time Accrued</button><button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div><button class="secondary timer-btn" type="button" data-timer-key="${escapeHtml(key)}" aria-label="${timerActionLabel}" title="${timerActionLabel}" ${punchPending?'disabled':''}>${timerLabel}</button></div><div><div class="title-copy-row"><div class="qtitle">${escapeHtml(title)}</div><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<div><a class="client-notes-link" data-client-notes-primary="${clientId}" data-client-notes-secondary="${secondaryClientId}">View Client Notes</a> <span class="muted">·</span> <a class="client-notes-link" data-job-notes-ticket="${ticket}">Job Notes</a></div><div class="qmeta">Due Date: ${formatDate(dueValue)}</div><div class="qmeta">Time Accrued: ${formatHours(accrued)}</div><div class="qmeta">Estimated Time Remaining: ${formatHours(hours)}</div><div class="qmeta">Block Remaining: <span class="timer-readout">${formatBlockTime(jobTimer)}</span></div><a class="reset-block-link" data-reset-block="${escapeHtml(key)}">Reset Block</a></div>`;q.appendChild(row)};
+        const addQueueItem=(j,i)=>{const overdue=isOverdueJob(j); const dueValue=effectiveDueDate(j); const dueDays=Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000); let urgencyTag=''; if(overdue){urgencyTag='<span class="card-tag overdue">Overdue</span>'} else if(dueDays<=0){urgencyTag='<span class="card-tag urgent">Due Today</span>'} else if(dueDays<=1){urgencyTag='<span class="card-tag soon">Due Soon</span>'} const invoiceTag=j.status==='To Be Invoiced'?'<span class="card-tag invoice">To Be Invoiced</span>':''; const tags=invoiceTag+urgencyTag; const title=j.title||j.displayTitle; const hours=j.status==='To Be Invoiced'?.1667:Number(j.hours??j.estimatedHoursRemaining??0); const accrued=getTimeAccruedHours(j); const key=timerKeyFor(j); const jobTimer=ensureTimerState(j); const punchPending=pendingPunchKeys.has(key); const isActivelyPunched=!!(activeWorkSession&&activeWorkSession.sessionId&&activeWorkSession.timerKey===key); const timerLabel=punchPending?PUNCH_LOADING_ICON:((jobTimer.running||isActivelyPunched)?PUNCH_OUT_ICON:PUNCH_IN_ICON); const timerActionLabel=punchPending?'Saving…':((jobTimer.running||isActivelyPunched)?'Punch Out':'Punch In'); const ticket=escapeHtml(String(j.ticketNumber||'')); const current=escapeHtml(j.status); const clientId=escapeHtml(String(j.primaryClientId||j.primaryClientID||j.clientId||'')); const secondaryClientId=escapeHtml(String(j.secondaryClientId||'')); const row=document.createElement('div');row.className='queue-item'+((jobTimer.running||isActivelyPunched)?' timer-active':'');row.innerHTML=`<div class="rank-stack"><div class="rank">${i+1}</div><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}"><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button><button type="button" data-edit-time-ticket="${ticket}">Edit Time Accrued</button><button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div><button class="secondary timer-btn" type="button" data-timer-key="${escapeHtml(key)}" aria-label="${timerActionLabel}" title="${timerActionLabel}" ${punchPending?'disabled':''}>${timerLabel}</button></div><div><div class="title-copy-row"><div class="qtitle">${escapeHtml(title)}</div><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<div><a class="client-notes-link" data-client-notes-primary="${clientId}" data-client-notes-secondary="${secondaryClientId}">View Client Notes</a> <span class="muted">·</span> <a class="client-notes-link" data-job-notes-ticket="${ticket}">Job Notes</a> <span class="muted">·</span> <a class="client-notes-link" data-time-record-ticket="${ticket}">Time Record</a></div><div class="qmeta">Due Date: ${formatDate(dueValue)}</div><div class="qmeta">Time Accrued: ${formatHours(accrued)}</div><div class="qmeta">Estimated Time Remaining: ${formatHours(hours)}</div><div class="qmeta">Block Remaining: <span class="timer-readout">${formatBlockTime(jobTimer)}</span></div><a class="reset-block-link" data-reset-block="${escapeHtml(key)}">Reset Block</a></div>`;q.appendChild(row)};
         dueToday.forEach((j,i)=>addQueueItem(j,i)); const divider=document.createElement('div');divider.className='eod-divider';divider.textContent='End of Day · 10:00 PM';q.appendChild(divider); later.forEach((j,i)=>addQueueItem(j,dueToday.length+i));
         q.querySelectorAll('[data-timer-key]').forEach(btn=>btn.addEventListener('click',async()=>{const key=btn.getAttribute('data-timer-key');if(pendingPunchKeys.has(key))return;const state=timerState[key];if(state&&state.running)await pauseTimer(key);else await requestStartTimer(key)}));
         q.querySelectorAll('[data-reset-block]').forEach(link=>link.addEventListener('click',e=>{e.stopPropagation();resetBlock(link.getAttribute('data-reset-block')||'')}));
@@ -870,10 +908,11 @@
         q.querySelectorAll('[data-edit-time-ticket]').forEach(btn=>btn.addEventListener('click',()=>openTimeEditModal(btn.getAttribute('data-edit-time-ticket'))));
         q.querySelectorAll('[data-client-notes-primary]').forEach(link=>link.addEventListener('click',()=>openClientNotesModal(link.getAttribute('data-client-notes-primary'),link.getAttribute('data-client-notes-secondary')||'')));
         q.querySelectorAll('[data-job-notes-ticket]').forEach(link=>link.addEventListener('click',()=>openJobNotesModal(link.getAttribute('data-job-notes-ticket'))));
+        q.querySelectorAll('[data-time-record-ticket]').forEach(link=>link.addEventListener('click',()=>openTimeRecordModal(link.getAttribute('data-time-record-ticket'))));
       }
       function renderCards(targetId,list){
         const target=document.getElementById(targetId); target.innerHTML=''; if(!list.length){target.innerHTML='<div class="muted">No jobs.</div>';return}
-        list.forEach(j=>{const c=document.createElement('div');const key=timerKeyFor(j);const jobTimer=ensureTimerState(j);c.className='card'+(targetId==='todoList'&&jobTimer.running?' timer-active':'');const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const accrued=getTimeAccruedHours(j);const storedDueValue=j.due||j.dueDate;const overdue=targetId==='todoList'&&isOverdueJob(j);const dueValue=targetId==='todoList'?effectiveDueDate(j):storedDueValue;const followUpValue=j.followUpDate||'';const followUpDue=followUpValue&&followUpValue<=todayISO();const ticket=escapeHtml(String(j.ticketNumber||''));const current=escapeHtml(j.status);const clientId=escapeHtml(String(j.primaryClientId||j.primaryClientID||j.clientId||''));const secondaryClientId=escapeHtml(String(j.secondaryClientId||''));const dueDays=dueValue?Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000):999;const invoiceTag=j.status==='To Be Invoiced'?'<span class="card-tag invoice">To Be Invoiced</span>':'';const completedTag=j.status==='Completed'?`<span class="card-tag">Completed: ${formatDate((j.completedAt||todayISO()).slice(0,10))}</span>`:'';const urgencyTag=targetId==='todoList'?(overdue?'<span class="card-tag overdue">Overdue</span>':dueDays<=0?'<span class="card-tag urgent">Due Today</span>':dueDays<=1?'<span class="card-tag soon">Due Soon</span>':''):'';const tags=completedTag+invoiceTag+urgencyTag;const usesFollowUpDate=j.status==='Client Review'||j.status==='In Production / Awaiting Vendor';const followUpMenu=usesFollowUpDate?`<button type="button" data-change-follow-up-ticket="${ticket}">Change Follow Up Date</button>`:'';const dueMeta=usesFollowUpDate?'':`<div class="card-meta">Due Date: ${formatDate(dueValue)}</div>`;const followUpMeta=usesFollowUpDate?`<div class="card-meta${followUpDue?' follow-up-due':''}">Follow Up Date: ${followUpValue?formatDate(followUpValue):'—'}</div>`:'';c.innerHTML=`<div class="card-head"><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}"><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button>${followUpMenu}<button type="button" data-edit-time-ticket="${ticket}">Edit Time Accrued</button><button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div><div><div class="title-copy-row"><div class="card-title">${escapeHtml(title)}</div><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<a class="client-notes-link" data-client-notes-primary="${clientId}" data-client-notes-secondary="${secondaryClientId}">View Client Notes</a> <span class="muted">·</span> <a class="client-notes-link" data-job-notes-ticket="${ticket}">Job Notes</a>${dueMeta}${followUpMeta}<div class="card-meta">Time Accrued: ${formatHours(accrued)}</div><div class="card-meta">Estimated Time Remaining: ${formatHours(j.status==='To Be Invoiced'?.1667:hours)}</div><div class="card-meta">Block Remaining: ${formatBlockTime(jobTimer)}</div></div></div>`;target.appendChild(c)});
+        list.forEach(j=>{const c=document.createElement('div');const key=timerKeyFor(j);const jobTimer=ensureTimerState(j);c.className='card'+(targetId==='todoList'&&jobTimer.running?' timer-active':'');const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const accrued=getTimeAccruedHours(j);const storedDueValue=j.due||j.dueDate;const overdue=targetId==='todoList'&&isOverdueJob(j);const dueValue=targetId==='todoList'?effectiveDueDate(j):storedDueValue;const followUpValue=j.followUpDate||'';const followUpDue=followUpValue&&followUpValue<=todayISO();const ticket=escapeHtml(String(j.ticketNumber||''));const current=escapeHtml(j.status);const clientId=escapeHtml(String(j.primaryClientId||j.primaryClientID||j.clientId||''));const secondaryClientId=escapeHtml(String(j.secondaryClientId||''));const dueDays=dueValue?Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000):999;const invoiceTag=j.status==='To Be Invoiced'?'<span class="card-tag invoice">To Be Invoiced</span>':'';const completedTag=j.status==='Completed'?`<span class="card-tag">Completed: ${formatDate((j.completedAt||todayISO()).slice(0,10))}</span>`:'';const urgencyTag=targetId==='todoList'?(overdue?'<span class="card-tag overdue">Overdue</span>':dueDays<=0?'<span class="card-tag urgent">Due Today</span>':dueDays<=1?'<span class="card-tag soon">Due Soon</span>':''):'';const tags=completedTag+invoiceTag+urgencyTag;const usesFollowUpDate=j.status==='Client Review'||j.status==='In Production / Awaiting Vendor';const followUpMenu=usesFollowUpDate?`<button type="button" data-change-follow-up-ticket="${ticket}">Change Follow Up Date</button>`:'';const dueMeta=usesFollowUpDate?'':`<div class="card-meta">Due Date: ${formatDate(dueValue)}</div>`;const followUpMeta=usesFollowUpDate?`<div class="card-meta${followUpDue?' follow-up-due':''}">Follow Up Date: ${followUpValue?formatDate(followUpValue):'—'}</div>`:'';c.innerHTML=`<div class="card-head"><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}"><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button>${followUpMenu}<button type="button" data-edit-time-ticket="${ticket}">Edit Time Accrued</button><button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div><div><div class="title-copy-row"><div class="card-title">${escapeHtml(title)}</div><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<a class="client-notes-link" data-client-notes-primary="${clientId}" data-client-notes-secondary="${secondaryClientId}">View Client Notes</a> <span class="muted">·</span> <a class="client-notes-link" data-job-notes-ticket="${ticket}">Job Notes</a> <span class="muted">·</span> <a class="client-notes-link" data-time-record-ticket="${ticket}">Time Record</a>${dueMeta}${followUpMeta}<div class="card-meta">Time Accrued: ${formatHours(accrued)}</div><div class="card-meta">Estimated Time Remaining: ${formatHours(j.status==='To Be Invoiced'?.1667:hours)}</div><div class="card-meta">Block Remaining: ${formatBlockTime(jobTimer)}</div></div></div>`;target.appendChild(c)});
         target.querySelectorAll('[data-menu-ticket]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const ticket=btn.getAttribute('data-menu-ticket');const menu=target.querySelector(`[data-move-menu="${ticket}"]`);document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>{if(m!==menu)m.classList.remove('open')});menu.classList.toggle('open')}));
         target.querySelectorAll('[data-move-ticket]').forEach(btn=>btn.addEventListener('click',()=>changeJobStatusFromMenu(btn)));
         target.querySelectorAll('[data-edit-title-ticket]').forEach(btn=>btn.addEventListener('click',()=>openJobTitleModal(btn.getAttribute('data-edit-title-ticket'))));
@@ -882,6 +921,7 @@
         target.querySelectorAll('[data-edit-time-ticket]').forEach(btn=>btn.addEventListener('click',()=>openTimeEditModal(btn.getAttribute('data-edit-time-ticket'))));
         target.querySelectorAll('[data-client-notes-primary]').forEach(link=>link.addEventListener('click',()=>openClientNotesModal(link.getAttribute('data-client-notes-primary'),link.getAttribute('data-client-notes-secondary')||'')));
         target.querySelectorAll('[data-job-notes-ticket]').forEach(link=>link.addEventListener('click',()=>openJobNotesModal(link.getAttribute('data-job-notes-ticket'))));
+        target.querySelectorAll('[data-time-record-ticket]').forEach(link=>link.addEventListener('click',()=>openTimeRecordModal(link.getAttribute('data-time-record-ticket'))));
         target.querySelectorAll('[data-copy-title]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();copyJobTitle(btn.getAttribute('data-copy-title')||'')}));
       }
       function openTimeEditModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;timeEditTicket=String(ticket);document.getElementById('timeEditModalJob').textContent=job.title||job.displayTitle||'';document.getElementById('timeAccruedInput').value=getTimeAccruedHours(job).toFixed(2);document.getElementById('estimatedRemainingInput').value=Number(job.hours??job.estimatedHoursRemaining??0).toFixed(2);document.getElementById('timeEditModalBackdrop').classList.add('open');document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'))}
@@ -907,6 +947,76 @@
         document.getElementById('clientNotesModalBackdrop').classList.add('open')
       }
       function openJobNotesModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;jobNotesTicket=String(ticket);document.getElementById('jobNotesModalJob').textContent=job.title||job.displayTitle||'';const textarea=document.getElementById('jobNotesTextarea');textarea.value=String(job.notes||'');textarea.readOnly=true;document.getElementById('editJobNotesBtn').style.display='inline-block';document.getElementById('doneJobNotesBtn').style.display='none';document.getElementById('jobNotesModalBackdrop').classList.add('open')}
+      function formatSessionDuration(minutes){
+        const totalSeconds=Math.max(0,Math.round(Number(minutes||0)*60));
+        const h=Math.floor(totalSeconds/3600),m=Math.floor((totalSeconds%3600)/60),sec=totalSeconds%60;
+        if(h)return `${h}h ${m}m ${sec}s`;
+        if(m)return `${m}m ${sec}s`;
+        return `${sec}s`;
+      }
+      function parseBackendDateTime(value){
+        if(!value)return null;
+        const d=new Date(value);
+        return isNaN(d.getTime())?null:d;
+      }
+      function formatSessionDateTime(value){
+        const d=parseBackendDateTime(value);if(!d)return '—';
+        return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+      }
+      function toDateTimeLocalValue(value){
+        const d=parseBackendDateTime(value);if(!d)return '';
+        const pad=n=>String(n).padStart(2,'0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      }
+      function workSetLabel(set){return set.workSetType==='Change Order'?`Change Order #${Number(set.changeOrderNumber||0)}`:'Initial Draft'}
+      function renderTimeRecordModal(){
+        const body=document.getElementById('timeRecordModalBody');
+        const ticket=Number(timeRecordTicket);const job=jobs.find(j=>Number(j.ticketNumber)===ticket);
+        if(!job){body.innerHTML='<div class="time-record-empty">Job not found.</div>';return}
+        const sessions=workSessions.filter(s=>Number(s.ticketNumber)===ticket).slice().sort((a,b)=>String(a.punchIn).localeCompare(String(b.punchIn)));
+        const sets=workSets.filter(set=>Number(set.ticketNumber)===ticket).slice().sort((a,b)=>{
+          if(a.workSetType!==b.workSetType)return a.workSetType==='Initial Draft'?-1:1;
+          return Number(a.changeOrderNumber||0)-Number(b.changeOrderNumber||0);
+        });
+        const total=sessions.filter(s=>s.punchOut).reduce((sum,s)=>sum+Number(s.durationMinutes||0),0);
+        let html=`<div class="time-record-summary"><strong>Total Recorded Time</strong><strong>${formatSessionDuration(total)}</strong></div>`;
+        if(!sessions.length){body.innerHTML=html+'<div class="time-record-empty">No punches have been recorded for this job yet.</div>';return}
+        const represented=new Set();
+        sets.forEach(set=>{
+          const group=sessions.filter(s=>s.workSetId===set.workSetId);if(!group.length)return;represented.add(set.workSetId);
+          const subtotal=group.filter(s=>s.punchOut).reduce((sum,s)=>sum+Number(s.durationMinutes||0),0);
+          html+=`<section class="time-record-set"><div class="time-record-set-head"><div class="time-record-set-title">${escapeHtml(workSetLabel(set))}</div><div class="time-record-description">${escapeHtml(set.workDescription||'')}</div></div>`;
+          group.forEach(session=>{
+            const active=!session.punchOut;
+            const timeText=active?`${formatSessionDateTime(session.punchIn)} – Active`:`${formatSessionDateTime(session.punchIn)} – ${formatSessionDateTime(session.punchOut)}`;
+            html+=`<div class="time-record-session"><div class="time-record-session-time">${escapeHtml(timeText)}</div><div class="time-record-session-duration">${active?'<span class="time-record-active">Currently Punched In</span>':escapeHtml(formatSessionDuration(session.durationMinutes))}</div><div>${active?'':`<button class="time-record-edit" type="button" data-edit-punch-session="${escapeHtml(session.sessionId)}">Edit</button>`}</div></div>`;
+          });
+          html+=`<div class="time-record-set-total">${escapeHtml(workSetLabel(set))} Total: ${escapeHtml(formatSessionDuration(subtotal))}</div></section>`;
+        });
+        const ungrouped=sessions.filter(s=>!s.workSetId||!represented.has(s.workSetId));
+        if(ungrouped.length){
+          const subtotal=ungrouped.filter(s=>s.punchOut).reduce((sum,s)=>sum+Number(s.durationMinutes||0),0);
+          html+='<section class="time-record-set"><div class="time-record-set-head"><div class="time-record-set-title">Other / Legacy Sessions</div></div>';
+          ungrouped.forEach(session=>{const active=!session.punchOut;const timeText=active?`${formatSessionDateTime(session.punchIn)} – Active`:`${formatSessionDateTime(session.punchIn)} – ${formatSessionDateTime(session.punchOut)}`;html+=`<div class="time-record-session"><div class="time-record-session-time">${escapeHtml(timeText)}</div><div class="time-record-session-duration">${active?'<span class="time-record-active">Currently Punched In</span>':escapeHtml(formatSessionDuration(session.durationMinutes))}</div><div>${active?'':`<button class="time-record-edit" type="button" data-edit-punch-session="${escapeHtml(session.sessionId)}">Edit</button>`}</div></div>`});
+          html+=`<div class="time-record-set-total">Other Total: ${escapeHtml(formatSessionDuration(subtotal))}</div></section>`;
+        }
+        body.innerHTML=html;
+        body.querySelectorAll('[data-edit-punch-session]').forEach(btn=>btn.addEventListener('click',()=>openEditPunchModal(btn.getAttribute('data-edit-punch-session'))));
+      }
+      function openTimeRecordModal(ticket){
+        const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;
+        timeRecordTicket=String(ticket);document.getElementById('timeRecordModalJob').textContent=job.title||job.displayTitle||'';renderTimeRecordModal();document.getElementById('timeRecordModalBackdrop').classList.add('open');
+      }
+      function openEditPunchModal(sessionId){
+        const session=workSessions.find(s=>s.sessionId===sessionId);if(!session)return;
+        if(!session.punchOut){alert('An active punch cannot be edited. Punch out first, then edit the completed session.');return}
+        editPunchSessionId=sessionId;const job=jobs.find(j=>Number(j.ticketNumber)===Number(session.ticketNumber));
+        document.getElementById('editPunchModalJob').textContent=job?(job.title||job.displayTitle||''):('Ticket '+session.ticketNumber);
+        document.getElementById('editPunchInInput').value=toDateTimeLocalValue(session.punchIn);
+        document.getElementById('editPunchOutInput').value=toDateTimeLocalValue(session.punchOut);
+        document.getElementById('editPunchModalBackdrop').classList.add('open');
+      }
+
       function openJobTitleModal(ticket){
         const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));
         if(!job)return;
@@ -1197,6 +1307,23 @@
       document.getElementById('closeClientNotesBtn').addEventListener('click',()=>{clientNotesTarget=null;document.getElementById('clientNotesModalBackdrop').classList.remove('open')});
       document.getElementById('editJobNotesBtn').addEventListener('click',()=>{const textarea=document.getElementById('jobNotesTextarea');textarea.readOnly=false;textarea.focus();document.getElementById('editJobNotesBtn').style.display='none';document.getElementById('doneJobNotesBtn').style.display='inline-block'});
       document.getElementById('doneJobNotesBtn').addEventListener('click',async()=>{const job=jobs.find(j=>String(j.ticketNumber||'')===jobNotesTicket);if(!job)return;const textarea=document.getElementById('jobNotesTextarea');const notes=textarea.value;try{const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,dueDate:job.due||job.dueDate,estimatedHoursRemaining:Number(job.hours??job.estimatedHoursRemaining??0),timeAccruedHours:getTimeAccruedHours(job),notes});if(!data.success)throw new Error(data.error||'Unable to save job notes');job.notes=notes;textarea.readOnly=true;document.getElementById('editJobNotesBtn').style.display='inline-block';document.getElementById('doneJobNotesBtn').style.display='none'}catch(err){alert(err.message)}});
+      document.getElementById('closeTimeRecordBtn').addEventListener('click',()=>{timeRecordTicket='';document.getElementById('timeRecordModalBackdrop').classList.remove('open')});
+      document.getElementById('cancelPunchEditBtn').addEventListener('click',()=>{editPunchSessionId='';document.getElementById('editPunchModalBackdrop').classList.remove('open')});
+      document.getElementById('savePunchEditBtn').addEventListener('click',async()=>{
+        const session=workSessions.find(s=>s.sessionId===editPunchSessionId);if(!session)return;
+        const inValue=document.getElementById('editPunchInInput').value;const outValue=document.getElementById('editPunchOutInput').value;
+        const punchIn=new Date(inValue),punchOut=new Date(outValue);
+        if(!inValue||!outValue||isNaN(punchIn.getTime())||isNaN(punchOut.getTime())){alert('Enter both Punch In and Punch Out times.');return}
+        if(punchOut<=punchIn){alert('Punch Out must be later than Punch In.');return}
+        const saveBtn=document.getElementById('savePunchEditBtn');saveBtn.disabled=true;saveBtn.textContent='Saving…';
+        try{
+          const data=await apiPost({action:'editWorkSession',sessionId:session.sessionId,punchInMs:punchIn.getTime(),punchOutMs:punchOut.getTime()});
+          if(!data.success)throw new Error(data.error||'Unable to edit punch');
+          session.punchIn=data.session.punchIn;session.punchOut=data.session.punchOut;session.durationMinutes=Number(data.session.durationMinutes||0);
+          const job=jobs.find(j=>Number(j.ticketNumber)===Number(session.ticketNumber));if(job&&data.timeAccruedHours!==undefined)setTimeAccruedHours(job,Number(data.timeAccruedHours||0));
+          document.getElementById('editPunchModalBackdrop').classList.remove('open');editPunchSessionId='';renderTimeRecordModal();renderQueue();renderBoard();
+        }catch(err){alert('Punch edit could not be saved: '+err.message)}finally{saveBtn.disabled=false;saveBtn.textContent='Save'}
+      });
       document.getElementById('closeJobNotesBtn').addEventListener('click',()=>{jobNotesTicket='';document.getElementById('jobNotesModalBackdrop').classList.remove('open')});
       document.getElementById('saveDueDateBtn').addEventListener('click',async()=>{const job=jobs.find(j=>String(j.ticketNumber||'')===dueDateEditTicket);const newDue=document.getElementById('dueDateModalInput').value;if(!job||!newDue)return;try{const data=await apiPost({action:'updateJob',ticketNumber:dueDateEditTicket,status:job.status,dueDate:newDue});if(!data.success)throw new Error(data.error||'Unable to update due date');job.dueDate=newDue;job.due=newDue;document.getElementById('dueDateModalBackdrop').classList.remove('open');dueDateEditTicket='';renderQueue();renderBoard()}catch(err){alert(err.message)}});
       document.getElementById('saveFollowUpDateBtn').addEventListener('click',async()=>{const job=jobs.find(j=>String(j.ticketNumber||'')===followUpDateEditTicket);const newFollowUp=document.getElementById('followUpDateModalInput').value;if(!job||!newFollowUp)return;try{const data=await apiPost({action:'updateJob',ticketNumber:followUpDateEditTicket,status:job.status,dueDate:job.due||job.dueDate,followUpDate:newFollowUp});if(!data.success)throw new Error(data.error||'Unable to update follow up date');job.followUpDate=newFollowUp;document.getElementById('followUpDateModalBackdrop').classList.remove('open');followUpDateEditTicket='';renderBoard()}catch(err){alert(err.message)}});
