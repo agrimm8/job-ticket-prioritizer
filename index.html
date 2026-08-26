@@ -901,7 +901,8 @@
           const effectiveHours=newStatus==='Client Review'?0:Number(job.hours??job.estimatedHoursRemaining??0);
           const data=await apiPost({action:'updateJob',ticketNumber:ticket,status:newStatus,dueDate:newDue,followUpDate:newFollowUp,estimatedHoursRemaining:effectiveHours});
           if(!data.success)throw new Error(data.error||'Unable to update job');
-          job.status=newStatus;job.dueDate=newDue;job.due=newDue;job.followUpDate=newFollowUp;job.hours=effectiveHours;job.estimatedHoursRemaining=effectiveHours;
+          const savedDue=data.dueDate||newDue;
+          job.status=newStatus;job.dueDate=savedDue;job.due=savedDue;job.followUpDate=newFollowUp;job.hours=effectiveHours;job.estimatedHoursRemaining=effectiveHours;
           if(newStatus==='Client Review'){
             const state=ensureTimerState(job);
             state.running=false;state.remaining=0;state.overtime=0;state.blockStartRemaining=0;state.blockStartOvertime=0;state.committedSeconds=0;
