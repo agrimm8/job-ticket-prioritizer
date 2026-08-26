@@ -68,6 +68,9 @@
     #job-priority-app .timer-tools{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap}
     #job-priority-app .timer-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;min-width:22px;min-height:22px;padding:3px;border-radius:6px}
     #job-priority-app .timer-btn svg{display:block;width:14px;height:14px}
+    #job-priority-app .timer-btn:disabled{cursor:wait;opacity:.82}
+    #job-priority-app .timer-spinner{display:block;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:punchSpin .65s linear infinite}
+    @keyframes punchSpin{to{transform:rotate(360deg)}}
     #job-priority-app .timer-readout{font-size:10px;font-weight:800;min-width:54px}
     #job-priority-app .reset-block-link{display:inline-block;margin-top:2px;font-size:9px;color:inherit;text-decoration:underline;cursor:pointer;opacity:.72}
     #job-priority-app .reset-block-link:hover{opacity:1}
@@ -350,6 +353,7 @@
       let holidayCalendar=[];
       let activeWorkSession=null;
       let pendingPunchTimerKey='';
+      const pendingPunchKeys=new Set();
       const workContextByKey={};
       let activeTimerKey='';
       let activeTimerInterval=null;
@@ -609,6 +613,7 @@
       const COPY_ICON='<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="Layer_2" data-name="Layer 2"><path d="m14 22.75h-9a2.752 2.752 0 0 1 -2.75-2.75v-10.86a2.752 2.752 0 0 1 2.75-2.75h3a.75.75 0 0 1 0 1.5h-3a1.251 1.251 0 0 0 -1.25 1.25v10.86a1.252 1.252 0 0 0 1.25 1.25h9a1.252 1.252 0 0 0 1.25-1.25v-3a.75.75 0 0 1 1.5 0v3a2.752 2.752 0 0 1 -2.75 2.75z" fill="#7fbde7"/><path d="m19 17.75h-9a2.752 2.752 0 0 1 -2.75-2.75v-11a2.752 2.752 0 0 1 2.75-2.75h9a2.752 2.752 0 0 1 2.75 2.75v11a2.752 2.752 0 0 1 -2.75 2.75zm-9-15a1.252 1.252 0 0 0 -1.25 1.25v11a1.252 1.252 0 0 0 1.25 1.25h9a1.252 1.252 0 0 0 1.25-1.25v-11a1.252 1.252 0 0 0 -1.25-1.25z" fill="#232323"/></g></svg>';
       const PUNCH_IN_ICON='<svg id="Capa_1" enable-background="new 0 0 512 512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><g><path d="m481.095 511.774h-450.19c-17.068 0-30.905-13.837-30.905-30.906v-449.736c0-17.069 13.837-30.906 30.905-30.906h450.189c17.069 0 30.906 13.837 30.906 30.906v449.736c0 17.069-13.837 30.906-30.905 30.906z" fill="#9be69d"/><path d="m481.095.226h-41.207c17.069 0 30.905 13.837 30.905 30.905v449.736c0 17.069-13.837 30.905-30.905 30.905h41.207c17.069 0 30.905-13.837 30.905-30.905v-449.735c0-17.069-13.837-30.906-30.905-30.906z" fill="#6fd7a3"/><path d="m383.823 242.578c10.332 5.965 10.332 20.878 0 26.843l-120.074 69.325-120.074 69.325c-10.332 5.965-23.247-1.491-23.247-13.422v-138.649-138.649c0-11.93 12.915-19.387 23.247-13.422l120.074 69.325z" fill="#fff"/></g></svg>';
       const PUNCH_OUT_ICON='<svg id="Capa_1" enable-background="new 0 0 497 497" viewBox="0 0 497 497" xmlns="http://www.w3.org/2000/svg"><g><path d="m248.5 0v497c137.243 0 248.5-111.257 248.5-248.5s-111.257-248.5-248.5-248.5z" fill="#ff3e3a"/><path d="m467 248.5c0-137.243-97.826-248.5-218.5-248.5-137.243 0-248.5 111.257-248.5 248.5s111.257 248.5 248.5 248.5c120.674 0 218.5-111.257 218.5-248.5z" fill="#ff5d34"/><path d="m329.752 138.243h-30v220.513h30c16.569 0 30-13.431 30-30v-160.513c0-16.568-13.431-30-30-30z" fill="#c4f3ff"/><path d="m329.752 328.757v-160.514c0-16.569-13.431-30-30-30h-130.513c-16.569 0-30 13.431-30 30v160.513c0 16.569 13.431 30 30 30h130.513c16.569.001 30-13.431 30-29.999z" fill="#fff"/></g></svg>';
+      const PUNCH_LOADING_ICON='<span class="timer-spinner" aria-hidden="true"></span>';
       function timerKeyFor(j){return String(j.ticketNumber||j.displayTitle||j.title)}
       function recommendedWorkSeconds(j){
         const h=j.status==='To Be Invoiced'?.1667:Number(j.hours??j.estimatedHoursRemaining??0);
@@ -824,7 +829,30 @@
         stopTimerInterval(); activeTimerKey=key; if(!timerState[key])return; lastActivityAt=Date.now(); resetNoJobTimer(); const state=timerState[key];state.running=true;state.blockStartRemaining=state.remaining;state.blockStartOvertime=state.overtime||0;state.committedSeconds=0;
         activeTimerInterval=setInterval(async()=>{const state=timerState[key];if(!state||!state.running)return;if(state.remaining>0){state.remaining=Math.max(0,state.remaining-1);if(state.remaining<=0){state.running=false;stopTimerInterval();await commitElapsedTime(key);await closeActiveWorkSession();activeTimerKey='';resetNoJobTimer();renderQueue();renderBoard();showTimerComplete(key);return}}else{state.overtime=(state.overtime||0)+1}renderQueue()},1000); renderQueue();
       }
-      async function pauseTimer(key){if(timerState[key])timerState[key].running=false;if(activeTimerKey===key){stopTimerInterval();activeTimerKey=''}await commitElapsedTime(key);await closeActiveWorkSession();resetNoJobTimer();renderQueue();renderBoard()}
+      async function pauseTimer(key){
+        if(pendingPunchKeys.has(key))return false;
+        const state=timerState[key];
+        if(!state)return false;
+        pendingPunchKeys.add(key);
+        renderQueue();
+        const wasRunning=!!state.running;
+        try{
+          state.running=false;
+          if(activeTimerKey===key){stopTimerInterval();activeTimerKey=''}
+          await commitElapsedTime(key);
+          const closed=await closeActiveWorkSession();
+          if(!closed){
+            if(wasRunning)await startTimerInternal(key);
+            return false;
+          }
+          resetNoJobTimer();
+          return true;
+        }finally{
+          pendingPunchKeys.delete(key);
+          renderQueue();
+          renderBoard();
+        }
+      }
       function resetBlock(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;const state=ensureTimerState(job);state.remaining=recommendedWorkSeconds(job);state.overtime=0;state.blockStartRemaining=state.remaining;state.blockStartOvertime=0;state.committedSeconds=0;renderQueue();renderBoard()}
       function showTimerComplete(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;completedTimerKey=key;document.getElementById('timerModalMessage').textContent=`Allotted Time for ${job.title||job.displayTitle} is Complete.`;document.getElementById('timerModalBackdrop').classList.add('open')}
       function getWSIWONJobs(){
@@ -845,9 +873,9 @@
         if(!active.length){document.getElementById('eodMessage').style.display='block';q.innerHTML='<div class="muted">No actionable jobs.</div>';return}
         const dueToday=active.filter(j=>effectiveDueDate(j)===todayValue); const later=active.filter(j=>effectiveDueDate(j)!==todayValue);
         document.getElementById('eodMessage').style.display=dueToday.length?'none':'block';
-        const addQueueItem=(j,i)=>{const overdue=isOverdueJob(j); const dueValue=effectiveDueDate(j); const dueDays=Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000); let urgencyTag=''; if(overdue){urgencyTag='<span class="card-tag overdue">Overdue</span>'} else if(dueDays<=0){urgencyTag='<span class="card-tag urgent">Due Today</span>'} else if(dueDays<=1){urgencyTag='<span class="card-tag soon">Due Soon</span>'} const invoiceTag=j.status==='To Be Invoiced'?'<span class="card-tag invoice">To Be Invoiced</span>':''; const tags=invoiceTag+urgencyTag; const title=j.title||j.displayTitle; const hours=j.status==='To Be Invoiced'?.1667:Number(j.hours??j.estimatedHoursRemaining??0); const accrued=getTimeAccruedHours(j); const key=timerKeyFor(j); const jobTimer=ensureTimerState(j); const timerLabel=jobTimer.running?PUNCH_OUT_ICON:PUNCH_IN_ICON; const timerActionLabel=jobTimer.running?'Punch Out':'Punch In'; const ticket=escapeHtml(String(j.ticketNumber||'')); const current=escapeHtml(j.status); const clientId=escapeHtml(String(j.primaryClientId||j.primaryClientID||j.clientId||'')); const secondaryClientId=escapeHtml(String(j.secondaryClientId||'')); const row=document.createElement('div');row.className='queue-item'+(jobTimer.running?' timer-active':'');row.innerHTML=`<div class="rank-stack"><div class="rank">${i+1}</div><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}"><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button><button type="button" data-edit-time-ticket="${ticket}">Edit Time Accrued</button><button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div><button class="secondary timer-btn" type="button" data-timer-key="${escapeHtml(key)}" aria-label="${timerActionLabel}" title="${timerActionLabel}">${timerLabel}</button></div><div><div class="title-copy-row"><div class="qtitle">${escapeHtml(title)}</div><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<div><a class="client-notes-link" data-client-notes-primary="${clientId}" data-client-notes-secondary="${secondaryClientId}">View Client Notes</a> <span class="muted">·</span> <a class="client-notes-link" data-job-notes-ticket="${ticket}">Job Notes</a></div><div class="qmeta">Due Date: ${formatDate(dueValue)}</div><div class="qmeta">Time Accrued: ${formatHours(accrued)}</div><div class="qmeta">Estimated Time Remaining: ${formatHours(hours)}</div><div class="qmeta">Block Remaining: <span class="timer-readout">${formatBlockTime(jobTimer)}</span></div><a class="reset-block-link" data-reset-block="${escapeHtml(key)}">Reset Block</a></div>`;q.appendChild(row)};
+        const addQueueItem=(j,i)=>{const overdue=isOverdueJob(j); const dueValue=effectiveDueDate(j); const dueDays=Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000); let urgencyTag=''; if(overdue){urgencyTag='<span class="card-tag overdue">Overdue</span>'} else if(dueDays<=0){urgencyTag='<span class="card-tag urgent">Due Today</span>'} else if(dueDays<=1){urgencyTag='<span class="card-tag soon">Due Soon</span>'} const invoiceTag=j.status==='To Be Invoiced'?'<span class="card-tag invoice">To Be Invoiced</span>':''; const tags=invoiceTag+urgencyTag; const title=j.title||j.displayTitle; const hours=j.status==='To Be Invoiced'?.1667:Number(j.hours??j.estimatedHoursRemaining??0); const accrued=getTimeAccruedHours(j); const key=timerKeyFor(j); const jobTimer=ensureTimerState(j); const punchPending=pendingPunchKeys.has(key); const timerLabel=punchPending?PUNCH_LOADING_ICON:(jobTimer.running?PUNCH_OUT_ICON:PUNCH_IN_ICON); const timerActionLabel=punchPending?'Saving…':(jobTimer.running?'Punch Out':'Punch In'); const ticket=escapeHtml(String(j.ticketNumber||'')); const current=escapeHtml(j.status); const clientId=escapeHtml(String(j.primaryClientId||j.primaryClientID||j.clientId||'')); const secondaryClientId=escapeHtml(String(j.secondaryClientId||'')); const row=document.createElement('div');row.className='queue-item'+(jobTimer.running?' timer-active':'');row.innerHTML=`<div class="rank-stack"><div class="rank">${i+1}</div><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}"><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button><button type="button" data-edit-time-ticket="${ticket}">Edit Time Accrued</button><button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div><button class="secondary timer-btn" type="button" data-timer-key="${escapeHtml(key)}" aria-label="${timerActionLabel}" title="${timerActionLabel}" ${punchPending?'disabled':''}>${timerLabel}</button></div><div><div class="title-copy-row"><div class="qtitle">${escapeHtml(title)}</div><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<div><a class="client-notes-link" data-client-notes-primary="${clientId}" data-client-notes-secondary="${secondaryClientId}">View Client Notes</a> <span class="muted">·</span> <a class="client-notes-link" data-job-notes-ticket="${ticket}">Job Notes</a></div><div class="qmeta">Due Date: ${formatDate(dueValue)}</div><div class="qmeta">Time Accrued: ${formatHours(accrued)}</div><div class="qmeta">Estimated Time Remaining: ${formatHours(hours)}</div><div class="qmeta">Block Remaining: <span class="timer-readout">${formatBlockTime(jobTimer)}</span></div><a class="reset-block-link" data-reset-block="${escapeHtml(key)}">Reset Block</a></div>`;q.appendChild(row)};
         dueToday.forEach((j,i)=>addQueueItem(j,i)); const divider=document.createElement('div');divider.className='eod-divider';divider.textContent='End of Day · 10:00 PM';q.appendChild(divider); later.forEach((j,i)=>addQueueItem(j,dueToday.length+i));
-        q.querySelectorAll('[data-timer-key]').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.getAttribute('data-timer-key');const state=timerState[key];if(state&&state.running)pauseTimer(key);else requestStartTimer(key)}));
+        q.querySelectorAll('[data-timer-key]').forEach(btn=>btn.addEventListener('click',async()=>{const key=btn.getAttribute('data-timer-key');if(pendingPunchKeys.has(key))return;const state=timerState[key];if(state&&state.running)await pauseTimer(key);else await requestStartTimer(key)}));
         q.querySelectorAll('[data-reset-block]').forEach(link=>link.addEventListener('click',e=>{e.stopPropagation();resetBlock(link.getAttribute('data-reset-block')||'')}));
         q.querySelectorAll('[data-copy-title]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();copyJobTitle(btn.getAttribute('data-copy-title')||'')}));
         q.querySelectorAll('[data-menu-ticket]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const ticket=btn.getAttribute('data-menu-ticket');const menu=q.querySelector(`[data-move-menu="${ticket}"]`);document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>{if(m!==menu)m.classList.remove('open')});menu.classList.toggle('open')}));
@@ -1106,19 +1134,36 @@
       });
       document.getElementById('punchInStartBtn').addEventListener('click',async()=>{
         const key=pendingPunchTimerKey;
-        if(!key)return;
+        if(!key||pendingPunchKeys.has(key))return;
         const workType=document.getElementById('punchInWorkType').value;
         const workDescription=document.getElementById('punchInWorkDescription').value.trim();
         if(!workType||!workDescription)return;
-        if(activeTimerKey&&activeTimerKey!==key){
-          const oldKey=activeTimerKey;
-          await pauseTimer(oldKey);
+        const startBtn=document.getElementById('punchInStartBtn');
+        const cancelBtn=document.getElementById('punchInCancelBtn');
+        pendingPunchKeys.add(key);
+        startBtn.disabled=true;
+        cancelBtn.disabled=true;
+        startBtn.textContent='Punching In…';
+        renderQueue();
+        try{
+          if(activeTimerKey&&activeTimerKey!==key){
+            const oldKey=activeTimerKey;
+            const paused=await pauseTimer(oldKey);
+            if(!paused)return;
+          }
+          const started=await beginWorkSessionForKey(key,workType,workDescription);
+          if(!started)return;
+          document.getElementById('punchInModalBackdrop').classList.remove('open');
+          pendingPunchTimerKey='';
+          await startTimerInternal(key);
+        }finally{
+          pendingPunchKeys.delete(key);
+          startBtn.textContent='Punch In & Start Timer';
+          cancelBtn.disabled=false;
+          if(document.getElementById('punchInModalBackdrop').classList.contains('open'))updatePunchInSubmitState();
+          renderQueue();
+          renderBoard();
         }
-        const started=await beginWorkSessionForKey(key,workType,workDescription);
-        if(!started)return;
-        document.getElementById('punchInModalBackdrop').classList.remove('open');
-        pendingPunchTimerKey='';
-        startTimerInternal(key);
       });
       document.getElementById('noJobOkBtn').addEventListener('click',()=>{document.getElementById('noJobModalBackdrop').classList.remove('open');resetNoJobTimer()});
       document.getElementById('cancelJobTimeBtn').addEventListener('click',()=>{timeEditTicket='';document.getElementById('timeEditModalBackdrop').classList.remove('open')});
