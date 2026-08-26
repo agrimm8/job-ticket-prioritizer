@@ -483,8 +483,10 @@
       function completedJobsForMonth(monthKey){
         return jobs.filter(j=>timestampMonthKey(j.completedAt)===monthKey);
       }
+      const ACTIVE_QUEUE_KPI_START_DATE='2026-09-01';
       function averageTrackedQueueHours(monthKey){
-        const completed=completedJobsForMonth(monthKey);
+        const completed=completedJobsForMonth(monthKey)
+          .filter(j=>String(j.completedAt||'').slice(0,10)>=ACTIVE_QUEUE_KPI_START_DATE);
         const values=completed
           .map(j=>queueHoursForCompletedTicket(j.ticketNumber,j.completedAt))
           .filter(v=>v!==null&&Number.isFinite(v));
@@ -535,7 +537,9 @@
 
         const currentQueue=averageTrackedQueueHours(currentKey);
         const previousQueue=averageTrackedQueueHours(previousKey);
-        document.getElementById('queueTimeKpiCurrent').textContent=currentQueue.average===null?'—':currentQueue.average.toFixed(1);
+        const todayKey=todayISO();
+        const queueTrackingStarted=todayKey>=ACTIVE_QUEUE_KPI_START_DATE;
+        document.getElementById('queueTimeKpiCurrent').textContent=!queueTrackingStarted||currentQueue.average===null?'—':currentQueue.average.toFixed(1);
         document.getElementById('queueTimeKpiPrevious').textContent=previousQueue.average===null
           ? 'Last month: No tracked history'
           : 'Last month: '+previousQueue.average.toFixed(1)+' hrs / job ('+previousQueue.count+' jobs)';
@@ -543,9 +547,11 @@
         const notes=document.querySelectorAll('#kpiStrip .kpi-note');
         const queueNote=notes[1];
         if(queueNote){
-          queueNote.textContent=currentQueue.average===null
-            ? 'Queue-time tracking begins with tickets that have complete Status History. To Be Invoiced time is excluded.'
-            : 'Based on '+currentQueue.count+' completed tracked job'+(currentQueue.count===1?'':'s')+' this month · max 10 hrs per weekday · weekends/holidays excluded except actual punched work · To Be Invoiced excluded';
+          queueNote.textContent=!queueTrackingStarted
+            ? 'Tracking begins September 1, 2026.'
+            : currentQueue.average===null
+              ? 'Queue-time tracking begins with completed tickets on or after September 1, 2026 that have complete Status History. To Be Invoiced time is excluded.'
+              : 'Based on '+currentQueue.count+' completed tracked job'+(currentQueue.count===1?'':'s')+' this month · max 10 hrs per weekday · weekends/holidays excluded except actual punched work · To Be Invoiced excluded';
         }
 
         const currentOverdue=overdueJobDaysForMonth(currentKey);
