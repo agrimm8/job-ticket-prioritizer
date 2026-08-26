@@ -16,6 +16,14 @@
     #job-priority-app .backend-status{display:inline-flex;align-items:center;gap:6px;margin-top:7px;padding:5px 8px;border-radius:999px;background:light-dark(#e9f6ee,#173a29);font-size:10px;font-weight:700}
     #job-priority-app .backend-dot{width:8px;height:8px;border-radius:999px;background:#b66a00}
     #job-priority-app .backend-status a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+    #job-priority-app .top-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    #job-priority-app .idle-alarm-control{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:750;white-space:nowrap}
+    #job-priority-app .idle-alarm-switch{position:relative;display:inline-block;width:42px;height:24px}
+    #job-priority-app .idle-alarm-switch input{opacity:0;width:0;height:0}
+    #job-priority-app .idle-alarm-slider{position:absolute;cursor:pointer;inset:0;border-radius:999px;background:light-dark(#b9b9b4,#555);transition:.2s}
+    #job-priority-app .idle-alarm-slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:.2s}
+    #job-priority-app .idle-alarm-switch input:checked+.idle-alarm-slider{background:#b42318}
+    #job-priority-app .idle-alarm-switch input:checked+.idle-alarm-slider:before{transform:translateX(18px)}
     #job-priority-app .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
     #job-priority-app .kpi-strip{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
     #job-priority-app .new-job-panel{grid-column:1}
@@ -117,7 +125,16 @@
   <div class="wrap">
     <div class="top">
       <div><h1>Job Ticket Prioritizer</h1><p class="sub">Live ticket creation, automatic due-date rules, statuses, and priority ranking.</p><div class="backend-status"><span class="backend-dot" id="backendDot"></span><span id="backendText">Connecting to Google Sheets…</span><span>· <a href="https://docs.google.com/spreadsheets/d/11PBs4KyIzJFDdBXQAWEXuKaxWxCrQJtmUhB7-PYmp14/edit" target="_blank" rel="noopener noreferrer">open sheet</a></span></div></div>
-      <button class="secondary" id="reloadBtn" type="button">Reload Data</button>
+      <div class="top-controls">
+        <div class="idle-alarm-control" title="When switched on, the idle warning remains visible but makes no sound.">
+          <label class="idle-alarm-switch" for="idleAlarmOffToggle">
+            <input id="idleAlarmOffToggle" type="checkbox" role="switch" aria-label="Turn idle alarm sound off">
+            <span class="idle-alarm-slider"></span>
+          </label>
+          <span id="idleAlarmStateLabel">Idle Alarm On</span>
+        </div>
+        <button class="secondary" id="reloadBtn" type="button">Reload Data</button>
+      </div>
     </div>
 
     <div class="grid">
@@ -345,6 +362,8 @@
       let systemIdlePermissionRequested=false;
       let noJobTimerStartedAt=Date.now();
       let noJobAlertOpen=false;
+      let idleAlarmMuted=false;
+      let idleAlarmRepeatInterval=null;
       let timeEditTicket='';
       let jobNotesTicket='';
       let copyToastTimer=null;
@@ -595,7 +614,7 @@
       function formatBlockTime(state){return state.overtime>0?`+${formatCountdown(state.overtime)}`:formatCountdown(state.remaining)}
       function defaultFollowUpDate(){return iso(addWorkdays(today(),5))}
       function stopTimerInterval(){if(activeTimerInterval){clearInterval(activeTimerInterval);activeTimerInterval=null}}
-      function playIdleAlertTone(){
+      function playNotificationTone(){
         try{
           const AudioContextClass=window.AudioContext||window.webkitAudioContext;if(!AudioContextClass)return;
           const ctx=new AudioContextClass();const now=ctx.currentTime;
@@ -603,8 +622,54 @@
           setTimeout(()=>ctx.close().catch(()=>{}),700);
         }catch(e){}
       }
+      function playIdleAlarmBurst(){
+        if(idleAlarmMuted||!activeWorkSession||!activeWorkSession.sessionId)return;
+        try{
+          const AudioContextClass=window.AudioContext||window.webkitAudioContext;if(!AudioContextClass)return;
+          const ctx=new AudioContextClass();const now=ctx.currentTime;
+          [0,.27,.54].forEach(delay=>{const osc=ctx.createOscillator();const gain=ctx.createGain();osc.type='sine';osc.frequency.setValueAtTime(880,now+delay);gain.gain.setValueAtTime(.0001,now+delay);gain.gain.exponentialRampToValueAtTime(.45,now+delay+.012);gain.gain.exponentialRampToValueAtTime(.0001,now+delay+.18);osc.connect(gain);gain.connect(ctx.destination);osc.start(now+delay);osc.stop(now+delay+.2)});
+          setTimeout(()=>ctx.close().catch(()=>{}),1100);
+        }catch(e){}
+      }
+      function stopIdleAlarm(){
+        if(idleAlarmRepeatInterval){clearInterval(idleAlarmRepeatInterval);idleAlarmRepeatInterval=null}
+      }
+      function startIdleAlarm(){
+        stopIdleAlarm();
+        if(idleAlarmMuted||!activeWorkSession||!activeWorkSession.sessionId)return;
+        playIdleAlarmBurst();
+        idleAlarmRepeatInterval=setInterval(()=>{
+          const modalOpen=document.getElementById('idlePauseModalBackdrop').classList.contains('open');
+          if(!modalOpen||idleAlarmMuted||!activeWorkSession||!activeWorkSession.sessionId){stopIdleAlarm();return}
+          playIdleAlarmBurst();
+        },3400);
+      }
+      function updateIdleAlarmControl(){
+        const toggle=document.getElementById('idleAlarmOffToggle');
+        const label=document.getElementById('idleAlarmStateLabel');
+        if(toggle)toggle.checked=idleAlarmMuted;
+        if(label)label.textContent=idleAlarmMuted?'Idle Alarm Off':'Idle Alarm On';
+      }
+      function loadIdleAlarmPreference(){
+        try{idleAlarmMuted=localStorage.getItem('jtp-idle-alarm-off')==='1'}catch(e){idleAlarmMuted=false}
+        updateIdleAlarmControl();
+      }
+      function setIdleAlarmMuted(muted){
+        idleAlarmMuted=Boolean(muted);
+        try{localStorage.setItem('jtp-idle-alarm-off',idleAlarmMuted?'1':'0')}catch(e){}
+        updateIdleAlarmControl();
+        if(idleAlarmMuted)stopIdleAlarm();
+        else if(document.getElementById('idlePauseModalBackdrop').classList.contains('open')&&activeWorkSession&&activeWorkSession.sessionId)startIdleAlarm();
+      }
       function stopIdleDurationInterval(){if(idleDurationInterval){clearInterval(idleDurationInterval);idleDurationInterval=null}}
       function updateIdleDuration(){if(!idlePausedAt)return;document.getElementById('idlePauseDuration').textContent=formatCountdown((Date.now()-idlePausedAt)/1000)}
+      function clearIdleWarning(resetActivity=true){
+        stopIdleAlarm();
+        stopIdleDurationInterval();
+        document.getElementById('idlePauseModalBackdrop').classList.remove('open');
+        idlePausedTimerKey='';idlePausedAt=0;idleConsumedSeconds=0;
+        if(resetActivity)lastActivityAt=Date.now();
+      }
       async function ensureSystemIdleDetection(){
         if(systemIdleDetectionState==='active'||systemIdleDetectionState==='fallback')return;
         if(!('IdleDetector' in window)||!window.isSecureContext){systemIdleDetectionState='fallback';return}
@@ -617,7 +682,7 @@
           systemIdleDetector.addEventListener('change',()=>{
             const isSystemIdle=systemIdleDetector.userState==='idle'||systemIdleDetector.screenState==='locked';
             if(!isSystemIdle){lastActivityAt=Date.now();return}
-            if(activeTimerKey&&timerState[activeTimerKey]&&timerState[activeTimerKey].running){
+            if(activeTimerKey&&timerState[activeTimerKey]&&timerState[activeTimerKey].running&&activeWorkSession&&activeWorkSession.sessionId&&activeWorkSession.timerKey===activeTimerKey){
               lastActivityAt=Date.now()-180000;
               showIdlePause(activeTimerKey);
             }
@@ -631,14 +696,14 @@
         }
       }
       function showIdlePause(key){
-        const state=timerState[key];if(!state||!state.running)return;
+        const state=timerState[key];if(!state||!state.running||!activeWorkSession||!activeWorkSession.sessionId||activeWorkSession.timerKey!==key)return;
         const backdrop=document.getElementById('idlePauseModalBackdrop');
         if(backdrop.classList.contains('open'))return;
         const idleSeconds=Math.max(180,Math.floor((Date.now()-lastActivityAt)/1000));
         idlePausedTimerKey=key;idlePausedAt=lastActivityAt;idleConsumedSeconds=idleSeconds;
         updateIdleDuration();stopIdleDurationInterval();idleDurationInterval=setInterval(updateIdleDuration,1000);
-        playIdleAlertTone();
         backdrop.classList.add('open');
+        startIdleAlarm();
       }
       function activeWorkSessionStorageKey(){return 'jtp-active-work-session'}
       function saveActiveWorkSession(session){
@@ -666,6 +731,7 @@
         document.getElementById('punchInStartBtn').disabled=!(type&&description);
       }
       async function closeActiveWorkSession(punchOutAt){
+        clearIdleWarning(true);
         if(!activeWorkSession||!activeWorkSession.sessionId)return true;
         try{
           const payload={action:'endWorkSession',sessionId:activeWorkSession.sessionId};
@@ -987,14 +1053,8 @@
       document.getElementById('reloadBtn').addEventListener('click',loadBackend);
       document.getElementById('continueTimerBtn').addEventListener('click',async()=>{if(!completedTimerKey)return;const key=completedTimerKey;const state=timerState[key];if(!state)return;state.remaining=0;state.overtime=0;state.running=false;const resumed=await resumeWorkSessionForKey(key);if(!resumed){alert('Unable to resume the work session. Use Play to punch in again.');return}document.getElementById('timerModalBackdrop').classList.remove('open');startTimerInternal(key);completedTimerKey=''});
       document.getElementById('reprioritizeBtn').addEventListener('click',async()=>{if(completedTimerKey&&timerState[completedTimerKey])timerState[completedTimerKey].running=false;await closeActiveWorkSession();document.getElementById('timerModalBackdrop').classList.remove('open');completedTimerKey='';activeTimerKey='';stopTimerInterval();renderQueue()});
-      document.getElementById('acknowledgeIdleBtn').addEventListener('click',()=>{
-        document.getElementById('idlePauseModalBackdrop').classList.remove('open');
-        stopIdleDurationInterval();
-        idlePausedTimerKey='';
-        idlePausedAt=0;
-        idleConsumedSeconds=0;
-        lastActivityAt=Date.now();
-      });
+      document.getElementById('acknowledgeIdleBtn').addEventListener('click',()=>clearIdleWarning(true));
+      document.getElementById('idleAlarmOffToggle').addEventListener('change',e=>setIdleAlarmMuted(e.currentTarget.checked));
       document.getElementById('cancelDueDateBtn').addEventListener('click',()=>{dueDateEditTicket='';document.getElementById('dueDateModalBackdrop').classList.remove('open')});
       document.getElementById('cancelJobTitleBtn').addEventListener('click',()=>{
         jobTitleEditTicket='';
@@ -1094,10 +1154,10 @@
       });
       const markActivity=()=>{if(systemIdleDetectionState!=='active')lastActivityAt=Date.now()};
       ['mousemove','mousedown','keydown','touchstart','scroll'].forEach(eventName=>document.addEventListener(eventName,markActivity,{passive:true}));
-      setInterval(()=>{if(systemIdleDetectionState!=='active'&&activeTimerKey&&timerState[activeTimerKey]&&timerState[activeTimerKey].running&&Date.now()-lastActivityAt>=180000)showIdlePause(activeTimerKey)},1000);
-      setInterval(()=>{const activeRunning=activeTimerKey&&timerState[activeTimerKey]&&timerState[activeTimerKey].running;if(activeRunning){resetNoJobTimer();return}if(!noJobAlertOpen&&Date.now()-noJobTimerStartedAt>=300000){noJobAlertOpen=true;playIdleAlertTone();document.getElementById('noJobModalBackdrop').classList.add('open')}},1000);
+      setInterval(()=>{if(systemIdleDetectionState!=='active'&&activeTimerKey&&timerState[activeTimerKey]&&timerState[activeTimerKey].running&&activeWorkSession&&activeWorkSession.sessionId&&activeWorkSession.timerKey===activeTimerKey&&Date.now()-lastActivityAt>=180000)showIdlePause(activeTimerKey)},1000);
+      setInterval(()=>{const activeRunning=activeTimerKey&&timerState[activeTimerKey]&&timerState[activeTimerKey].running;if(activeRunning){resetNoJobTimer();return}if(!noJobAlertOpen&&Date.now()-noJobTimerStartedAt>=300000){noJobAlertOpen=true;playNotificationTone();document.getElementById('noJobModalBackdrop').classList.add('open')}},1000);
       document.addEventListener('click',()=>document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open')));
-      restoreActiveWorkSession();populateClients();renderQueue();renderBoard();loadBackend();
+      loadIdleAlarmPreference();restoreActiveWorkSession();populateClients();renderQueue();renderBoard();loadBackend();
     })();
   </script>
 </div>
