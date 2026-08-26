@@ -925,7 +925,7 @@
           .filter(j=>(j.status==='To Do'||j.status==='In Progress'||j.status==='To Be Invoiced')&&!wsiwonTickets.has(String(j.ticketNumber||'')))
           .sort((a,b)=>new Date(effectiveDueDate(a)+'T00:00:00Z')-new Date(effectiveDueDate(b)+'T00:00:00Z'));
         renderTodo(todo);
-        renderCards('clientReviewList',jobs.filter(j=>j.status==='Client Review').sort((a,b)=>String(a.followUpDate||'9999-12-31').localeCompare(String(b.followUpDate||'9999-12-31'))));
+        renderCards('clientReviewList',jobs.filter(j=>j.status==='Client Review').sort((a,b)=>{const dateCompare=String(a.followUpDate||'9999-12-31').localeCompare(String(b.followUpDate||'9999-12-31'));if(dateCompare!==0)return dateCompare;return Number(a.ticketNumber||Number.MAX_SAFE_INTEGER)-Number(b.ticketNumber||Number.MAX_SAFE_INTEGER)}));
         renderCards('productionList',jobs.filter(j=>j.status==='In Production / Awaiting Vendor'));
         renderCards('completedList',jobs.filter(j=>j.status==='Completed'));
       }
