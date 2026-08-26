@@ -229,7 +229,7 @@
     <div class="timer-modal-backdrop" id="idlePauseModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="idlePauseModalTitle">
       <div class="timer-modal idle-warning-modal">
         <h3 id="idlePauseModalTitle" class="idle-warning-heading"><span class="idle-warning-icon" aria-hidden="true">⚠</span><span>Idle Activity Detected</span></h3>
-        <p>No activity has been detected for at least 3 minutes. Your timer and current punch are still running.</p>
+        <p>No computer activity has been detected for at least 3 minutes. Your timer and current punch are still running.</p>
         <div class="preview idle-warning-box" style="margin-top:12px"><strong>Inactive For</strong><div id="idlePauseDuration" class="ticket-title">3:00</div></div>
         <div class="actions">
           <button class="primary" id="acknowledgeIdleBtn" type="button">Continue Timer</button>
@@ -687,13 +687,13 @@
         if(resetActivity)lastActivityAt=Date.now();
       }
       async function ensureSystemIdleDetection(){
-        if(systemIdleDetectionState==='active'||systemIdleDetectionState==='fallback')return;
-        if(!('IdleDetector' in window)||!window.isSecureContext){systemIdleDetectionState='fallback';return}
+        if(systemIdleDetectionState==='active'||systemIdleDetectionState==='unavailable')return;
+        if(!('IdleDetector' in window)||!window.isSecureContext){systemIdleDetectionState='unavailable';return}
         if(systemIdlePermissionRequested)return;
         systemIdlePermissionRequested=true;
         try{
           const permission=await IdleDetector.requestPermission();
-          if(permission!=='granted'){systemIdleDetectionState='fallback';return}
+          if(permission!=='granted'){systemIdleDetectionState='unavailable';return}
           systemIdleDetector=new IdleDetector();
           systemIdleDetector.addEventListener('change',()=>{
             const isSystemIdle=systemIdleDetector.userState==='idle'||systemIdleDetector.screenState==='locked';
@@ -708,7 +708,7 @@
           lastActivityAt=Date.now();
         }catch(e){
           systemIdleDetector=null;
-          systemIdleDetectionState='fallback';
+          systemIdleDetectionState='unavailable';
         }
       }
       function showIdlePause(key){
@@ -1208,9 +1208,10 @@
           if(!data.success)throw new Error(data.error||'Unable to create job'); jobs.push(data.job); renderQueue(); renderBoard(); document.getElementById('jobForm').reset(); document.getElementById('clientModal').classList.remove('open'); document.getElementById('subclientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; document.getElementById('clientIdAlert').style.display='none'; document.getElementById('clientIdAlert').textContent=''; document.getElementById('newSubclientName').value=''; document.getElementById('newSubclientId').value=''; document.getElementById('subclientIdAlert').style.display='none'; document.getElementById('subclientIdAlert').textContent=''; document.getElementById('dueDate').dataset.manual=''; populateClients(); syncNextId(); document.getElementById('ticketPreview').style.display='none'; document.getElementById('jobNumberWrap').style.display='none';
         }catch(err){alert(err.message)}
       });
-      const markActivity=()=>{if(systemIdleDetectionState!=='active')lastActivityAt=Date.now()};
+      const markActivity=()=>{if(systemIdleDetectionState==='active')lastActivityAt=Date.now()};
       ['mousemove','mousedown','keydown','touchstart','scroll'].forEach(eventName=>document.addEventListener(eventName,markActivity,{passive:true}));
-      setInterval(()=>{if(systemIdleDetectionState!=='active'&&activeTimerKey&&timerState[activeTimerKey]&&timerState[activeTimerKey].running&&activeWorkSession&&activeWorkSession.sessionId&&activeWorkSession.timerKey===activeTimerKey&&Date.now()-lastActivityAt>=180000)showIdlePause(activeTimerKey)},1000);
+      // System-level IdleDetector is the sole source for idle warnings.
+      // If unavailable or permission is denied, no idle warning is triggered.
       setInterval(()=>{const activeRunning=activeTimerKey&&timerState[activeTimerKey]&&timerState[activeTimerKey].running;if(activeRunning){resetNoJobTimer();return}if(!noJobAlertOpen&&Date.now()-noJobTimerStartedAt>=300000){noJobAlertOpen=true;playNotificationTone();document.getElementById('noJobModalBackdrop').classList.add('open')}},1000);
       document.addEventListener('click',()=>document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open')));
       loadIdleAlarmPreference();restoreActiveWorkSession();populateClients();renderQueue();renderBoard();loadBackend();
