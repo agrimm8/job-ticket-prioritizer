@@ -143,6 +143,9 @@
     #job-priority-app .time-record-session-time{font-weight:600}
     #job-priority-app .time-record-session-duration{white-space:nowrap;color:#59636f}
     #job-priority-app .time-record-edit{border:0;background:none;padding:0;color:#2f67b2;text-decoration:underline;cursor:pointer;font:inherit}
+    #job-priority-app .time-record-actions{display:flex;gap:8px;align-items:center}
+    #job-priority-app .time-record-delete{border:0;background:none;padding:0;color:#b42318;text-decoration:underline;cursor:pointer;font:inherit}
+    #job-priority-app .danger{background:#b42318!important;color:#fff!important;border-color:#b42318!important}
     #job-priority-app .time-record-active{display:inline-block;padding:2px 6px;border-radius:999px;background:#dff5e7;color:#17633a;font-weight:700;font-size:11px}
     #job-priority-app .time-record-set-total{padding:8px 13px;text-align:right;font-size:12px;font-weight:700;background:#fbfcfd;border-top:1px solid #e7ebf0}
     #job-priority-app .time-record-empty{padding:18px;text-align:center;color:#6b7280}
@@ -238,10 +241,11 @@
         <h3 id="openSessionRecoveryTitle">Open Work Session Found</h3>
         <p id="openSessionRecoveryMessage"></p>
         <div class="preview" style="margin-top:12px"><div id="openSessionRecoveryDetails" class="meta"></div></div>
-        <p class="muted" style="margin-top:10px">Punch-time editing and corrections will be added in Stage 1.6.</p>
+        <p class="muted" style="margin-top:10px">If this is an old or orphaned punch, you can close it at the time you actually stopped working.</p>
         <div class="actions" style="margin-top:16px">
           <button class="primary" id="resumeOpenSessionBtn" type="button">Resume Session</button>
           <button class="secondary" id="endOpenSessionBtn" type="button">End Session Now</button>
+          <button class="secondary" id="closeOpenAtTimeBtn" type="button">Close at Specific Time</button>
         </div>
       </div>
     </div>
@@ -382,6 +386,26 @@
         <div class="actions"><button class="primary" id="savePunchEditBtn" type="button">Save</button><button class="secondary" id="cancelPunchEditBtn" type="button">Cancel</button></div>
       </div>
     </div>
+    <div class="timer-modal-backdrop" id="deletePunchModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="deletePunchModalTitle">
+      <div class="timer-modal">
+        <h3 id="deletePunchModalTitle">Delete Punch?</h3>
+        <p id="deletePunchModalJob" style="margin-bottom:8px"></p>
+        <div class="preview"><div id="deletePunchModalDetails" class="meta"></div></div>
+        <p id="deletePunchImpact" class="time-record-edit-note" style="margin-top:10px"></p>
+        <p class="time-record-edit-note">The deleted punch will be preserved in Punch Edit History for audit purposes. Its Work Set will remain intact.</p>
+        <div class="actions"><button class="danger" id="confirmDeletePunchBtn" type="button">Delete Punch</button><button class="secondary" id="cancelDeletePunchBtn" type="button">Cancel</button></div>
+      </div>
+    </div>
+    <div class="timer-modal-backdrop" id="closeOpenAtTimeBackdrop" role="dialog" aria-modal="true" aria-labelledby="closeOpenAtTimeTitle">
+      <div class="timer-modal">
+        <h3 id="closeOpenAtTimeTitle">Close Open Punch at Specific Time</h3>
+        <p id="closeOpenAtTimeJob" style="margin-bottom:10px"></p>
+        <label for="closeOpenAtTimeInput">Punch Out</label>
+        <input id="closeOpenAtTimeInput" type="datetime-local" step="1">
+        <p class="time-record-edit-note">This closes the existing open session, calculates its duration, adjusts Time Accrued, and records the repair in Punch Edit History.</p>
+        <div class="actions"><button class="primary" id="saveCloseOpenAtTimeBtn" type="button">Close Punch</button><button class="secondary" id="cancelCloseOpenAtTimeBtn" type="button">Cancel</button></div>
+      </div>
+    </div>
     <div class="copy-toast" id="copyToast" role="status" aria-live="polite">Job Ticket Title Copied!</div>
   </div>
 
@@ -426,6 +450,8 @@
       let timeEditTicket='';
       let timeRecordTicket='';
       let editPunchSessionId='';
+      let deletePunchSessionId='';
+      let repairOpenSessionId='';
       let jobNotesTicket='';
       let copyToastTimer=null;
       const timerState={};
@@ -964,7 +990,7 @@
         return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
       }
       function toDateTimeLocalValue(value){
-        const d=parseBackendDateTime(value);if(!d)return '';
+        const d=value instanceof Date?value:parseBackendDateTime(value);if(!d||isNaN(d.getTime()))return '';
         const pad=n=>String(n).padStart(2,'0');
         return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
       }
@@ -989,7 +1015,7 @@
           group.forEach(session=>{
             const active=!session.punchOut;
             const timeText=active?`${formatSessionDateTime(session.punchIn)} – Active`:`${formatSessionDateTime(session.punchIn)} – ${formatSessionDateTime(session.punchOut)}`;
-            html+=`<div class="time-record-session"><div class="time-record-session-time">${escapeHtml(timeText)}</div><div class="time-record-session-duration">${active?'<span class="time-record-active">Currently Punched In</span>':escapeHtml(formatSessionDuration(session.durationMinutes))}</div><div>${active?'':`<button class="time-record-edit" type="button" data-edit-punch-session="${escapeHtml(session.sessionId)}">Edit</button>`}</div></div>`;
+            html+=`<div class="time-record-session"><div class="time-record-session-time">${escapeHtml(timeText)}</div><div class="time-record-session-duration">${active?'<span class="time-record-active">Currently Punched In</span>':escapeHtml(formatSessionDuration(session.durationMinutes))}</div><div class="time-record-actions">${active?'':`<button class="time-record-edit" type="button" data-edit-punch-session="${escapeHtml(session.sessionId)}">Edit</button><button class="time-record-delete" type="button" data-delete-punch-session="${escapeHtml(session.sessionId)}">Delete</button>`}</div></div>`;
           });
           html+=`<div class="time-record-set-total">${escapeHtml(workSetLabel(set))} Total: ${escapeHtml(formatSessionDuration(subtotal))}</div></section>`;
         });
@@ -997,11 +1023,12 @@
         if(ungrouped.length){
           const subtotal=ungrouped.filter(s=>s.punchOut).reduce((sum,s)=>sum+Number(s.durationMinutes||0),0);
           html+='<section class="time-record-set"><div class="time-record-set-head"><div class="time-record-set-title">Other / Legacy Sessions</div></div>';
-          ungrouped.forEach(session=>{const active=!session.punchOut;const timeText=active?`${formatSessionDateTime(session.punchIn)} – Active`:`${formatSessionDateTime(session.punchIn)} – ${formatSessionDateTime(session.punchOut)}`;html+=`<div class="time-record-session"><div class="time-record-session-time">${escapeHtml(timeText)}</div><div class="time-record-session-duration">${active?'<span class="time-record-active">Currently Punched In</span>':escapeHtml(formatSessionDuration(session.durationMinutes))}</div><div>${active?'':`<button class="time-record-edit" type="button" data-edit-punch-session="${escapeHtml(session.sessionId)}">Edit</button>`}</div></div>`});
+          ungrouped.forEach(session=>{const active=!session.punchOut;const timeText=active?`${formatSessionDateTime(session.punchIn)} – Active`:`${formatSessionDateTime(session.punchIn)} – ${formatSessionDateTime(session.punchOut)}`;html+=`<div class="time-record-session"><div class="time-record-session-time">${escapeHtml(timeText)}</div><div class="time-record-session-duration">${active?'<span class="time-record-active">Currently Punched In</span>':escapeHtml(formatSessionDuration(session.durationMinutes))}</div><div class="time-record-actions">${active?'':`<button class="time-record-edit" type="button" data-edit-punch-session="${escapeHtml(session.sessionId)}">Edit</button><button class="time-record-delete" type="button" data-delete-punch-session="${escapeHtml(session.sessionId)}">Delete</button>`}</div></div>`});
           html+=`<div class="time-record-set-total">Other Total: ${escapeHtml(formatSessionDuration(subtotal))}</div></section>`;
         }
         body.innerHTML=html;
         body.querySelectorAll('[data-edit-punch-session]').forEach(btn=>btn.addEventListener('click',()=>openEditPunchModal(btn.getAttribute('data-edit-punch-session'))));
+        body.querySelectorAll('[data-delete-punch-session]').forEach(btn=>btn.addEventListener('click',()=>openDeletePunchModal(btn.getAttribute('data-delete-punch-session'))));
       }
       function openTimeRecordModal(ticket){
         const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;
@@ -1015,6 +1042,24 @@
         document.getElementById('editPunchInInput').value=toDateTimeLocalValue(session.punchIn);
         document.getElementById('editPunchOutInput').value=toDateTimeLocalValue(session.punchOut);
         document.getElementById('editPunchModalBackdrop').classList.add('open');
+      }
+
+      function openDeletePunchModal(sessionId){
+        const session=workSessions.find(s=>s.sessionId===sessionId);if(!session)return;
+        if(!session.punchOut){alert('An active punch cannot be deleted. Punch out first, then delete the completed session.');return}
+        deletePunchSessionId=sessionId;const job=jobs.find(j=>Number(j.ticketNumber)===Number(session.ticketNumber));const set=workSets.find(item=>item.workSetId===session.workSetId);
+        document.getElementById('deletePunchModalJob').textContent=job?(job.title||job.displayTitle||''):('Ticket '+session.ticketNumber);
+        document.getElementById('deletePunchModalDetails').innerHTML=`<strong>${escapeHtml(set?workSetLabel(set):(session.workType||'Work Session'))}</strong><br>${escapeHtml(formatSessionDateTime(session.punchIn))} – ${escapeHtml(formatSessionDateTime(session.punchOut))}<br>Duration: ${escapeHtml(formatSessionDuration(session.durationMinutes))}`;
+        document.getElementById('deletePunchImpact').textContent=`Deleting this punch will remove ${formatSessionDuration(session.durationMinutes)} from this job's Time Accrued.`;
+        document.getElementById('deletePunchModalBackdrop').classList.add('open');
+      }
+      function openCloseOpenAtTimeModal(){
+        if(!recoveryOpenSession)return;
+        repairOpenSessionId=recoveryOpenSession.sessionId;const job=jobs.find(j=>Number(j.ticketNumber)===Number(recoveryOpenSession.ticketNumber));
+        document.getElementById('closeOpenAtTimeJob').textContent=job?(job.title||job.displayTitle||''):('Ticket '+recoveryOpenSession.ticketNumber);
+        document.getElementById('closeOpenAtTimeInput').value=toDateTimeLocalValue(new Date());
+        document.getElementById('openSessionRecoveryBackdrop').classList.remove('open');
+        document.getElementById('closeOpenAtTimeBackdrop').classList.add('open');
       }
 
       function openJobTitleModal(ticket){
@@ -1241,6 +1286,7 @@
         const closed=await closeActiveWorkSession();
         if(closed){recoveryOpenSession=null;document.getElementById('openSessionRecoveryBackdrop').classList.remove('open');activeTimerKey='';stopTimerInterval();renderQueue();renderBoard()}
       });
+      document.getElementById('closeOpenAtTimeBtn').addEventListener('click',openCloseOpenAtTimeModal);
       document.getElementById('punchInStartBtn').addEventListener('click',async()=>{
         const key=pendingPunchTimerKey;
         if(!key||pendingPunchKeys.has(key))return;
@@ -1323,6 +1369,29 @@
           const job=jobs.find(j=>Number(j.ticketNumber)===Number(session.ticketNumber));if(job&&data.timeAccruedHours!==undefined)setTimeAccruedHours(job,Number(data.timeAccruedHours||0));
           document.getElementById('editPunchModalBackdrop').classList.remove('open');editPunchSessionId='';renderTimeRecordModal();renderQueue();renderBoard();
         }catch(err){alert('Punch edit could not be saved: '+err.message)}finally{saveBtn.disabled=false;saveBtn.textContent='Save'}
+      });
+      document.getElementById('cancelDeletePunchBtn').addEventListener('click',()=>{deletePunchSessionId='';document.getElementById('deletePunchModalBackdrop').classList.remove('open')});
+      document.getElementById('confirmDeletePunchBtn').addEventListener('click',async()=>{
+        const session=workSessions.find(s=>s.sessionId===deletePunchSessionId);if(!session)return;
+        const deleteBtn=document.getElementById('confirmDeletePunchBtn');deleteBtn.disabled=true;deleteBtn.textContent='Deleting…';
+        try{
+          const data=await apiPost({action:'deleteWorkSession',sessionId:session.sessionId});if(!data.success)throw new Error(data.error||'Unable to delete punch');
+          workSessions=workSessions.filter(s=>s.sessionId!==session.sessionId);const job=jobs.find(j=>Number(j.ticketNumber)===Number(session.ticketNumber));if(job&&data.timeAccruedHours!==undefined)setTimeAccruedHours(job,Number(data.timeAccruedHours||0));
+          deletePunchSessionId='';document.getElementById('deletePunchModalBackdrop').classList.remove('open');renderTimeRecordModal();renderQueue();renderBoard();
+        }catch(err){alert('Punch could not be deleted: '+err.message)}finally{deleteBtn.disabled=false;deleteBtn.textContent='Delete Punch'}
+      });
+      document.getElementById('cancelCloseOpenAtTimeBtn').addEventListener('click',()=>{repairOpenSessionId='';document.getElementById('closeOpenAtTimeBackdrop').classList.remove('open');if(recoveryOpenSession)document.getElementById('openSessionRecoveryBackdrop').classList.add('open')});
+      document.getElementById('saveCloseOpenAtTimeBtn').addEventListener('click',async()=>{
+        if(!recoveryOpenSession||!repairOpenSessionId)return;
+        const value=document.getElementById('closeOpenAtTimeInput').value;const punchOut=new Date(value);const punchIn=parseBackendDateTime(recoveryOpenSession.punchIn);
+        if(!value||isNaN(punchOut.getTime())){alert('Enter a valid Punch Out time.');return}if(punchIn&&punchOut<=punchIn){alert('Punch Out must be later than Punch In.');return}
+        const saveBtn=document.getElementById('saveCloseOpenAtTimeBtn');saveBtn.disabled=true;saveBtn.textContent='Closing…';
+        try{
+          const data=await apiPost({action:'repairOpenWorkSession',sessionId:repairOpenSessionId,punchOutMs:punchOut.getTime()});if(!data.success)throw new Error(data.error||'Unable to repair open punch');
+          const found=workSessions.find(s=>s.sessionId===repairOpenSessionId);if(found){found.punchOut=data.session.punchOut;found.durationMinutes=Number(data.session.durationMinutes||0)}
+          const job=jobs.find(j=>Number(j.ticketNumber)===Number(data.session.ticketNumber));if(job&&data.timeAccruedHours!==undefined)setTimeAccruedHours(job,Number(data.timeAccruedHours||0));
+          saveActiveWorkSession(null);clearTimerSnapshot();activeWorkSession=null;activeTimerKey='';stopTimerInterval();recoveryOpenSession=null;repairOpenSessionId='';document.getElementById('closeOpenAtTimeBackdrop').classList.remove('open');renderQueue();renderBoard();
+        }catch(err){alert('Open punch could not be repaired: '+err.message)}finally{saveBtn.disabled=false;saveBtn.textContent='Close Punch'}
       });
       document.getElementById('closeJobNotesBtn').addEventListener('click',()=>{jobNotesTicket='';document.getElementById('jobNotesModalBackdrop').classList.remove('open')});
       document.getElementById('saveDueDateBtn').addEventListener('click',async()=>{const job=jobs.find(j=>String(j.ticketNumber||'')===dueDateEditTicket);const newDue=document.getElementById('dueDateModalInput').value;if(!job||!newDue)return;try{const data=await apiPost({action:'updateJob',ticketNumber:dueDateEditTicket,status:job.status,dueDate:newDue});if(!data.success)throw new Error(data.error||'Unable to update due date');job.dueDate=newDue;job.due=newDue;document.getElementById('dueDateModalBackdrop').classList.remove('open');dueDateEditTicket='';renderQueue();renderBoard()}catch(err){alert(err.message)}});
