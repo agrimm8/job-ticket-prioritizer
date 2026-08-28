@@ -72,6 +72,8 @@
     #job-priority-app .timer-btn.punch-locked:disabled{cursor:not-allowed;opacity:1}
     #job-priority-app .readonly-id{padding:8px 10px;border:1px solid #d7dbe0;border-radius:7px;background:#f5f6f7;color:#555;font-weight:700}
     #job-priority-app .timer-spinner{display:block;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:punchSpin .65s linear infinite}
+    #job-priority-app .timer-modal .actions button.is-loading{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+    #job-priority-app .timer-modal .actions button:disabled{cursor:wait;opacity:.78}
     @keyframes punchSpin{to{transform:rotate(360deg)}}
     #job-priority-app .timer-readout{font-size:10px;font-weight:800;min-width:54px}
     #job-priority-app .reset-block-link{display:inline-block;margin-top:2px;font-size:9px;color:inherit;text-decoration:underline;cursor:pointer;opacity:.72}
@@ -1316,8 +1318,57 @@
       });
       document.getElementById('clearBtn').addEventListener('click',()=>{document.getElementById('jobForm').reset();document.getElementById('clientModal').classList.remove('open');document.getElementById('subclientModal').classList.remove('open');document.getElementById('dueDate').dataset.manual='';populateClients();syncNextId();document.getElementById('ticketPreview').style.display='none';document.getElementById('jobNumberWrap').style.display='none'});
       document.getElementById('reloadBtn').addEventListener('click',loadBackend);
-      document.getElementById('continueTimerBtn').addEventListener('click',async()=>{if(!completedTimerKey)return;const key=completedTimerKey;const state=timerState[key];if(!state)return;state.remaining=0;state.overtime=0;state.running=false;const resumed=await resumeWorkSessionForKey(key);if(!resumed){alert('Unable to resume the work session. Use Play to punch in again.');return}document.getElementById('timerModalBackdrop').classList.remove('open');startTimerInternal(key);completedTimerKey=''});
-      document.getElementById('reprioritizeBtn').addEventListener('click',async()=>{if(completedTimerKey&&timerState[completedTimerKey])timerState[completedTimerKey].running=false;await closeActiveWorkSession();document.getElementById('timerModalBackdrop').classList.remove('open');completedTimerKey='';activeTimerKey='';stopTimerInterval();renderQueue()});
+      document.getElementById('continueTimerBtn').addEventListener('click',async()=>{
+        if(!completedTimerKey)return;
+        const continueBtn=document.getElementById('continueTimerBtn');
+        const reprioritizeBtn=document.getElementById('reprioritizeBtn');
+        if(continueBtn.disabled)return;
+        const originalContinue=continueBtn.innerHTML;
+        continueBtn.disabled=true;
+        reprioritizeBtn.disabled=true;
+        continueBtn.classList.add('is-loading');
+        continueBtn.innerHTML=PUNCH_LOADING_ICON+'<span>Continuing…</span>';
+        const key=completedTimerKey;
+        const state=timerState[key];
+        if(!state){continueBtn.disabled=false;reprioritizeBtn.disabled=false;continueBtn.innerHTML=originalContinue;return}
+        state.remaining=0;state.overtime=0;state.running=false;
+        try{
+          const resumed=await resumeWorkSessionForKey(key);
+          if(!resumed){
+            alert('Unable to resume the work session. Use Play to punch in again.');
+            return;
+          }
+          document.getElementById('timerModalBackdrop').classList.remove('open');
+          startTimerInternal(key);
+          completedTimerKey='';
+        }finally{
+          continueBtn.disabled=false;
+          reprioritizeBtn.disabled=false;
+          continueBtn.classList.remove('is-loading');
+          continueBtn.innerHTML=originalContinue;
+        }
+      });
+      document.getElementById('reprioritizeBtn').addEventListener('click',async()=>{
+        const continueBtn=document.getElementById('continueTimerBtn');
+        const reprioritizeBtn=document.getElementById('reprioritizeBtn');
+        if(reprioritizeBtn.disabled)return;
+        const originalReprioritize=reprioritizeBtn.innerHTML;
+        continueBtn.disabled=true;
+        reprioritizeBtn.disabled=true;
+        reprioritizeBtn.classList.add('is-loading');
+        reprioritizeBtn.innerHTML=PUNCH_LOADING_ICON+'<span>Re-Prioritizing…</span>';
+        try{
+          if(completedTimerKey&&timerState[completedTimerKey])timerState[completedTimerKey].running=false;
+          await closeActiveWorkSession();
+          document.getElementById('timerModalBackdrop').classList.remove('open');
+          completedTimerKey='';activeTimerKey='';stopTimerInterval();renderQueue();
+        }finally{
+          continueBtn.disabled=false;
+          reprioritizeBtn.disabled=false;
+          reprioritizeBtn.classList.remove('is-loading');
+          reprioritizeBtn.innerHTML=originalReprioritize;
+        }
+      });
       document.getElementById('acknowledgeIdleBtn').addEventListener('click',()=>clearIdleWarning(true));
       document.getElementById('idleAlarmOffToggle').addEventListener('change',e=>setIdleAlarmMuted(e.currentTarget.checked));
       document.getElementById('cancelDueDateBtn').addEventListener('click',()=>{dueDateEditTicket='';document.getElementById('dueDateModalBackdrop').classList.remove('open')});
