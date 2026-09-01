@@ -163,11 +163,19 @@
     /* Compact operational notification tray */
     #job-priority-app .notification-tray{position:fixed;right:18px;bottom:18px;z-index:12000;width:min(390px,calc(100vw - 36px));display:none;flex-direction:column;gap:7px;pointer-events:none}
     #job-priority-app .notification-tray.show{display:flex}
-    #job-priority-app .notification-row{display:none;pointer-events:auto;border:1px solid light-dark(#c9c9c2,#555);border-radius:10px;background:light-dark(#fff,#242424);box-shadow:0 7px 24px rgba(0,0,0,.20);padding:9px 10px}
+    #job-priority-app .notification-tray-shell{pointer-events:auto;background:#fde8e8;border:1px solid #e6a0a0;border-top:4px solid #c62828;border-radius:11px;box-shadow:0 7px 24px rgba(0,0,0,.20);overflow:hidden}
+    #job-priority-app .notification-tray-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;background:#f8caca;border-bottom:1px solid #e6a0a0}
+    #job-priority-app .notification-tray-label{font-size:10px;font-weight:900;color:#7f1d1d;letter-spacing:.02em;text-transform:uppercase}
+    #job-priority-app .notification-tray-minimize{width:24px;height:22px;min-height:22px;padding:0;border:1px solid #d98a8a;border-radius:6px;background:#fff1f1;color:#7f1d1d;font-size:14px;font-weight:900;line-height:1;cursor:pointer}
+    #job-priority-app .notification-tray-minimize:hover{background:#ffe1e1}
+    #job-priority-app .notification-tray-body{display:flex;flex-direction:column;gap:0}
+    #job-priority-app .notification-row{display:none;pointer-events:auto;border:0;border-top:1px solid #edb6b6;border-radius:0;background:#fff4f4;box-shadow:none;padding:9px 10px}
+    #job-priority-app .notification-row:first-child{border-top:0}
     #job-priority-app .notification-row.show{display:block}
-    #job-priority-app .notification-row.block-complete{border-left:4px solid #1f7a4d}
-    #job-priority-app .notification-row.no-job{border-left:4px solid #b66a00}
-    #job-priority-app .notification-row.orphan{border-left:4px solid #b42318}
+    #job-priority-app .notification-row.block-complete,#job-priority-app .notification-row.no-job,#job-priority-app .notification-row.orphan{border-left:4px solid #c62828}
+    #job-priority-app .notification-tray-collapsed{display:none;pointer-events:auto;align-items:center;gap:7px;border:1px solid #d98a8a;border-left:4px solid #c62828;border-radius:999px;background:#fde8e8;color:#7f1d1d;box-shadow:0 7px 24px rgba(0,0,0,.20);padding:7px 11px;font-size:10px;font-weight:900;cursor:pointer}
+    #job-priority-app .notification-tray.minimized .notification-tray-shell{display:none}
+    #job-priority-app .notification-tray.minimized .notification-tray-collapsed{display:flex}
     #job-priority-app .notification-row-head{display:flex;align-items:flex-start;gap:7px;margin-bottom:4px}
     #job-priority-app .notification-row-icon{font-size:13px;line-height:1.1;margin-top:1px}
     #job-priority-app .notification-row-title{font-size:11px;font-weight:900;line-height:1.2}
@@ -197,6 +205,9 @@
       <button type="button" id="fixOrphanPunchBtn">Fix Punch</button>
     </div>
     <div class="notification-tray" id="notificationTray" aria-live="polite" aria-label="Job alerts">
+      <div class="notification-tray-shell">
+        <div class="notification-tray-toolbar"><span class="notification-tray-label">Alerts</span><button class="notification-tray-minimize" id="notificationTrayMinimizeBtn" type="button" aria-label="Minimize alerts">−</button></div>
+        <div class="notification-tray-body">
       <div class="notification-row block-complete" id="blockCompleteNotification" role="status">
         <div class="notification-row-head"><span class="notification-row-icon" aria-hidden="true">✓</span><span class="notification-row-title">Block Complete</span></div>
         <p class="notification-row-message" id="blockCompleteNotificationMessage">Your allotted work block is complete.</p>
@@ -207,14 +218,16 @@
       </div>
       <div class="notification-row no-job" id="noJobNotification" role="status">
         <div class="notification-row-head"><span class="notification-row-icon" aria-hidden="true">⚠</span><span class="notification-row-title">No Job Selected</span></div>
-        <p class="notification-row-message">No job activity has been recorded for 5 minutes.</p>
-        <div class="notification-row-actions"><button class="secondary" id="notificationNoJobDismissBtn" type="button">Dismiss</button></div>
+        <p class="notification-row-message" id="noJobNotificationMessage">No billable job selected.</p>
       </div>
       <div class="notification-row orphan" id="orphanPunchNotification" role="alert">
         <div class="notification-row-head"><span class="notification-row-icon" aria-hidden="true">⚠</span><span class="notification-row-title">Unresolved Punch</span></div>
         <p class="notification-row-message" id="orphanPunchNotificationMessage">An unresolved open punch was found.</p>
         <div class="notification-row-actions"><button type="button" id="notificationFixOrphanBtn">Fix Punch</button></div>
       </div>
+        </div>
+      </div>
+      <button class="notification-tray-collapsed" id="notificationTrayCollapsedBtn" type="button" aria-label="Expand alerts"><span aria-hidden="true">⚠</span><span id="notificationTrayCollapsedText">1 Alert</span></button>
     </div>
 
     <div class="grid">
@@ -492,6 +505,9 @@
       let activeTimerKey='';
       let activeTimerInterval=null;
       let completedTimerKey='';
+      let notificationTrayMinimized=false;
+      let notificationTrayHadBlock=false;
+      let notificationTrayHadOrphan=false;
       let dueDateEditTicket='';
       let followUpDateEditTicket='';
       let jobTitleEditTicket='';
@@ -506,9 +522,10 @@
       let systemIdleDetector=null;
       let systemIdleDetectionState='uninitialized';
       let systemIdlePermissionRequested=false;
-      let noJobTimerStartedAt=Date.now();
+      let noJobElapsedSeconds=0;
       let noJobAlertOpen=false;
-      let noJobAlertDismissed=false;
+      let noJobLastRenderedMilestone=-1;
+      let noJobWorkdayKey='';
       let idleAlarmMuted=false;
       let idleAlarmRepeatInterval=null;
       let timeEditTicket='';
@@ -977,8 +994,23 @@
         const block=document.getElementById('blockCompleteNotification');
         const noJob=document.getElementById('noJobNotification');
         const orphan=document.getElementById('orphanPunchNotification');
-        if(block)block.classList.toggle('show',Boolean(completedTimerKey));
-        if(noJob)noJob.classList.toggle('show',Boolean(noJobAlertOpen));
+        const hasBlock=Boolean(completedTimerKey);
+        if(block)block.classList.toggle('show',hasBlock);
+        if(noJob){
+          noJob.classList.toggle('show',Boolean(noJobAlertOpen));
+          const msg=document.getElementById('noJobNotificationMessage');
+          if(msg){
+            if(noJobElapsedSeconds>=900){
+              const milestone=Math.floor(noJobElapsedSeconds/900)*15;
+              const hours=Math.floor(milestone/60);
+              const minutes=milestone%60;
+              const duration=hours?`${hours} hr${hours===1?'':'s'}${minutes?` ${minutes} min`:''}`:`${minutes} minutes`;
+              msg.textContent=`You've been without a billable job for ${duration}.`;
+            }else{
+              msg.textContent='No billable job selected for at least 5 minutes.';
+            }
+          }
+        }
         const orphanSessions=orphanOpenSessions();
         if(orphan){
           orphan.classList.toggle('show',orphanSessions.length>0);
@@ -991,9 +1023,20 @@
             orphan.setAttribute('data-orphan-session',String(session.sessionId||''));
           }else orphan.removeAttribute('data-orphan-session');
         }
-        tray.classList.toggle('show',Boolean(completedTimerKey||noJobAlertOpen||orphanSessions.length));
+        const hasOrphan=orphanSessions.length>0;
+        const alertCount=(hasBlock?1:0)+(noJobAlertOpen?1:0)+(hasOrphan?1:0);
+        const urgentNew=(hasBlock&&!notificationTrayHadBlock)||(hasOrphan&&!notificationTrayHadOrphan);
+        if(urgentNew)notificationTrayMinimized=false;
+        notificationTrayHadBlock=hasBlock;notificationTrayHadOrphan=hasOrphan;
+        if(!alertCount)notificationTrayMinimized=false;
+        tray.classList.toggle('show',alertCount>0);
+        tray.classList.toggle('minimized',notificationTrayMinimized&&alertCount>0);
+        const collapsedText=document.getElementById('notificationTrayCollapsedText');
+        if(collapsedText)collapsedText.textContent=`${alertCount} Alert${alertCount===1?'':'s'}`;
       }
-      function resetNoJobTimer(){noJobTimerStartedAt=Date.now();noJobAlertOpen=false;noJobAlertDismissed=false;renderNotificationTray()}
+      function workdayKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+      function isBillableWorkWindow(d=new Date()){const day=d.getDay();const hour=d.getHours();return day>=1&&day<=5&&hour>=8&&hour<22}
+      function resetNoJobTimer(){noJobElapsedSeconds=0;noJobAlertOpen=false;noJobLastRenderedMilestone=-1;noJobWorkdayKey=workdayKey();renderNotificationTray()}
       async function startTimerInternal(key,resumeExisting=false){
         if(activeTimerKey&&activeTimerKey!==key&&timerState[activeTimerKey])timerState[activeTimerKey].running=false;
         stopTimerInterval();activeTimerKey=key;if(!timerState[key])return;lastActivityAt=Date.now();resetNoJobTimer();const state=timerState[key];state.running=true;renderQueue();renderBoard();
@@ -1426,6 +1469,8 @@
       });
       document.getElementById('clearBtn').addEventListener('click',()=>{document.getElementById('jobForm').reset();document.getElementById('clientModal').classList.remove('open');document.getElementById('subclientModal').classList.remove('open');document.getElementById('dueDate').dataset.manual='';populateClients();syncNextId();document.getElementById('ticketPreview').style.display='none';document.getElementById('jobNumberWrap').style.display='none'});
       document.getElementById('reloadBtn').addEventListener('click',loadBackend);
+      document.getElementById('notificationTrayMinimizeBtn').addEventListener('click',()=>{notificationTrayMinimized=true;renderNotificationTray()});
+      document.getElementById('notificationTrayCollapsedBtn').addEventListener('click',()=>{notificationTrayMinimized=false;renderNotificationTray()});
       document.getElementById('notificationFixOrphanBtn').addEventListener('click',()=>{
         const sessionId=document.getElementById('orphanPunchNotification').getAttribute('data-orphan-session');
         const session=workSessions.find(item=>String(item.sessionId||'')===String(sessionId||''));
@@ -1570,7 +1615,6 @@
           renderBoard();
         }
       });
-      document.getElementById('notificationNoJobDismissBtn').addEventListener('click',()=>{noJobAlertOpen=false;noJobAlertDismissed=true;renderNotificationTray()});
       document.getElementById('cancelJobTimeBtn').addEventListener('click',()=>{timeEditTicket='';document.getElementById('timeEditModalBackdrop').classList.remove('open')});
       document.getElementById('saveJobTimeBtn').addEventListener('click',async()=>{const job=jobs.find(j=>String(j.ticketNumber||'')===timeEditTicket);if(!job)return;const accrued=Math.max(0,Number(document.getElementById('timeAccruedInput').value)||0);const estimated=Math.max(0,Number(document.getElementById('estimatedRemainingInput').value)||0);try{const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,dueDate:job.due||job.dueDate,estimatedHoursRemaining:estimated,timeAccruedHours:accrued});if(!data.success)throw new Error(data.error||'Unable to save job time');setTimeAccruedHours(job,accrued);job.hours=estimated;job.estimatedHoursRemaining=estimated;const state=ensureTimerState(job);state.remaining=recommendedWorkSeconds(job);state.blockStartRemaining=state.remaining;state.blockStartOvertime=state.overtime||0;state.committedSeconds=0;document.getElementById('timeEditModalBackdrop').classList.remove('open');timeEditTicket='';renderQueue();renderBoard()}catch(err){alert(err.message)}});
       document.getElementById('editClientNotesBtn').addEventListener('click',()=>{const textarea=document.getElementById('clientNotesTextarea');textarea.readOnly=false;textarea.focus();document.getElementById('editClientNotesBtn').style.display='none';document.getElementById('doneClientNotesBtn').style.display='inline-block'});
@@ -1657,7 +1701,23 @@
       ['mousemove','mousedown','keydown','touchstart','scroll'].forEach(eventName=>document.addEventListener(eventName,markActivity,{passive:true}));
       // System-level IdleDetector is the sole source for idle warnings.
       // If unavailable or permission is denied, no idle warning is triggered.
-      setInterval(()=>{const activeRunning=activeTimerKey&&timerState[activeTimerKey]&&timerState[activeTimerKey].running;if(activeRunning){resetNoJobTimer();return}if(!noJobAlertOpen&&!noJobAlertDismissed&&Date.now()-noJobTimerStartedAt>=300000){noJobAlertOpen=true;playNotificationTone();renderNotificationTray()}},1000);
+      setInterval(()=>{
+        const activeRunning=activeTimerKey&&timerState[activeTimerKey]&&timerState[activeTimerKey].running;
+        if(activeRunning){resetNoJobTimer();return}
+        const now=new Date();
+        const key=workdayKey(now);
+        if(!isBillableWorkWindow(now)){
+          if(noJobElapsedSeconds||noJobAlertOpen||noJobWorkdayKey!==key){noJobElapsedSeconds=0;noJobAlertOpen=false;noJobLastRenderedMilestone=-1;noJobWorkdayKey=key;renderNotificationTray()}
+          return;
+        }
+        if(noJobWorkdayKey!==key){noJobElapsedSeconds=0;noJobAlertOpen=false;noJobLastRenderedMilestone=-1;noJobWorkdayKey=key}
+        noJobElapsedSeconds+=1;
+        if(noJobElapsedSeconds===300){noJobAlertOpen=true;noJobLastRenderedMilestone=5;playNotificationTone();renderNotificationTray();return}
+        if(noJobElapsedSeconds>=900){
+          const milestone=Math.floor(noJobElapsedSeconds/900)*15;
+          if(milestone!==noJobLastRenderedMilestone){noJobAlertOpen=true;noJobLastRenderedMilestone=milestone;renderNotificationTray()}
+        }
+      },1000);
       document.addEventListener('click',()=>document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open')));
       window.addEventListener('beforeunload',event=>{if(!activeWorkSession||!activeWorkSession.sessionId)return;if(activeTimerKey)saveTimerSnapshot(activeTimerKey);saveActiveWorkSession(activeWorkSession);event.preventDefault();event.returnValue=''});
       loadIdleAlarmPreference();populateClients();renderQueue();renderBoard();renderNotificationTray();loadBackend();setInterval(checkForOrphanPunch,60000);
