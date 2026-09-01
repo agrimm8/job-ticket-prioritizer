@@ -991,11 +991,17 @@
       function applyWorkSessionContext(session,key){if(!session||!key)return;workContextByKey[key]={workSetId:session.workSetId||'',workSetType:session.workSetType||'',changeOrderNumber:Number(session.changeOrderNumber||0),workType:continuationTypeForSession(session),workDescription:session.workDescription||''}}
       function workSetsForTicket(ticketNumber){return workSets.filter(set=>Number(set.ticketNumber)===Number(ticketNumber))}
       function workSetLabel(set){return set.workSetType==='Change Order'?`Change Order #${set.changeOrderNumber} — ${set.workDescription}`:`Initial Draft — ${set.workDescription}`}
+      function changeOrderOptionLabel(set){
+        const description=String(set&&set.workDescription||'').trim();
+        const maxChars=36;
+        const preview=description.length>maxChars?description.slice(0,maxChars).trimEnd()+'…':description;
+        return `CO #${Number(set&&set.changeOrderNumber||0)}${preview?' — '+preview:''}`;
+      }
       function populatePunchInChoices(job){
         const typeSelect=document.getElementById('punchInWorkType');const sets=workSetsForTicket(job.ticketNumber);const initial=sets.find(set=>set.workSetType==='Initial Draft');const changeOrders=sets.filter(set=>set.workSetType==='Change Order').sort((a,b)=>Number(a.changeOrderNumber)-Number(b.changeOrderNumber));const options=[];
         if(!initial)options.push(['Initial Draft','Initial Draft']);else options.push(['Continuing Initial Draft','Continuing Initial Draft']);options.push(['New Change Order','New Change Order']);if(changeOrders.length)options.push(['Continuing Change Order','Continuing Change Order']);
         typeSelect.innerHTML='<option value="">Select Work Type</option>'+options.map(([v,l])=>`<option value="${escapeHtml(v)}">${escapeHtml(l)}</option>`).join('');
-        const setSelect=document.getElementById('punchInWorkSet');setSelect.innerHTML='<option value="">Select Change Order</option>'+changeOrders.map(set=>`<option value="${escapeHtml(set.workSetId)}">${escapeHtml(workSetLabel(set))}</option>`).join('');
+        const setSelect=document.getElementById('punchInWorkSet');setSelect.innerHTML='<option value="">Select Change Order</option>'+changeOrders.map(set=>`<option value="${escapeHtml(set.workSetId)}">${escapeHtml(changeOrderOptionLabel(set))}</option>`).join('');
       }
       function updatePunchInFields(){
         const job=jobs.find(j=>timerKeyFor(j)===pendingPunchTimerKey);const type=document.getElementById('punchInWorkType').value;const description=document.getElementById('punchInWorkDescription');const setWrap=document.getElementById('punchInWorkSetWrap');const setSelect=document.getElementById('punchInWorkSet');
@@ -1228,9 +1234,10 @@
       }
       function renderCards(targetId,list){
         const target=document.getElementById(targetId); target.innerHTML=''; if(!list.length){target.innerHTML='<div class="muted">No jobs.</div>';return}
-        list.forEach(j=>{const c=document.createElement('div');const key=timerKeyFor(j);const jobTimer=ensureTimerState(j);c.className='card'+(targetId==='todoList'&&jobTimer.running?' timer-active':'');const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const accrued=getRecordedTimeAccruedHours(j);const storedDueValue=j.due||j.dueDate;const overdue=targetId==='todoList'&&isOverdueJob(j);const dueValue=targetId==='todoList'?effectiveDueDate(j):storedDueValue;const followUpValue=j.followUpDate||'';const followUpDue=followUpValue&&followUpValue<=todayISO();const ticket=escapeHtml(String(j.ticketNumber||''));const current=escapeHtml(j.status);const clientId=escapeHtml(String(j.primaryClientId||j.primaryClientID||j.clientId||''));const secondaryClientId=escapeHtml(String(j.secondaryClientId||''));const dueDays=dueValue?Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000):999;const invoiceTag=j.status==='To Be Invoiced'?'<span class="card-tag invoice">To Be Invoiced</span>':'';const completedTag=j.status==='Completed'?`<span class="card-tag">Completed: ${formatDate((j.completedAt||todayISO()).slice(0,10))}</span>`:'';const urgencyTag=targetId==='todoList'?(overdue?'<span class="card-tag overdue">Overdue</span>':dueDays<=0?'<span class="card-tag urgent">Due Today</span>':dueDays<=1?'<span class="card-tag soon">Due Soon</span>':''):'';const tags=completedTag+invoiceTag+urgencyTag;const usesFollowUpDate=j.status==='Client Review'||j.status==='In Production / Awaiting Vendor';const followUpMenu=usesFollowUpDate?`<button type="button" data-change-follow-up-ticket="${ticket}">Change Follow Up Date</button>`:'';const dueMeta=usesFollowUpDate?'':`<div class="card-meta">Due Date: ${formatDate(dueValue)}</div>`;const followUpMeta=usesFollowUpDate?`<div class="card-meta${followUpDue?' follow-up-due':''}">Follow Up Date: ${followUpValue?formatDate(followUpValue):'—'}</div>`:'';c.innerHTML=`<div class="card-head"><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}"><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button>${followUpMenu}<button type="button" data-edit-time-ticket="${ticket}">Edit Time Accrued</button><button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div><div><div class="title-copy-row"><div class="card-title">${escapeHtml(title)}</div><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<a class="client-notes-link" data-client-notes-primary="${clientId}" data-client-notes-secondary="${secondaryClientId}">View Client Notes</a> <span class="muted">·</span> <a class="client-notes-link" data-job-notes-ticket="${ticket}">Job Notes</a> <span class="muted">·</span> ${orphanTimeRecordLink(ticket)}${dueMeta}${followUpMeta}<div class="card-meta">Time Accrued: ${formatHours(accrued)}</div><div class="card-meta">Estimated Time Remaining: ${formatHours(j.status==='To Be Invoiced'?.1667:hours)}</div><div class="card-meta">Block Remaining: ${formatBlockTime(jobTimer)}</div></div></div>`;target.appendChild(c)});
+        list.forEach(j=>{const c=document.createElement('div');const key=timerKeyFor(j);const jobTimer=ensureTimerState(j);c.className='card'+(targetId==='todoList'&&jobTimer.running?' timer-active':'');const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const accrued=getRecordedTimeAccruedHours(j);const storedDueValue=j.due||j.dueDate;const overdue=targetId==='todoList'&&isOverdueJob(j);const dueValue=targetId==='todoList'?effectiveDueDate(j):storedDueValue;const followUpValue=j.followUpDate||'';const followUpDue=followUpValue&&followUpValue<=todayISO();const ticket=escapeHtml(String(j.ticketNumber||''));const current=escapeHtml(j.status);const clientId=escapeHtml(String(j.primaryClientId||j.primaryClientID||j.clientId||''));const secondaryClientId=escapeHtml(String(j.secondaryClientId||''));const dueDays=dueValue?Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000):999;const invoiceTag=j.status==='To Be Invoiced'?'<span class="card-tag invoice">To Be Invoiced</span>':'';const completedTag=j.status==='Completed'?`<span class="card-tag">Completed: ${formatDate((j.completedAt||todayISO()).slice(0,10))}</span>`:'';const urgencyTag=targetId==='todoList'?(overdue?'<span class="card-tag overdue">Overdue</span>':dueDays<=0?'<span class="card-tag urgent">Due Today</span>':dueDays<=1?'<span class="card-tag soon">Due Soon</span>':''):'';const tags=completedTag+invoiceTag+urgencyTag;const usesFollowUpDate=j.status==='Client Review'||j.status==='In Production / Awaiting Vendor';const quickReturnPunchMenu=j.status==='Client Review'?`<button type="button" data-client-review-punch-ticket="${ticket}">Move to To Do &amp; Punch In</button><div class="menu-separator"></div>`:'';const followUpMenu=usesFollowUpDate?`<button type="button" data-change-follow-up-ticket="${ticket}">Change Follow Up Date</button>`:'';const dueMeta=usesFollowUpDate?'':`<div class="card-meta">Due Date: ${formatDate(dueValue)}</div>`;const followUpMeta=usesFollowUpDate?`<div class="card-meta${followUpDue?' follow-up-due':''}">Follow Up Date: ${followUpValue?formatDate(followUpValue):'—'}</div>`:'';c.innerHTML=`<div class="card-head"><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}">${quickReturnPunchMenu}<button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button>${followUpMenu}<button type="button" data-edit-time-ticket="${ticket}">Edit Time Accrued</button><button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div><div><div class="title-copy-row"><div class="card-title">${escapeHtml(title)}</div><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<a class="client-notes-link" data-client-notes-primary="${clientId}" data-client-notes-secondary="${secondaryClientId}">View Client Notes</a> <span class="muted">·</span> <a class="client-notes-link" data-job-notes-ticket="${ticket}">Job Notes</a> <span class="muted">·</span> ${orphanTimeRecordLink(ticket)}${dueMeta}${followUpMeta}<div class="card-meta">Time Accrued: ${formatHours(accrued)}</div><div class="card-meta">Estimated Time Remaining: ${formatHours(j.status==='To Be Invoiced'?.1667:hours)}</div><div class="card-meta">Block Remaining: ${formatBlockTime(jobTimer)}</div></div></div>`;target.appendChild(c)});
         target.querySelectorAll('[data-menu-ticket]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const ticket=btn.getAttribute('data-menu-ticket');const menu=target.querySelector(`[data-move-menu="${ticket}"]`);document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>{if(m!==menu)m.classList.remove('open')});menu.classList.toggle('open')}));
         target.querySelectorAll('[data-move-ticket]').forEach(btn=>btn.addEventListener('click',()=>changeJobStatusFromMenu(btn)));
+        target.querySelectorAll('[data-client-review-punch-ticket]').forEach(btn=>btn.addEventListener('click',()=>quickClientReviewReturnAndPunch(btn.getAttribute('data-client-review-punch-ticket'))));
         target.querySelectorAll('[data-edit-title-ticket]').forEach(btn=>btn.addEventListener('click',()=>openJobTitleModal(btn.getAttribute('data-edit-title-ticket'))));
         target.querySelectorAll('[data-change-due-ticket]').forEach(btn=>btn.addEventListener('click',()=>openDueDateModal(btn.getAttribute('data-change-due-ticket'))));
         target.querySelectorAll('[data-change-follow-up-ticket]').forEach(btn=>btn.addEventListener('click',()=>openFollowUpDateModal(btn.getAttribute('data-change-follow-up-ticket'))));
@@ -1463,6 +1470,46 @@
         }
       }
       function renderTodo(list){renderCards('todoList',list)}
+      async function quickClientReviewReturnAndPunch(ticket){
+        const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));
+        if(!job||job.status!=='Client Review')return;
+        if(activeWorkSession&&activeWorkSession.sessionId){
+          alert(`Ticket ${activeWorkSession.ticketNumber} already has an active punch. Punch out of that session before starting another job.`);
+          return;
+        }
+        document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'));
+        const newHours=.5;
+        const newDue=todayISO();
+        try{
+          const data=await apiPost({
+            action:'updateJob',
+            ticketNumber:String(ticket),
+            status:'To Do',
+            dueDate:newDue,
+            followUpDate:job.followUpDate||'',
+            estimatedHoursRemaining:newHours
+          });
+          if(!data.success)throw new Error(data.error||'Unable to move job to To Do');
+          job.status='To Do';
+          job.dueDate=data.dueDate||newDue;
+          job.due=job.dueDate;
+          job.followUpDate=data.followUpDate!==undefined?data.followUpDate:(job.followUpDate||'');
+          job.hours=newHours;
+          job.estimatedHoursRemaining=newHours;
+          const state=ensureTimerState(job);
+          state.running=false;
+          state.remaining=Math.round(newHours*3600);
+          state.overtime=0;
+          state.blockStartRemaining=state.remaining;
+          state.blockStartOvertime=0;
+          state.committedSeconds=0;
+          renderQueue();
+          renderBoard();
+          await requestStartTimer(timerKeyFor(job));
+        }catch(err){
+          alert('Move to To Do & Punch In could not be started: '+err.message);
+        }
+      }
       async function changeJobStatusFromMenu(button){
         const ticket=button.getAttribute('data-move-ticket'); const oldStatus=button.getAttribute('data-old-status'); const newStatus=button.getAttribute('data-new-status'); const job=jobs.find(j=>String(j.ticketNumber||'')===ticket); if(!job)return;
         if(oldStatus==='Client Review'&&newStatus==='To Do'){openClientReviewDueChoice(ticket);return}
