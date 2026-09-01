@@ -322,6 +322,18 @@
         <div class="actions"><button class="primary" id="continueTimerBtn" type="button">Continue Working</button><button class="secondary" id="reprioritizeBtn" type="button">Re-Prioritize and Move to Next Job</button></div>
       </div>
     </div>
+    <div class="timer-modal-backdrop" id="blockGapRecoveryBackdrop" role="dialog" aria-modal="true" aria-labelledby="blockGapRecoveryTitle">
+      <div class="timer-modal">
+        <h3 id="blockGapRecoveryTitle">Include Missed Time?</h3>
+        <p id="blockGapRecoveryMessage">Your previous block ended a few minutes ago.</p>
+        <p class="muted" style="margin-top:10px">If you kept working and simply missed the alert, you can include that time in the new work session.</p>
+        <div class="actions" style="margin-top:16px">
+          <button class="primary" id="includeBlockGapBtn" type="button">Include Missed Time</button>
+          <button class="secondary" id="startBlockNowBtn" type="button">Start From Now</button>
+          <button class="secondary" id="cancelBlockGapBtn" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
     <div class="timer-modal-backdrop" id="idlePauseModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="idlePauseModalTitle">
       <div class="timer-modal idle-warning-modal">
         <h3 id="idlePauseModalTitle" class="idle-warning-heading"><span class="idle-warning-icon" aria-hidden="true">⚠</span><span>Idle Activity Detected</span></h3>
@@ -507,6 +519,7 @@
       let activeTimerKey='';
       let activeTimerInterval=null;
       let completedTimerKey='';
+      let completedTimerEndedAt=0;
       let notificationTrayMinimized=false;
       let notificationTrayHadBlock=false;
       let notificationTrayHadOrphan=false;
@@ -1018,11 +1031,11 @@
         clearIdleWarning(true);if(!activeWorkSession||!activeWorkSession.sessionId)return true;
         try{const payload={action:'endWorkSession',sessionId:activeWorkSession.sessionId};if(punchOutAt)payload.punchOutAt=punchOutAt;const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch out');const localSession=activeWorkSession;const found=workSessions.find(s=>s.sessionId===localSession.sessionId);if(found){found.punchOut=data.punchOut||'';found.durationMinutes=Number(data.durationMinutes||0)}saveActiveWorkSession(null);clearTimerSnapshot();return true}catch(err){alert('Punch Out could not be saved: '+err.message);return false}
       }
-      async function beginWorkSessionForKey(key,workType,workDescription,workSetId=''){
+      async function beginWorkSessionForKey(key,workType,workDescription,workSetId='',punchInAt=''){
         const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return false;
-        try{const data=await apiPost({action:'beginWorkSession',ticketNumber:job.ticketNumber,workType,workDescription,workSetId});if(!data.success)throw new Error(data.error||'Unable to punch in');const session=data.session;if(data.workSet&&!workSets.some(set=>set.workSetId===data.workSet.workSetId))workSets.push(data.workSet);workSessions.push(session);applyWorkSessionContext(session,key);saveActiveWorkSession({...session,timerKey:key});return true}catch(err){alert('Punch In could not be saved: '+err.message);return false}
+        try{const payload={action:'beginWorkSession',ticketNumber:job.ticketNumber,workType,workDescription,workSetId};if(punchInAt)payload.punchInAt=punchInAt;const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch in');const session=data.session;if(data.workSet&&!workSets.some(set=>set.workSetId===data.workSet.workSetId))workSets.push(data.workSet);workSessions.push(session);applyWorkSessionContext(session,key);saveActiveWorkSession({...session,timerKey:key});return true}catch(err){alert('Punch In could not be saved: '+err.message);return false}
       }
-      async function resumeWorkSessionForKey(key){const context=workContextByKey[key];if(!context||!context.workSetId)return false;return beginWorkSessionForKey(key,context.workType,context.workDescription,context.workSetId)}
+      async function resumeWorkSessionForKey(key,punchInAt=''){const context=workContextByKey[key];if(!context||!context.workSetId)return false;return beginWorkSessionForKey(key,context.workType,context.workDescription,context.workSetId,punchInAt)}
       async function requestStartTimer(key){
         const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;if(activeWorkSession&&activeWorkSession.sessionId){alert(`Ticket ${activeWorkSession.ticketNumber} already has an active punch. Punch out of that session before starting another job.`);return}
         pendingPunchTimerKey=key;document.getElementById('punchInModalTitle').textContent=job.title||job.displayTitle||'Punch In';document.getElementById('punchInWorkDescription').readOnly=false;document.getElementById('punchInWorkDescription').value='';populatePunchInChoices(job);document.getElementById('punchInWorkType').value='';document.getElementById('punchInWorkSet').value='';updatePunchInFields();document.getElementById('punchInModalBackdrop').classList.add('open');
@@ -1084,6 +1097,16 @@
         const orphan=document.getElementById('orphanPunchNotification');
         const hasBlock=Boolean(completedTimerKey);
         if(block)block.classList.toggle('show',hasBlock);
+        if(hasBlock&&completedTimerEndedAt){
+          const job=jobs.find(j=>timerKeyFor(j)===completedTimerKey);
+          const label=job?(job.title||job.displayTitle||'This job'):'This job';
+          const elapsedMs=Math.max(0,Date.now()-completedTimerEndedAt);
+          const elapsedMinutes=Math.max(0,Math.floor(elapsedMs/60000));
+          const timeText=elapsedMinutes<1?'less than a minute':`${elapsedMinutes} minute${elapsedMinutes===1?'':'s'}`;
+          const recoveryText=elapsedMs<=15*60*1000?' If you kept working, that gap can still be included.':' The 15-minute recovery window has passed, so Continue Working will start from now.';
+          const msg=document.getElementById('blockCompleteNotificationMessage');
+          if(msg)msg.textContent=`Allotted time for ${label} is complete. Block ended ${timeText} ago.${recoveryText}`;
+        }
         if(noJob){
           noJob.classList.toggle('show',Boolean(noJobAlertOpen));
           const msg=document.getElementById('noJobNotificationMessage');
@@ -1156,7 +1179,7 @@
         }
       }
       function resetBlock(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;const state=ensureTimerState(job);state.remaining=recommendedWorkSeconds(job);state.overtime=0;state.blockStartRemaining=state.remaining;state.blockStartOvertime=0;state.committedSeconds=0;if(state.running)saveTimerSnapshot(key);renderQueue();renderBoard()}
-      function showTimerComplete(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;completedTimerKey=key;document.getElementById('blockCompleteNotificationMessage').textContent=`Allotted time for ${job.title||job.displayTitle} is complete.`;renderNotificationTray()}
+      function showTimerComplete(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;completedTimerKey=key;completedTimerEndedAt=Date.now();renderNotificationTray()}
       function getWSIWONJobs(){
         const eligible=jobs.filter(j=>priorityScore(j)>-900).sort((a,b)=>{
           const overdueDiff=Number(isOverdueJob(b))-Number(isOverdueJob(a));
@@ -1639,36 +1662,68 @@
         const session=workSessions.find(item=>String(item.sessionId||'')===String(sessionId||''));
         if(session)showOpenSessionRecovery(session);
       });
-      document.getElementById('notificationContinueBtn').addEventListener('click',async()=>{
+      async function applyRecoveredGapToJob(key,recoveredSeconds){
+        const seconds=Math.max(0,Number(recoveredSeconds)||0);if(!seconds)return true;
+        const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return false;
+        const recoveredHours=seconds/3600;
+        const currentEstimated=Math.max(0,Number(job.hours??job.estimatedHoursRemaining??0));
+        const newEstimated=Math.max(0,currentEstimated-recoveredHours);
+        const newAccrued=getTimeAccruedHours(job)+recoveredHours;
+        job.hours=newEstimated;job.estimatedHoursRemaining=newEstimated;setTimeAccruedHours(job,newAccrued);
+        try{
+          const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,dueDate:job.due||job.dueDate,estimatedHoursRemaining:newEstimated,timeAccruedHours:newAccrued});
+          if(!data.success)throw new Error(data.error||'Unable to save recovered time');
+          return true;
+        }catch(err){alert('Recovered time was added to the punch, but the job estimate could not be updated: '+err.message);return false}
+      }
+      async function continueCompletedBlock(includeGap=false){
         if(!completedTimerKey)return;
         const continueBtn=document.getElementById('notificationContinueBtn');
         const reprioritizeBtn=document.getElementById('notificationReprioritizeBtn');
-        if(continueBtn.disabled)return;
         const originalContinue=continueBtn.innerHTML;
-        continueBtn.disabled=true;
-        reprioritizeBtn.disabled=true;
-        continueBtn.classList.add('is-loading');
-        continueBtn.innerHTML=PUNCH_LOADING_ICON+'<span>Continuing…</span>';
-        const key=completedTimerKey;
-        const state=timerState[key];
-        if(!state){continueBtn.disabled=false;reprioritizeBtn.disabled=false;continueBtn.innerHTML=originalContinue;return}
+        continueBtn.disabled=true;reprioritizeBtn.disabled=true;continueBtn.classList.add('is-loading');continueBtn.innerHTML=PUNCH_LOADING_ICON+'<span>Continuing…</span>';
+        const key=completedTimerKey;const state=timerState[key];
+        if(!state){continueBtn.disabled=false;reprioritizeBtn.disabled=false;continueBtn.classList.remove('is-loading');continueBtn.innerHTML=originalContinue;return}
         state.remaining=0;state.overtime=0;state.running=false;
         try{
-          const resumed=await resumeWorkSessionForKey(key);
-          if(!resumed){
-            alert('Unable to resume the work session. Use Play to punch in again.');
-            return;
+          const elapsedMs=completedTimerEndedAt?Math.max(0,Date.now()-completedTimerEndedAt):0;
+          const recoverable=includeGap&&completedTimerEndedAt&&elapsedMs<=15*60*1000;
+          const resumed=await resumeWorkSessionForKey(key,recoverable?completedTimerEndedAt:'');
+          if(!resumed){alert('Unable to resume the work session. Use Play to punch in again.');return}
+          if(recoverable){
+            const recoveredSeconds=Math.max(0,Math.floor(elapsedMs/1000));
+            state.overtime=recoveredSeconds;
+            await applyRecoveredGapToJob(key,recoveredSeconds);
           }
-          startTimerInternal(key);
-          completedTimerKey='';
+          await startTimerInternal(key);
+          completedTimerKey='';completedTimerEndedAt=0;
+          document.getElementById('blockGapRecoveryBackdrop').classList.remove('open');
           renderNotificationTray();
         }finally{
-          continueBtn.disabled=false;
-          reprioritizeBtn.disabled=false;
-          continueBtn.classList.remove('is-loading');
-          continueBtn.innerHTML=originalContinue;
+          continueBtn.disabled=false;reprioritizeBtn.disabled=false;continueBtn.classList.remove('is-loading');continueBtn.innerHTML=originalContinue;
         }
+      }
+      document.getElementById('notificationContinueBtn').addEventListener('click',async()=>{
+        if(!completedTimerKey)return;
+        const elapsedMs=completedTimerEndedAt?Math.max(0,Date.now()-completedTimerEndedAt):0;
+        if(elapsedMs>=60000&&elapsedMs<=15*60*1000){
+          const minutes=Math.max(1,Math.floor(elapsedMs/60000));
+          document.getElementById('blockGapRecoveryMessage').textContent=`Your block ended ${minutes} minute${minutes===1?'':'s'} ago. Were you working during that time?`;
+          document.getElementById('includeBlockGapBtn').textContent=`Include ${minutes} Minute${minutes===1?'':'s'}`;
+          document.getElementById('blockGapRecoveryBackdrop').classList.add('open');
+          return;
+        }
+        await continueCompletedBlock(false);
       });
+      document.getElementById('includeBlockGapBtn').addEventListener('click',async()=>{
+        document.getElementById('blockGapRecoveryBackdrop').classList.remove('open');
+        await continueCompletedBlock(true);
+      });
+      document.getElementById('startBlockNowBtn').addEventListener('click',async()=>{
+        document.getElementById('blockGapRecoveryBackdrop').classList.remove('open');
+        await continueCompletedBlock(false);
+      });
+      document.getElementById('cancelBlockGapBtn').addEventListener('click',()=>document.getElementById('blockGapRecoveryBackdrop').classList.remove('open'));
       document.getElementById('notificationReprioritizeBtn').addEventListener('click',async()=>{
         const continueBtn=document.getElementById('notificationContinueBtn');
         const reprioritizeBtn=document.getElementById('notificationReprioritizeBtn');
@@ -1693,7 +1748,7 @@
               state.committedSeconds=0;
             }
           }
-          completedTimerKey='';activeTimerKey='';stopTimerInterval();renderQueue();renderNotificationTray();
+          completedTimerKey='';completedTimerEndedAt=0;activeTimerKey='';stopTimerInterval();renderQueue();renderNotificationTray();
         }finally{
           continueBtn.disabled=false;
           reprioritizeBtn.disabled=false;
@@ -1876,6 +1931,7 @@
       ['mousemove','mousedown','keydown','touchstart','scroll'].forEach(eventName=>document.addEventListener(eventName,markActivity,{passive:true}));
       // System-level IdleDetector is the sole source for idle warnings.
       // If unavailable or permission is denied, no idle warning is triggered.
+      setInterval(()=>{if(completedTimerKey)renderNotificationTray()},30000);
       setInterval(()=>{
         const activeRunning=activeTimerKey&&timerState[activeTimerKey]&&timerState[activeTimerKey].running;
         if(activeRunning){resetNoJobTimer();return}
