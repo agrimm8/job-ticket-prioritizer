@@ -161,6 +161,26 @@
     #job-priority-app .time-record-set-total{padding:8px 13px;text-align:right;font-size:12px;font-weight:700;background:#fbfcfd;border-top:1px solid #e7ebf0}
     #job-priority-app .time-record-empty{padding:18px;text-align:center;color:#6b7280}
     #job-priority-app .time-record-edit-note{font-size:11px;color:#6b7280;margin:8px 0 0}
+    #job-priority-app .job-profit{font-size:10px;font-weight:700;margin-top:5px;color:light-dark(#111,#f2f2f2)}
+    #job-priority-app .job-profit.negative{color:#b42318}
+    #job-priority-app .job-profit.zero{color:#6b7280}
+    #job-priority-app .financial-modal{width:min(900px,calc(100vw - 32px));max-height:88vh;overflow:auto}
+    #job-priority-app .financial-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:14px}
+    #job-priority-app .financial-panel{border:1px solid light-dark(#dfe5ec,#454545);border-radius:10px;overflow:hidden;background:light-dark(#fff,#242424)}
+    #job-priority-app .financial-panel-title{font-size:14px;font-weight:800;padding:11px 13px;background:light-dark(#f7f9fc,#2f2f2f);border-bottom:1px solid light-dark(#e3e8ef,#454545)}
+    #job-priority-app .financial-columns-head,#job-priority-app .financial-entry-row,#job-priority-app .financial-total-row{display:grid;grid-template-columns:minmax(0,1fr) 120px 24px;gap:7px;align-items:center;padding:7px 10px}
+    #job-priority-app .financial-columns-head{font-size:10px;font-weight:700;opacity:.7;border-bottom:1px solid light-dark(#edf0f4,#3b3b3b)}
+    #job-priority-app .financial-entry-row{border-bottom:1px solid light-dark(#f0f1f3,#333)}
+    #job-priority-app .financial-entry-row input{min-width:0;margin:0;height:32px;font-size:11px}
+    #job-priority-app .financial-remove{border:0;background:transparent;color:#b42318;padding:0;font-size:16px;line-height:1;cursor:pointer}
+    #job-priority-app .financial-add{margin:9px 10px;font-size:10px;padding:6px 9px}
+    #job-priority-app .financial-total-row{grid-template-columns:minmax(0,1fr) 120px 24px;font-size:12px;font-weight:800;background:light-dark(#fbfcfd,#292929);border-top:1px solid light-dark(#e7ebf0,#424242)}
+    #job-priority-app .financial-total-amount{text-align:right}
+    #job-priority-app .financial-net{display:flex;justify-content:flex-end;gap:12px;align-items:baseline;margin-top:16px;padding:12px 14px;border:1px solid light-dark(#dfe5ec,#454545);border-radius:9px;font-weight:800}
+    #job-priority-app .financial-net-value{font-size:18px;color:light-dark(#111,#f2f2f2)}
+    #job-priority-app .financial-net-value.negative{color:#b42318}
+    #job-priority-app .financial-net-value.zero{color:#6b7280}
+    @media(max-width:700px){#job-priority-app .financial-grid{grid-template-columns:1fr}#job-priority-app .financial-columns-head,#job-priority-app .financial-entry-row,#job-priority-app .financial-total-row{grid-template-columns:minmax(0,1fr) 105px 22px}}
   
     /* Compact operational notification tray */
     #job-priority-app .notification-tray{position:fixed;right:18px;bottom:18px;z-index:12000;width:min(390px,calc(100vw - 36px));display:none;flex-direction:column;gap:7px;pointer-events:none}
@@ -455,6 +475,30 @@
         <div class="actions"><button class="edit-notes-btn" id="editJobNotesBtn" type="button">Edit</button><button class="primary" id="doneJobNotesBtn" type="button" style="display:none">Done</button><button class="secondary" id="closeJobNotesBtn" type="button">Close</button></div>
       </div>
     </div>
+    <div class="timer-modal-backdrop" id="jobFinancialsModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="jobFinancialsModalTitle">
+      <div class="timer-modal financial-modal">
+        <h3 id="jobFinancialsModalTitle">Job Income &amp; Expense</h3>
+        <p id="jobFinancialsModalJob" style="margin-bottom:4px"></p>
+        <div class="financial-grid">
+          <section class="financial-panel">
+            <div class="financial-panel-title">Income</div>
+            <div class="financial-columns-head"><span>Description</span><span>Amount</span><span></span></div>
+            <div id="incomeFinancialRows"></div>
+            <button class="secondary financial-add" id="addIncomeFinancialRowBtn" type="button">+ Add Income</button>
+            <div class="financial-total-row"><span>Income Total</span><span class="financial-total-amount" id="incomeFinancialTotal">$0.00</span><span></span></div>
+          </section>
+          <section class="financial-panel">
+            <div class="financial-panel-title">Expenses</div>
+            <div class="financial-columns-head"><span>Description</span><span>Amount</span><span></span></div>
+            <div id="expenseFinancialRows"></div>
+            <button class="secondary financial-add" id="addExpenseFinancialRowBtn" type="button">+ Add Expense</button>
+            <div class="financial-total-row"><span>Expense Total</span><span class="financial-total-amount" id="expenseFinancialTotal">$0.00</span><span></span></div>
+          </section>
+        </div>
+        <div class="financial-net"><span>Project Net Profit</span><span class="financial-net-value zero" id="jobFinancialNetTotal">$0.00</span></div>
+        <div class="actions"><button class="primary" id="saveJobFinancialsBtn" type="button">Save</button><button class="secondary" id="cancelJobFinancialsBtn" type="button">Cancel</button></div>
+      </div>
+    </div>
     <div class="timer-modal-backdrop" id="timeRecordModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="timeRecordModalTitle">
       <div class="timer-modal time-record-modal">
         <h3 id="timeRecordModalTitle">Time Record</h3>
@@ -510,6 +554,8 @@
       let overdueHistory=[];
       let workSessions=[];
       let workSets=[];
+      let jobFinancials=[];
+      let jobFinancialsTicket='';
       let recoveryOpenSession=null;
       let holidayCalendar=[];
       let activeWorkSession=null;
@@ -1202,6 +1248,73 @@
         }
         return 'Ticket '+activeWorkSession.ticketNumber;
       }
+      function formatCurrency(value){
+        const n=Number(value)||0;
+        const absolute=Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+        return n<0?'-$'+absolute:'$'+absolute;
+      }
+      function financialEntriesForTicket(ticket){return jobFinancials.filter(entry=>String(entry.ticketNumber||'')===String(ticket||''))}
+      function financialSummary(ticket){
+        const entries=financialEntriesForTicket(ticket);
+        const income=entries.filter(entry=>entry.type==='Income').reduce((sum,entry)=>sum+Math.max(0,Number(entry.amount)||0),0);
+        const expenses=entries.filter(entry=>entry.type==='Expense').reduce((sum,entry)=>sum+Math.max(0,Number(entry.amount)||0),0);
+        return {income,expenses,net:income-expenses};
+      }
+      function profitClass(net){return net<0?'negative':(Math.abs(net)<.005?'zero':'')}
+      function profitLine(ticket,className='card-meta'){
+        const summary=financialSummary(ticket);
+        return `<div class="${className} job-profit ${profitClass(summary.net)}">Net Profit: ${escapeHtml(formatCurrency(summary.net))}</div>`;
+      }
+      function createFinancialRow(type,entry={}){
+        const row=document.createElement('div');
+        row.className='financial-entry-row';
+        row.setAttribute('data-financial-type',type);
+        row.innerHTML=`<input class="financial-description" type="text" placeholder="Description" value="${escapeHtml(entry.description||'')}"><input class="financial-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" value="${Number.isFinite(Number(entry.amount))&&entry.amount!==''?escapeHtml(Number(entry.amount).toFixed(2)):''}"><button class="financial-remove" type="button" aria-label="Remove row" title="Remove row">×</button>`;
+        row.querySelectorAll('input').forEach(input=>input.addEventListener('input',updateFinancialTotals));
+        row.querySelector('.financial-remove').addEventListener('click',()=>{row.remove();updateFinancialTotals()});
+        return row;
+      }
+      function addFinancialRow(type,entry={}){
+        const target=document.getElementById(type==='Income'?'incomeFinancialRows':'expenseFinancialRows');
+        target.appendChild(createFinancialRow(type,entry));
+      }
+      function readFinancialRows(type,validate=false){
+        const target=document.getElementById(type==='Income'?'incomeFinancialRows':'expenseFinancialRows');
+        const entries=[];
+        target.querySelectorAll('.financial-entry-row').forEach(row=>{
+          const description=row.querySelector('.financial-description').value.trim();
+          const amountText=row.querySelector('.financial-amount').value.trim();
+          if(!description&&!amountText)return;
+          const amount=Number(amountText);
+          if(validate&&(!description||amountText===''||!Number.isFinite(amount)||amount<0))throw new Error(`${type} rows need both a description and a valid amount.`);
+          if(description&&Number.isFinite(amount)&&amount>=0)entries.push({type,description,amount});
+        });
+        return entries;
+      }
+      function updateFinancialTotals(){
+        let income=[],expenses=[];
+        try{income=readFinancialRows('Income',false);expenses=readFinancialRows('Expense',false)}catch(e){}
+        const incomeTotal=income.reduce((sum,e)=>sum+Number(e.amount||0),0);
+        const expenseTotal=expenses.reduce((sum,e)=>sum+Number(e.amount||0),0);
+        const net=incomeTotal-expenseTotal;
+        document.getElementById('incomeFinancialTotal').textContent=formatCurrency(incomeTotal);
+        document.getElementById('expenseFinancialTotal').textContent=formatCurrency(expenseTotal);
+        const netEl=document.getElementById('jobFinancialNetTotal');
+        netEl.textContent=formatCurrency(net);netEl.classList.remove('negative','zero');const cls=profitClass(net);if(cls)netEl.classList.add(cls);
+      }
+      function openJobFinancialsModal(ticket){
+        const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;
+        jobFinancialsTicket=String(ticket);
+        document.getElementById('jobFinancialsModalJob').textContent=job.title||job.displayTitle||'';
+        const incomeTarget=document.getElementById('incomeFinancialRows');const expenseTarget=document.getElementById('expenseFinancialRows');incomeTarget.innerHTML='';expenseTarget.innerHTML='';
+        const entries=financialEntriesForTicket(ticket);
+        const incomes=entries.filter(e=>e.type==='Income');const expenses=entries.filter(e=>e.type==='Expense');
+        (incomes.length?incomes:[{}]).forEach(entry=>addFinancialRow('Income',entry));
+        (expenses.length?expenses:[{}]).forEach(entry=>addFinancialRow('Expense',entry));
+        updateFinancialTotals();
+        document.getElementById('jobFinancialsModalBackdrop').classList.add('open');
+        document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'));
+      }
       function renderQueue(){
         const q=document.getElementById('queue'); q.innerHTML=''; const active=getWSIWONJobs(); const todayValue=todayISO();
         if(!active.length){document.getElementById('eodMessage').style.display='block';q.innerHTML='<div class="muted">No actionable jobs.</div>';return}
@@ -1239,7 +1352,7 @@
             : `<div class="qmeta">Today's Minimum: ${formatHours(pace.todaysMinimum)} · Remaining: ${formatHours(pace.todayMinimumRemaining)}</div>`;
           const row=document.createElement('div');
           row.className='queue-item'+((jobTimer.running||isActivelyPunched)?' timer-active':'');
-          row.innerHTML=`<div class="rank-stack"><div class="rank">${i+1}</div><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}"><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button><button type="button" data-edit-time-ticket="${ticket}">Edit Time Accrued</button><button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div><button class="secondary timer-btn${punchLocked?' punch-locked':''}" type="button" data-timer-key="${escapeHtml(key)}" aria-label="${escapeHtml(timerActionLabel)}" title="${escapeHtml(timerActionLabel)}" ${(punchPending||punchLocked)?'disabled':''}>${timerLabel}</button></div><div><div class="title-copy-row"><div class="qtitle">${escapeHtml(title)}</div><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<div><a class="client-notes-link" data-client-notes-primary="${clientId}" data-client-notes-secondary="${secondaryClientId}">View Client Notes</a> <span class="muted">·</span> <a class="client-notes-link" data-job-notes-ticket="${ticket}">Job Notes</a> <span class="muted">·</span> ${orphanTimeRecordLink(ticket)}</div><div class="qmeta">Due Date: ${formatDate(dueValue)}</div><div class="qmeta">Time Accrued: ${formatHours(accrued)}</div><div class="qmeta">Estimated Time Remaining: ${formatHours(hours)}</div>${paceLine}<div class="qmeta">Recommended Block: ${formatCountdown(recommendedSeconds)}</div><div class="qmeta">Block Remaining: <span class="timer-readout">${formatBlockTime(jobTimer)}</span></div><a class="reset-block-link" data-reset-block="${escapeHtml(key)}">Reset Block</a></div>`;
+          row.innerHTML=`<div class="rank-stack"><div class="rank">${i+1}</div><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}"><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-job-financials-ticket="${ticket}">Job Income &amp; Expense</button><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button><button type="button" data-edit-time-ticket="${ticket}">Edit Time Accrued</button><button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div><button class="secondary timer-btn${punchLocked?' punch-locked':''}" type="button" data-timer-key="${escapeHtml(key)}" aria-label="${escapeHtml(timerActionLabel)}" title="${escapeHtml(timerActionLabel)}" ${(punchPending||punchLocked)?'disabled':''}>${timerLabel}</button></div><div><div class="title-copy-row"><div class="qtitle">${escapeHtml(title)}</div><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<div><a class="client-notes-link" data-client-notes-primary="${clientId}" data-client-notes-secondary="${secondaryClientId}">View Client Notes</a> <span class="muted">·</span> <a class="client-notes-link" data-job-notes-ticket="${ticket}">Job Notes</a> <span class="muted">·</span> ${orphanTimeRecordLink(ticket)}</div>${profitLine(j.ticketNumber,'qmeta')}<div class="qmeta">Due Date: ${formatDate(dueValue)}</div><div class="qmeta">Time Accrued: ${formatHours(accrued)}</div><div class="qmeta">Estimated Time Remaining: ${formatHours(hours)}</div>${paceLine}<div class="qmeta">Recommended Block: ${formatCountdown(recommendedSeconds)}</div><div class="qmeta">Block Remaining: <span class="timer-readout">${formatBlockTime(jobTimer)}</span></div><a class="reset-block-link" data-reset-block="${escapeHtml(key)}">Reset Block</a></div>`;
           q.appendChild(row);
         };
         dueToday.forEach((j,i)=>addQueueItem(j,i)); const divider=document.createElement('div');divider.className='eod-divider';divider.textContent='End of Day · 10:00 PM';q.appendChild(divider); later.forEach((j,i)=>addQueueItem(j,dueToday.length+i));
@@ -1248,6 +1361,7 @@
         q.querySelectorAll('[data-copy-title]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();copyJobTitle(btn.getAttribute('data-copy-title')||'')}));
         q.querySelectorAll('[data-menu-ticket]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const ticket=btn.getAttribute('data-menu-ticket');const menu=q.querySelector(`[data-move-menu="${ticket}"]`);document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>{if(m!==menu)m.classList.remove('open')});menu.classList.toggle('open')}));
         q.querySelectorAll('[data-move-ticket]').forEach(btn=>btn.addEventListener('click',()=>changeJobStatusFromMenu(btn)));
+        q.querySelectorAll('[data-job-financials-ticket]').forEach(btn=>btn.addEventListener('click',()=>openJobFinancialsModal(btn.getAttribute('data-job-financials-ticket'))));
         q.querySelectorAll('[data-edit-title-ticket]').forEach(btn=>btn.addEventListener('click',()=>openJobTitleModal(btn.getAttribute('data-edit-title-ticket'))));
         q.querySelectorAll('[data-change-due-ticket]').forEach(btn=>btn.addEventListener('click',()=>openDueDateModal(btn.getAttribute('data-change-due-ticket'))));
         q.querySelectorAll('[data-edit-time-ticket]').forEach(btn=>btn.addEventListener('click',()=>openTimeEditModal(btn.getAttribute('data-edit-time-ticket'))));
@@ -1257,10 +1371,11 @@
       }
       function renderCards(targetId,list){
         const target=document.getElementById(targetId); target.innerHTML=''; if(!list.length){target.innerHTML='<div class="muted">No jobs.</div>';return}
-        list.forEach(j=>{const c=document.createElement('div');const key=timerKeyFor(j);const jobTimer=ensureTimerState(j);c.className='card'+(targetId==='todoList'&&jobTimer.running?' timer-active':'');const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const accrued=getRecordedTimeAccruedHours(j);const storedDueValue=j.due||j.dueDate;const overdue=targetId==='todoList'&&isOverdueJob(j);const dueValue=targetId==='todoList'?effectiveDueDate(j):storedDueValue;const followUpValue=j.followUpDate||'';const followUpDue=followUpValue&&followUpValue<=todayISO();const ticket=escapeHtml(String(j.ticketNumber||''));const current=escapeHtml(j.status);const clientId=escapeHtml(String(j.primaryClientId||j.primaryClientID||j.clientId||''));const secondaryClientId=escapeHtml(String(j.secondaryClientId||''));const dueDays=dueValue?Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000):999;const invoiceTag=j.status==='To Be Invoiced'?'<span class="card-tag invoice">To Be Invoiced</span>':'';const completedTag=j.status==='Completed'?`<span class="card-tag">Completed: ${formatDate((j.completedAt||todayISO()).slice(0,10))}</span>`:'';const urgencyTag=targetId==='todoList'?(overdue?'<span class="card-tag overdue">Overdue</span>':dueDays<=0?'<span class="card-tag urgent">Due Today</span>':dueDays<=1?'<span class="card-tag soon">Due Soon</span>':''):'';const tags=completedTag+invoiceTag+urgencyTag;const usesFollowUpDate=j.status==='Client Review'||j.status==='In Production / Awaiting Vendor';const quickReturnPunchMenu=j.status==='Client Review'?`<button type="button" data-client-review-punch-ticket="${ticket}">Move to To Do &amp; Punch In</button><div class="menu-separator"></div>`:'';const followUpMenu=usesFollowUpDate?`<button type="button" data-change-follow-up-ticket="${ticket}">Change Follow Up Date</button>`:'';const dueMeta=usesFollowUpDate?'':`<div class="card-meta">Due Date: ${formatDate(dueValue)}</div>`;const followUpMeta=usesFollowUpDate?`<div class="card-meta${followUpDue?' follow-up-due':''}">Follow Up Date: ${followUpValue?formatDate(followUpValue):'—'}</div>`:'';c.innerHTML=`<div class="card-head"><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}">${quickReturnPunchMenu}<button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button>${followUpMenu}<button type="button" data-edit-time-ticket="${ticket}">Edit Time Accrued</button><button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div><div><div class="title-copy-row"><div class="card-title">${escapeHtml(title)}</div><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<a class="client-notes-link" data-client-notes-primary="${clientId}" data-client-notes-secondary="${secondaryClientId}">View Client Notes</a> <span class="muted">·</span> <a class="client-notes-link" data-job-notes-ticket="${ticket}">Job Notes</a> <span class="muted">·</span> ${orphanTimeRecordLink(ticket)}${dueMeta}${followUpMeta}<div class="card-meta">Time Accrued: ${formatHours(accrued)}</div><div class="card-meta">Estimated Time Remaining: ${formatHours(j.status==='To Be Invoiced'?.1667:hours)}</div><div class="card-meta">Block Remaining: ${formatBlockTime(jobTimer)}</div></div></div>`;target.appendChild(c)});
+        list.forEach(j=>{const c=document.createElement('div');const key=timerKeyFor(j);const jobTimer=ensureTimerState(j);c.className='card'+(targetId==='todoList'&&jobTimer.running?' timer-active':'');const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const accrued=getRecordedTimeAccruedHours(j);const storedDueValue=j.due||j.dueDate;const overdue=targetId==='todoList'&&isOverdueJob(j);const dueValue=targetId==='todoList'?effectiveDueDate(j):storedDueValue;const followUpValue=j.followUpDate||'';const followUpDue=followUpValue&&followUpValue<=todayISO();const ticket=escapeHtml(String(j.ticketNumber||''));const current=escapeHtml(j.status);const clientId=escapeHtml(String(j.primaryClientId||j.primaryClientID||j.clientId||''));const secondaryClientId=escapeHtml(String(j.secondaryClientId||''));const dueDays=dueValue?Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000):999;const invoiceTag=j.status==='To Be Invoiced'?'<span class="card-tag invoice">To Be Invoiced</span>':'';const completedTag=j.status==='Completed'?`<span class="card-tag">Completed: ${formatDate((j.completedAt||todayISO()).slice(0,10))}</span>`:'';const urgencyTag=targetId==='todoList'?(overdue?'<span class="card-tag overdue">Overdue</span>':dueDays<=0?'<span class="card-tag urgent">Due Today</span>':dueDays<=1?'<span class="card-tag soon">Due Soon</span>':''):'';const tags=completedTag+invoiceTag+urgencyTag;const usesFollowUpDate=j.status==='Client Review'||j.status==='In Production / Awaiting Vendor';const quickReturnPunchMenu=j.status==='Client Review'?`<button type="button" data-client-review-punch-ticket="${ticket}">Move to To Do &amp; Punch In</button><div class="menu-separator"></div>`:'';const followUpMenu=usesFollowUpDate?`<button type="button" data-change-follow-up-ticket="${ticket}">Change Follow Up Date</button>`:'';const dueMeta=usesFollowUpDate?'':`<div class="card-meta">Due Date: ${formatDate(dueValue)}</div>`;const followUpMeta=usesFollowUpDate?`<div class="card-meta${followUpDue?' follow-up-due':''}">Follow Up Date: ${followUpValue?formatDate(followUpValue):'—'}</div>`:'';c.innerHTML=`<div class="card-head"><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}">${quickReturnPunchMenu}<button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-job-financials-ticket="${ticket}">Job Income &amp; Expense</button><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button>${followUpMenu}<button type="button" data-edit-time-ticket="${ticket}">Edit Time Accrued</button><button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div><div><div class="title-copy-row"><div class="card-title">${escapeHtml(title)}</div><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<a class="client-notes-link" data-client-notes-primary="${clientId}" data-client-notes-secondary="${secondaryClientId}">View Client Notes</a> <span class="muted">·</span> <a class="client-notes-link" data-job-notes-ticket="${ticket}">Job Notes</a> <span class="muted">·</span> ${orphanTimeRecordLink(ticket)}${dueMeta}${followUpMeta}${profitLine(j.ticketNumber)}<div class="card-meta">Time Accrued: ${formatHours(accrued)}</div><div class="card-meta">Estimated Time Remaining: ${formatHours(j.status==='To Be Invoiced'?.1667:hours)}</div><div class="card-meta">Block Remaining: ${formatBlockTime(jobTimer)}</div></div></div>`;target.appendChild(c)});
         target.querySelectorAll('[data-menu-ticket]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const ticket=btn.getAttribute('data-menu-ticket');const menu=target.querySelector(`[data-move-menu="${ticket}"]`);document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>{if(m!==menu)m.classList.remove('open')});menu.classList.toggle('open')}));
         target.querySelectorAll('[data-move-ticket]').forEach(btn=>btn.addEventListener('click',()=>changeJobStatusFromMenu(btn)));
         target.querySelectorAll('[data-client-review-punch-ticket]').forEach(btn=>btn.addEventListener('click',()=>quickClientReviewReturnAndPunch(btn.getAttribute('data-client-review-punch-ticket'))));
+        target.querySelectorAll('[data-job-financials-ticket]').forEach(btn=>btn.addEventListener('click',()=>openJobFinancialsModal(btn.getAttribute('data-job-financials-ticket'))));
         target.querySelectorAll('[data-edit-title-ticket]').forEach(btn=>btn.addEventListener('click',()=>openJobTitleModal(btn.getAttribute('data-edit-title-ticket'))));
         target.querySelectorAll('[data-change-due-ticket]').forEach(btn=>btn.addEventListener('click',()=>openDueDateModal(btn.getAttribute('data-change-due-ticket'))));
         target.querySelectorAll('[data-change-follow-up-ticket]').forEach(btn=>btn.addEventListener('click',()=>openFollowUpDateModal(btn.getAttribute('data-change-follow-up-ticket'))));
@@ -1579,7 +1694,7 @@
         setBackendStatus(false,'Connecting to Google Sheets…');
         try{
           const data=await apiGet(); if(!data.success)throw new Error(data.error||'Backend error');
-          clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[]; statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; workSets=data.workSets||[]; holidayCalendar=data.holidayCalendar||[]; await reconcileOpenWorkSession(data.openWorkSession||null);
+          clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[]; statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; workSets=data.workSets||[]; holidayCalendar=data.holidayCalendar||[]; jobFinancials=data.jobFinancials||[]; await reconcileOpenWorkSession(data.openWorkSession||null);
           Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);
           clients.forEach(c=>{clientNotes[clientNotesKey(c.id)]=String(c.notes||c.clientNotes||'')});
           subclients.forEach(s=>{clientNotes[clientNotesKey(s.parentClientId,s.id)]=String(s.notes||s.clientNotes||'')});
@@ -1655,6 +1770,22 @@
       });
       document.getElementById('clearBtn').addEventListener('click',()=>{document.getElementById('jobForm').reset();document.getElementById('clientModal').classList.remove('open');document.getElementById('subclientModal').classList.remove('open');document.getElementById('dueDate').dataset.manual='';populateClients();syncNextId();document.getElementById('ticketPreview').style.display='none';document.getElementById('jobNumberWrap').style.display='none'});
       document.getElementById('reloadBtn').addEventListener('click',loadBackend);
+      document.getElementById('addIncomeFinancialRowBtn').addEventListener('click',()=>addFinancialRow('Income'));
+      document.getElementById('addExpenseFinancialRowBtn').addEventListener('click',()=>addFinancialRow('Expense'));
+      document.getElementById('cancelJobFinancialsBtn').addEventListener('click',()=>{jobFinancialsTicket='';document.getElementById('jobFinancialsModalBackdrop').classList.remove('open')});
+      document.getElementById('saveJobFinancialsBtn').addEventListener('click',async()=>{
+        if(!jobFinancialsTicket)return;
+        const saveBtn=document.getElementById('saveJobFinancialsBtn');
+        try{
+          const entries=[...readFinancialRows('Income',true),...readFinancialRows('Expense',true)];
+          saveBtn.disabled=true;saveBtn.textContent='Saving…';
+          const data=await apiPost({action:'saveJobFinancials',ticketNumber:jobFinancialsTicket,entries});
+          if(!data.success)throw new Error(data.error||'Unable to save job financials');
+          jobFinancials=jobFinancials.filter(entry=>String(entry.ticketNumber||'')!==String(jobFinancialsTicket));
+          (data.entries||entries).forEach(entry=>jobFinancials.push({...entry,ticketNumber:Number(jobFinancialsTicket)}));
+          document.getElementById('jobFinancialsModalBackdrop').classList.remove('open');jobFinancialsTicket='';renderQueue();renderBoard();
+        }catch(err){alert(err.message)}finally{saveBtn.disabled=false;saveBtn.textContent='Save'}
+      });
       document.getElementById('notificationTrayMinimizeBtn').addEventListener('click',()=>{notificationTrayMinimized=true;renderNotificationTray()});
       document.getElementById('notificationTrayCollapsedBtn').addEventListener('click',()=>{notificationTrayMinimized=false;renderNotificationTray()});
       document.getElementById('notificationFixOrphanBtn').addEventListener('click',()=>{
