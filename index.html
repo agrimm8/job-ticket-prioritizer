@@ -182,6 +182,33 @@
     #job-priority-app .financial-net-value.zero{color:#6b7280}
     @media(max-width:700px){#job-priority-app .financial-grid{grid-template-columns:1fr}#job-priority-app .financial-columns-head,#job-priority-app .financial-entry-row,#job-priority-app .financial-total-row{grid-template-columns:minmax(0,1fr) 105px 22px}}
   
+
+    #job-priority-app .financial-dashboard{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline;margin-top:5px}
+    #job-priority-app .financial-dashboard-item{display:flex;gap:6px;align-items:baseline;font-size:12px;font-weight:800}
+    #job-priority-app .financial-dashboard-label{opacity:.72}
+    #job-priority-app .financial-dashboard-value{font-size:15px;color:light-dark(#111,#f2f2f2)}
+    #job-priority-app .financial-dashboard-value.negative{color:#b42318}
+    #job-priority-app .financial-dashboard-value.zero{color:#6b7280}
+    #job-priority-app .overhead-modal{width:min(900px,calc(100vw - 32px));max-height:88vh;overflow:auto}
+    #job-priority-app .overhead-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+    #job-priority-app .overhead-summary-card{border:1px solid light-dark(#dfe5ec,#454545);border-radius:9px;padding:9px 10px;background:light-dark(#fbfcfd,#292929)}
+    #job-priority-app .overhead-summary-label{font-size:9px;font-weight:800;opacity:.65;text-transform:uppercase;letter-spacing:.04em}
+    #job-priority-app .overhead-summary-value{font-size:16px;font-weight:900;margin-top:3px}
+    #job-priority-app .overhead-summary-value.negative{color:#b42318}
+    #job-priority-app .overhead-table{border:1px solid light-dark(#dfe5ec,#454545);border-radius:10px;overflow:hidden;margin-top:10px}
+    #job-priority-app .overhead-head,#job-priority-app .overhead-row{display:grid;grid-template-columns:minmax(150px,1.4fr) 110px 120px 90px 110px 78px 24px;gap:7px;align-items:center;padding:7px 9px}
+    #job-priority-app .overhead-head{font-size:9px;font-weight:800;opacity:.68;background:light-dark(#f7f9fc,#2f2f2f);border-bottom:1px solid light-dark(#e3e8ef,#454545)}
+    #job-priority-app .overhead-row{border-bottom:1px solid light-dark(#edf0f4,#3b3b3b)}
+    #job-priority-app .overhead-row:last-child{border-bottom:0}
+    #job-priority-app .overhead-row input,#job-priority-app .overhead-row select{min-width:0;margin:0;height:32px;font-size:10px;padding:5px 6px}
+    #job-priority-app .overhead-monthly-cost{text-align:right;font-size:10px;font-weight:800}
+    #job-priority-app .overhead-carry{display:flex;align-items:center;justify-content:center}
+    #job-priority-app .overhead-carry input{width:15px;height:15px}
+    #job-priority-app .overhead-remove{border:0;background:transparent;color:#b42318;padding:0;font-size:16px;line-height:1;cursor:pointer}
+    #job-priority-app .overhead-tools{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+    #job-priority-app .overhead-note{font-size:10px;opacity:.67;margin-top:8px}
+    @media(max-width:850px){#job-priority-app .overhead-table{overflow-x:auto}#job-priority-app .overhead-head,#job-priority-app .overhead-row{min-width:760px}#job-priority-app .overhead-summary{grid-template-columns:1fr}}
+
     /* Compact operational notification tray */
     #job-priority-app .notification-tray{position:fixed;right:18px;bottom:18px;z-index:12000;width:min(390px,calc(100vw - 36px));display:none;flex-direction:column;gap:7px;pointer-events:none}
     #job-priority-app .notification-tray.show{display:flex}
@@ -209,7 +236,7 @@
 </style>
   <div class="wrap">
     <div class="top">
-      <div><h1>Job Ticket Prioritizer</h1><p class="sub">Live ticket creation, automatic due-date rules, statuses, and priority ranking.</p><div class="backend-status"><span class="backend-dot" id="backendDot"></span><span id="backendText">Connecting to Google Sheets…</span><span>· <a href="https://docs.google.com/spreadsheets/d/11PBs4KyIzJFDdBXQAWEXuKaxWxCrQJtmUhB7-PYmp14/edit" target="_blank" rel="noopener noreferrer">open sheet</a></span></div></div>
+      <div><h1>Job Ticket Prioritizer</h1><p class="sub">Live ticket creation, automatic due-date rules, statuses, and priority ranking.</p><div class="financial-dashboard"><div class="financial-dashboard-item"><span class="financial-dashboard-label" id="monthlyNetProfitLabel">Net Profit</span><span class="financial-dashboard-value zero" id="monthlyNetProfitValue">$0.00</span></div><div class="financial-dashboard-item"><span class="financial-dashboard-label">Potential Project Profit</span><span class="financial-dashboard-value zero" id="potentialProjectProfitValue">$0.00</span></div></div><div class="backend-status"><span class="backend-dot" id="backendDot"></span><span id="backendText">Connecting to Google Sheets…</span><span>· <a href="https://docs.google.com/spreadsheets/d/11PBs4KyIzJFDdBXQAWEXuKaxWxCrQJtmUhB7-PYmp14/edit" target="_blank" rel="noopener noreferrer">open sheet</a></span></div></div>
       <div class="top-controls">
         <div class="idle-alarm-control" title="When switched on, the idle warning remains visible but makes no sound.">
           <label class="idle-alarm-switch" for="idleAlarmOffToggle">
@@ -218,6 +245,7 @@
           </label>
           <span id="idleAlarmStateLabel">Idle Alarm On</span>
         </div>
+        <button class="secondary" id="overheadBtn" type="button">Overhead</button>
         <button class="secondary" id="reloadBtn" type="button">Reload Data</button>
       </div>
     </div>
@@ -499,6 +527,24 @@
         <div class="actions"><button class="primary" id="saveJobFinancialsBtn" type="button">Save</button><button class="secondary" id="cancelJobFinancialsBtn" type="button">Cancel</button></div>
       </div>
     </div>
+    <div class="timer-modal-backdrop" id="overheadModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="overheadModalTitle">
+      <div class="timer-modal overhead-modal">
+        <h3 id="overheadModalTitle">Monthly Overhead</h3>
+        <p id="overheadModalMonth" class="muted"></p>
+        <div class="overhead-summary">
+          <div class="overhead-summary-card"><div class="overhead-summary-label">Completed Project Profit</div><div class="overhead-summary-value" id="overheadGrossProfit">$0.00</div></div>
+          <div class="overhead-summary-card"><div class="overhead-summary-label">Monthly Overhead</div><div class="overhead-summary-value" id="overheadMonthlyTotal">$0.00</div></div>
+          <div class="overhead-summary-card"><div class="overhead-summary-label">Net Profit</div><div class="overhead-summary-value" id="overheadNetProfit">$0.00</div></div>
+        </div>
+        <div class="overhead-table">
+          <div class="overhead-head"><span>Description</span><span>Charge</span><span>Frequency</span><span>Term</span><span>Monthly Cost</span><span>Carry Forward</span><span></span></div>
+          <div id="overheadRows"></div>
+        </div>
+        <div class="overhead-tools"><button class="secondary" id="addOverheadRowBtn" type="button">+ Add Overhead</button><button class="secondary" id="copyPreviousOverheadBtn" type="button">Copy Previous Month</button></div>
+        <p class="overhead-note">Annual charges are divided by 12. Fixed Term charges are divided across the number of months you enter. Carry Forward items become the recurring starting point for future months.</p>
+        <div class="actions"><button class="secondary" id="cancelOverheadBtn" type="button">Cancel</button><button class="primary" id="saveOverheadBtn" type="button">Save Overhead</button></div>
+      </div>
+    </div>
     <div class="timer-modal-backdrop" id="timeRecordModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="timeRecordModalTitle">
       <div class="timer-modal time-record-modal">
         <h3 id="timeRecordModalTitle">Time Record</h3>
@@ -556,6 +602,8 @@
       let workSets=[];
       let jobFinancials=[];
       let jobFinancialsTicket='';
+      let overheadTemplates=[];
+      let currentMonthlyOverhead={month:'',entries:[],total:0};
       let recoveryOpenSession=null;
       let holidayCalendar=[];
       let activeWorkSession=null;
@@ -1265,6 +1313,86 @@
         const summary=financialSummary(ticket);
         return `<div class="${className} job-profit ${profitClass(summary.net)}">Net Profit: ${escapeHtml(formatCurrency(summary.net))}</div>`;
       }
+      function completedProjectProfitForMonth(monthKey){
+        return completedJobsForMonth(monthKey).reduce((sum,j)=>sum+financialSummary(j.ticketNumber).net,0);
+      }
+      function potentialProjectProfit(){
+        const potentialStatuses=new Set(['To Do','In Progress','Client Review','In Production / Awaiting Vendor','To Be Invoiced']);
+        return jobs.filter(j=>potentialStatuses.has(String(j.status||''))).reduce((sum,j)=>sum+financialSummary(j.ticketNumber).net,0);
+      }
+      function monthlyOverheadTotal(){return Number(currentMonthlyOverhead&&currentMonthlyOverhead.total||0)}
+      function setMoneyState(el,value){
+        if(!el)return;
+        el.textContent=formatCurrency(value);
+        el.classList.toggle('negative',value<0);
+        el.classList.toggle('zero',Math.abs(value)<0.005);
+      }
+      function renderFinancialDashboard(){
+        const month=currentMonthKey();
+        const gross=completedProjectProfitForMonth(month);
+        const overhead=monthlyOverheadTotal();
+        const net=gross-overhead;
+        const label=document.getElementById('monthlyNetProfitLabel');
+        if(label){const d=new Date();label.textContent=d.toLocaleDateString(undefined,{month:'long'})+' Net Profit'}
+        setMoneyState(document.getElementById('monthlyNetProfitValue'),net);
+        setMoneyState(document.getElementById('potentialProjectProfitValue'),potentialProjectProfit());
+      }
+      function overheadMonthlyAmount(entry){
+        const amount=Math.max(0,Number(entry.amount)||0);
+        if(entry.frequency==='Annual')return amount/12;
+        if(entry.frequency==='Fixed Term')return amount/Math.max(1,Number(entry.termMonths)||1);
+        return amount;
+      }
+      function overheadMonthLabel(monthKey){
+        const parts=String(monthKey||currentMonthKey()).split('-').map(Number);
+        const d=new Date(parts[0],(parts[1]||1)-1,1);
+        return d.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+      }
+      function makeOverheadRow(entry={}){
+        const row=document.createElement('div');row.className='overhead-row';
+        const frequency=entry.frequency||'Monthly';
+        row.innerHTML=`<input class="overhead-description" type="text" placeholder="Description" value="${escapeHtml(entry.description||'')}"><input class="overhead-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" value="${Number.isFinite(Number(entry.amount))&&entry.amount!==''?escapeHtml(Number(entry.amount).toFixed(2)):''}"><select class="overhead-frequency"><option value="Monthly" ${frequency==='Monthly'?'selected':''}>Monthly</option><option value="Annual" ${frequency==='Annual'?'selected':''}>Annual</option><option value="Fixed Term" ${frequency==='Fixed Term'?'selected':''}>Fixed Term</option></select><input class="overhead-term" type="number" min="1" step="1" placeholder="Months" value="${frequency==='Fixed Term'&&entry.termMonths?escapeHtml(String(entry.termMonths)):''}" ${frequency==='Fixed Term'?'':'disabled'}><span class="overhead-monthly-cost">$0.00</span><label class="overhead-carry" title="Carry this item into future months"><input class="overhead-carry-input" type="checkbox" ${entry.carryForward===false?'':'checked'}></label><button class="overhead-remove" type="button" aria-label="Remove overhead" title="Remove overhead">×</button>`;
+        row.querySelector('.overhead-frequency').addEventListener('change',()=>{const fixed=row.querySelector('.overhead-frequency').value==='Fixed Term';const term=row.querySelector('.overhead-term');term.disabled=!fixed;if(!fixed)term.value='';updateOverheadTotals()});
+        row.querySelectorAll('input').forEach(input=>input.addEventListener('input',updateOverheadTotals));
+        row.querySelector('.overhead-remove').addEventListener('click',()=>{row.remove();updateOverheadTotals()});
+        document.getElementById('overheadRows').appendChild(row);
+        updateOverheadTotals();
+      }
+      function collectOverheadEntries(){
+        const entries=[];
+        document.querySelectorAll('#overheadRows .overhead-row').forEach(row=>{
+          const description=row.querySelector('.overhead-description').value.trim();
+          const amountText=row.querySelector('.overhead-amount').value.trim();
+          if(!description&&!amountText)return;
+          const frequency=row.querySelector('.overhead-frequency').value;
+          const termMonths=frequency==='Fixed Term'?Number(row.querySelector('.overhead-term').value):'';
+          entries.push({description,amount:Number(amountText),frequency,termMonths,carryForward:row.querySelector('.overhead-carry-input').checked});
+        });
+        return entries;
+      }
+      function updateOverheadTotals(){
+        let total=0;
+        document.querySelectorAll('#overheadRows .overhead-row').forEach(row=>{
+          const entry={amount:Number(row.querySelector('.overhead-amount').value)||0,frequency:row.querySelector('.overhead-frequency').value,termMonths:Number(row.querySelector('.overhead-term').value)||1};
+          const monthly=overheadMonthlyAmount(entry);total+=monthly;row.querySelector('.overhead-monthly-cost').textContent=formatCurrency(monthly);
+        });
+        const gross=completedProjectProfitForMonth(currentMonthKey());
+        const net=gross-total;
+        document.getElementById('overheadMonthlyTotal').textContent=formatCurrency(total);
+        document.getElementById('overheadGrossProfit').textContent=formatCurrency(gross);
+        setMoneyState(document.getElementById('overheadNetProfit'),net);
+      }
+      function openOverheadModal(){
+        const month=currentMonthlyOverhead&&currentMonthlyOverhead.month||currentMonthKey();
+        document.getElementById('overheadModalMonth').textContent=overheadMonthLabel(month);
+        const rows=document.getElementById('overheadRows');rows.innerHTML='';
+        const entries=(currentMonthlyOverhead&&currentMonthlyOverhead.entries)||[];
+        entries.forEach(makeOverheadRow);
+        if(!entries.length)makeOverheadRow();
+        updateOverheadTotals();
+        document.getElementById('overheadModalBackdrop').classList.add('open');
+      }
+
       function createFinancialRow(type,entry={}){
         const row=document.createElement('div');
         row.className='financial-entry-row';
@@ -1677,6 +1805,7 @@
       }
       function renderBoard(){
         renderKpis();
+        renderFinancialDashboard();
         renderOrphanPunchBanner();
         const wsiwonTickets=new Set(getWSIWONJobs().map(j=>String(j.ticketNumber||'')));
         const todo=jobs
@@ -1694,7 +1823,7 @@
         setBackendStatus(false,'Connecting to Google Sheets…');
         try{
           const data=await apiGet(); if(!data.success)throw new Error(data.error||'Backend error');
-          clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[]; statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; workSets=data.workSets||[]; holidayCalendar=data.holidayCalendar||[]; jobFinancials=data.jobFinancials||[]; await reconcileOpenWorkSession(data.openWorkSession||null);
+          clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[]; statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; workSets=data.workSets||[]; holidayCalendar=data.holidayCalendar||[]; jobFinancials=data.jobFinancials||[]; overheadTemplates=data.overheadTemplates||[]; currentMonthlyOverhead=data.currentMonthlyOverhead||{month:currentMonthKey(),entries:[],total:0}; await reconcileOpenWorkSession(data.openWorkSession||null);
           Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);
           clients.forEach(c=>{clientNotes[clientNotesKey(c.id)]=String(c.notes||c.clientNotes||'')});
           subclients.forEach(s=>{clientNotes[clientNotesKey(s.parentClientId,s.id)]=String(s.notes||s.clientNotes||'')});
@@ -1769,6 +1898,32 @@
         }catch(err){alert(err.message)}finally{saveBtn.disabled=false}
       });
       document.getElementById('clearBtn').addEventListener('click',()=>{document.getElementById('jobForm').reset();document.getElementById('clientModal').classList.remove('open');document.getElementById('subclientModal').classList.remove('open');document.getElementById('dueDate').dataset.manual='';populateClients();syncNextId();document.getElementById('ticketPreview').style.display='none';document.getElementById('jobNumberWrap').style.display='none'});
+      document.getElementById('overheadBtn').addEventListener('click',openOverheadModal);
+      document.getElementById('cancelOverheadBtn').addEventListener('click',()=>document.getElementById('overheadModalBackdrop').classList.remove('open'));
+      document.getElementById('addOverheadRowBtn').addEventListener('click',()=>makeOverheadRow());
+      document.getElementById('copyPreviousOverheadBtn').addEventListener('click',async()=>{
+        if(!confirm('Replace this month\'s overhead with the previous month\'s saved overhead?'))return;
+        const btn=document.getElementById('copyPreviousOverheadBtn');btn.disabled=true;btn.textContent='Copying…';
+        try{
+          const data=await apiPost({action:'copyPreviousMonthOverhead',month:currentMonthKey()});
+          if(!data.success)throw new Error(data.error||'Unable to copy previous month overhead');
+          overheadTemplates=data.overheadTemplates||[];currentMonthlyOverhead=data.monthlyOverhead||{month:currentMonthKey(),entries:[],total:0};openOverheadModal();renderFinancialDashboard();
+        }catch(err){alert(err.message)}finally{btn.disabled=false;btn.textContent='Copy Previous Month'}
+      });
+      document.getElementById('saveOverheadBtn').addEventListener('click',async()=>{
+        const entries=collectOverheadEntries();
+        for(const entry of entries){
+          if(!entry.description){alert('Each overhead entry needs a description.');return}
+          if(!Number.isFinite(entry.amount)||entry.amount<0){alert('Each overhead charge needs a valid amount.');return}
+          if(entry.frequency==='Fixed Term'&&(!Number.isFinite(entry.termMonths)||entry.termMonths<1)){alert('Fixed Term overhead needs a term of at least 1 month.');return}
+        }
+        const btn=document.getElementById('saveOverheadBtn');btn.disabled=true;btn.textContent='Saving…';
+        try{
+          const data=await apiPost({action:'saveMonthlyOverhead',month:currentMonthKey(),entries});
+          if(!data.success)throw new Error(data.error||'Unable to save overhead');
+          overheadTemplates=data.overheadTemplates||[];currentMonthlyOverhead=data.monthlyOverhead||{month:currentMonthKey(),entries:[],total:0};document.getElementById('overheadModalBackdrop').classList.remove('open');renderFinancialDashboard();
+        }catch(err){alert(err.message)}finally{btn.disabled=false;btn.textContent='Save Overhead'}
+      });
       document.getElementById('reloadBtn').addEventListener('click',loadBackend);
       document.getElementById('addIncomeFinancialRowBtn').addEventListener('click',()=>addFinancialRow('Income'));
       document.getElementById('addExpenseFinancialRowBtn').addEventListener('click',()=>addFinancialRow('Expense'));
