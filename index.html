@@ -475,6 +475,18 @@
           <option value="5">5 Days</option>
         </select>
 
+        <label for="clientReviewReturnReason" style="margin-top:12px">Reason for Return</label>
+        <select id="clientReviewReturnReason">
+          <option value="Change Order">Change Order</option>
+          <option value="Correction">Correction / Accidental Move</option>
+        </select>
+
+        <div id="clientReviewChangeOrderNotesWrap" style="margin-top:12px">
+          <label for="clientReviewChangeOrderNotes">Change Order Notes</label>
+          <textarea id="clientReviewChangeOrderNotes" rows="4" placeholder="Describe the client's requested changes..."></textarea>
+          <p class="muted" style="margin-top:6px">These notes will be carried into the next New Change Order when you punch into this job.</p>
+        </div>
+
         <div class="actions" style="margin-top:16px">
           <button class="primary" id="clientReviewSubmitBtn" type="button" disabled>Submit</button>
           <button class="secondary" id="clientReviewCancelBtn" type="button">Cancel</button>
@@ -1152,12 +1164,13 @@
       }
       async function beginWorkSessionForKey(key,workType,workDescription,workSetId='',punchInAt=''){
         const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return false;
-        try{const payload={action:'beginWorkSession',ticketNumber:job.ticketNumber,workType,workDescription,workSetId};if(punchInAt)payload.punchInAt=punchInAt;const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch in');const session=data.session;if(data.workSet&&!workSets.some(set=>set.workSetId===data.workSet.workSetId))workSets.push(data.workSet);workSessions.push(session);applyWorkSessionContext(session,key);saveActiveWorkSession({...session,timerKey:key});return true}catch(err){alert('Punch In could not be saved: '+err.message);return false}
+        try{const payload={action:'beginWorkSession',ticketNumber:job.ticketNumber,workType,workDescription,workSetId};if(punchInAt)payload.punchInAt=punchInAt;const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch in');const session=data.session;if(data.workSet&&!workSets.some(set=>set.workSetId===data.workSet.workSetId))workSets.push(data.workSet);if(data.pendingChangeOrderNotes!==undefined)job.pendingChangeOrderNotes=String(data.pendingChangeOrderNotes||'');workSessions.push(session);applyWorkSessionContext(session,key);saveActiveWorkSession({...session,timerKey:key});return true}catch(err){alert('Punch In could not be saved: '+err.message);return false}
       }
       async function resumeWorkSessionForKey(key,punchInAt=''){const context=workContextByKey[key];if(!context||!context.workSetId)return false;return beginWorkSessionForKey(key,context.workType,context.workDescription,context.workSetId,punchInAt)}
       async function requestStartTimer(key){
         const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;if(activeWorkSession&&activeWorkSession.sessionId){alert(`Ticket ${activeWorkSession.ticketNumber} already has an active punch. Punch out of that session before starting another job.`);return}
-        pendingPunchTimerKey=key;document.getElementById('punchInModalTitle').textContent=job.title||job.displayTitle||'Punch In';document.getElementById('punchInWorkDescription').readOnly=false;document.getElementById('punchInWorkDescription').value='';populatePunchInChoices(job);document.getElementById('punchInWorkType').value='';document.getElementById('punchInWorkSet').value='';updatePunchInFields();document.getElementById('punchInModalBackdrop').classList.add('open');
+        const pendingNotes=String(job.pendingChangeOrderNotes||'').trim();
+        pendingPunchTimerKey=key;document.getElementById('punchInModalTitle').textContent=job.title||job.displayTitle||'Punch In';document.getElementById('punchInWorkDescription').readOnly=false;document.getElementById('punchInWorkDescription').value=pendingNotes;populatePunchInChoices(job);document.getElementById('punchInWorkType').value=pendingNotes?'New Change Order':'';document.getElementById('punchInWorkSet').value='';updatePunchInFields();document.getElementById('punchInModalBackdrop').classList.add('open');
       }
       function sessionRecoveryKey(session){return String(session&&session.ticketNumber||'')}
       function orphanOpenSessions(){
@@ -1774,10 +1787,19 @@
       }
       function openDueDateModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;dueDateEditTicket=String(ticket);document.getElementById('dueDateModalJob').textContent=job.title||job.displayTitle||'';document.getElementById('dueDateModalInput').value=job.due||job.dueDate||'';document.getElementById('dueDateModalBackdrop').classList.add('open');document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'))}
       function openFollowUpDateModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;followUpDateEditTicket=String(ticket);document.getElementById('followUpDateModalJob').textContent=job.title||job.displayTitle||'';document.getElementById('followUpDateModalInput').value=job.followUpDate||defaultFollowUpDate();document.getElementById('followUpDateModalBackdrop').classList.add('open');document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'))}
+      function updateClientReviewReturnFields(){
+        const reason=document.getElementById('clientReviewReturnReason').value;
+        document.getElementById('clientReviewChangeOrderNotesWrap').style.display=reason==='Change Order'?'block':'none';
+        updateClientReviewSubmitState();
+      }
       function updateClientReviewSubmitState(){
         const etr=document.getElementById('clientReviewEtrSelect').value;
         const due=document.getElementById('clientReviewDueSelect').value;
-        document.getElementById('clientReviewSubmitBtn').disabled=!(etr!==''&&due!=='');
+        const reason=document.getElementById('clientReviewReturnReason').value;
+        const notes=document.getElementById('clientReviewChangeOrderNotes').value.trim();
+        const validReason=reason==='Change Order'||reason==='Correction';
+        const validNotes=reason!=='Change Order'||!!notes;
+        document.getElementById('clientReviewSubmitBtn').disabled=!(etr!==''&&due!==''&&validReason&&validNotes);
       }
       function openClientReviewDueChoice(ticket){
         const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));
@@ -1786,7 +1808,9 @@
         document.getElementById('clientReviewDueChoiceJob').textContent=job.title||job.displayTitle||'';
         document.getElementById('clientReviewEtrSelect').value='';
         document.getElementById('clientReviewDueSelect').value='';
-        updateClientReviewSubmitState();
+        document.getElementById('clientReviewReturnReason').value='Change Order';
+        document.getElementById('clientReviewChangeOrderNotes').value=String(job.pendingChangeOrderNotes||'');
+        updateClientReviewReturnFields();
         document.getElementById('clientReviewDueChoiceBackdrop').classList.add('open');
         document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'));
       }
@@ -1797,10 +1821,14 @@
 
         const newHours=Number(document.getElementById('clientReviewEtrSelect').value);
         const dueOffsetValue=document.getElementById('clientReviewDueSelect').value;
-        if(!newHours||dueOffsetValue==='')return;
+        const returnReason=document.getElementById('clientReviewReturnReason').value;
+        const changeOrderNotes=document.getElementById('clientReviewChangeOrderNotes').value.trim();
+        if(!newHours||dueOffsetValue===''||!returnReason)return;
+        if(returnReason==='Change Order'&&!changeOrderNotes)return;
 
         const dueOffset=Number(dueOffsetValue);
         const newDue=dueOffset===0?todayISO():iso(addWorkdays(today(),dueOffset));
+        const pendingChangeOrderNotes=returnReason==='Change Order'?changeOrderNotes:'';
 
         try{
           const data=await apiPost({
@@ -1809,7 +1837,8 @@
             status:'To Do',
             dueDate:newDue,
             followUpDate:job.followUpDate||'',
-            estimatedHoursRemaining:newHours
+            estimatedHoursRemaining:newHours,
+            pendingChangeOrderNotes
           });
           if(!data.success)throw new Error(data.error||'Unable to update job');
 
@@ -1818,6 +1847,7 @@
           job.due=newDue;
           job.hours=newHours;
           job.estimatedHoursRemaining=newHours;
+          job.pendingChangeOrderNotes=pendingChangeOrderNotes;
 
           const state=ensureTimerState(job);
           state.running=false;
@@ -2175,6 +2205,8 @@
       document.getElementById('cancelFollowUpDateBtn').addEventListener('click',()=>{followUpDateEditTicket='';document.getElementById('followUpDateModalBackdrop').classList.remove('open')});
       document.getElementById('clientReviewEtrSelect').addEventListener('change',updateClientReviewSubmitState);
       document.getElementById('clientReviewDueSelect').addEventListener('change',updateClientReviewSubmitState);
+      document.getElementById('clientReviewReturnReason').addEventListener('change',updateClientReviewReturnFields);
+      document.getElementById('clientReviewChangeOrderNotes').addEventListener('input',updateClientReviewSubmitState);
       document.getElementById('clientReviewSubmitBtn').addEventListener('click',submitClientReviewReturn);
       document.getElementById('clientReviewCancelBtn').addEventListener('click',()=>{
         clientReviewMoveTicket='';
