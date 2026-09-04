@@ -36,6 +36,21 @@
     #job-priority-app .kpi-unit{font-size:11px;font-weight:700;opacity:.72;margin-left:4px}
     #job-priority-app .kpi-comparison{font-size:10px;opacity:.68;margin-top:6px}
     #job-priority-app .kpi-note{font-size:9px;opacity:.55;margin-top:4px;line-height:1.35}
+    #job-priority-app .kpi-link{display:inline-block;margin-top:6px;font-size:9px;color:inherit;text-decoration:underline;cursor:pointer;opacity:.72}
+    #job-priority-app .completed-metrics-modal{width:min(820px,calc(100vw - 32px));max-height:86vh;overflow:auto}
+    #job-priority-app .completed-metrics-table{border:1px solid light-dark(#dfe5ec,#454545);border-radius:10px;overflow:hidden;margin-top:12px}
+    #job-priority-app .completed-metrics-head,#job-priority-app .completed-metrics-row{display:grid;grid-template-columns:105px minmax(0,1fr) 110px 110px;gap:10px;align-items:center;padding:9px 11px}
+    #job-priority-app .completed-metrics-head{font-size:10px;font-weight:800;background:light-dark(#f7f9fc,#2f2f2f);border-bottom:1px solid light-dark(#e3e8ef,#454545)}
+    #job-priority-app .completed-metrics-row{font-size:11px;border-top:1px solid light-dark(#edf0f4,#383838)}
+    #job-priority-app .completed-metrics-row:first-child{border-top:0}
+    #job-priority-app .completed-metrics-row.excluded{opacity:.6;background:light-dark(#fafafa,#262626)}
+    #job-priority-app .completed-metrics-job{min-width:0}
+    #job-priority-app .completed-metrics-title{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #job-priority-app .completed-metrics-reason{font-size:9px;margin-top:2px;opacity:.7}
+    #job-priority-app .completed-metrics-money{text-align:right;font-weight:700}
+    #job-priority-app .completed-metrics-action{text-align:right}
+    #job-priority-app .completed-metrics-action button{font-size:10px;padding:5px 8px}
+    #job-priority-app .completed-metrics-empty{padding:18px;text-align:center;font-size:11px;opacity:.65}
     #job-priority-app .panel{background:light-dark(#fff,#202020);border:1px solid light-dark(#d8d8d4,#333);border-radius:13px;padding:14px}
     #job-priority-app .panel h2{font-size:15px;margin:0 0 11px}
     #job-priority-app .form-grid{display:grid;grid-template-columns:1fr;gap:9px}
@@ -302,6 +317,7 @@
           <div class="kpi-label">Jobs Completed</div>
           <div><span class="kpi-value" id="completedKpiCurrent">—</span><span class="kpi-unit">this month</span></div>
           <div class="kpi-comparison" id="completedKpiPrevious">Last month: —</div>
+          <a class="kpi-link" id="viewCompletedJobsBtn">View Completed Jobs</a>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Avg. Active Queue Time</div>
@@ -529,6 +545,17 @@
         <p id="jobNotesModalJob" style="margin-bottom:10px"></p>
         <textarea id="jobNotesTextarea" class="notes-box" readonly placeholder="No job notes yet."></textarea>
         <div class="actions"><button class="edit-notes-btn" id="editJobNotesBtn" type="button">Edit</button><button class="primary" id="doneJobNotesBtn" type="button" style="display:none">Done</button><button class="secondary" id="closeJobNotesBtn" type="button">Close</button></div>
+      </div>
+    </div>
+    <div class="timer-modal-backdrop" id="completedMetricsModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="completedMetricsModalTitle">
+      <div class="timer-modal completed-metrics-modal">
+        <h3 id="completedMetricsModalTitle">Completed Jobs</h3>
+        <p id="completedMetricsModalMonth" class="muted"></p>
+        <div class="completed-metrics-table">
+          <div class="completed-metrics-head"><span>Completed</span><span>Job</span><span style="text-align:right">Project Net</span><span style="text-align:right">Metrics</span></div>
+          <div id="completedMetricsRows"></div>
+        </div>
+        <div class="actions"><button class="secondary" id="closeCompletedMetricsBtn" type="button">Close</button></div>
       </div>
     </div>
     <div class="timer-modal-backdrop" id="jobFinancialsModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="jobFinancialsModalTitle">
@@ -814,12 +841,15 @@
         }
         return total;
       }
-      function completedJobsForMonth(monthKey){
+      function allCompletedJobsForMonth(monthKey){
         return jobs.filter(j=>timestampMonthKey(j.completedAt)===monthKey);
+      }
+      function completedJobsForMonth(monthKey){
+        return allCompletedJobsForMonth(monthKey).filter(j=>j.excludeFromCompletedMetrics!==true);
       }
       const ACTIVE_QUEUE_KPI_START_DATE='2026-09-01';
       function averageTrackedQueueHours(monthKey){
-        const completed=completedJobsForMonth(monthKey)
+        const completed=allCompletedJobsForMonth(monthKey)
           .filter(j=>String(j.completedAt||'').slice(0,10)>=ACTIVE_QUEUE_KPI_START_DATE);
         const values=completed
           .map(j=>queueHoursForCompletedTicket(j.ticketNumber,j.completedAt))
@@ -892,6 +922,47 @@
         const previousOverdue=overdueJobDaysForMonth(previousKey);
         document.getElementById('overdueKpiCurrent').textContent=String(currentOverdue);
         document.getElementById('overdueKpiPrevious').textContent='Last month: '+previousOverdue+' days';
+      }
+      function completedMetricsReasonLabel(value){
+        const reason=String(value||'').trim();
+        return reason||'Excluded from completed metrics';
+      }
+      function renderCompletedMetricsModal(){
+        const month=currentMonthKey();
+        const rows=document.getElementById('completedMetricsRows');
+        if(!rows)return;
+        document.getElementById('completedMetricsModalMonth').textContent=new Date().toLocaleDateString(undefined,{month:'long',year:'numeric'})+' · chronological by completion time';
+        const list=allCompletedJobsForMonth(month).slice().sort((a,b)=>new Date(a.completedAt||0)-new Date(b.completedAt||0));
+        rows.innerHTML='';
+        if(!list.length){rows.innerHTML='<div class="completed-metrics-empty">No jobs were moved to Completed this month.</div>';return}
+        list.forEach(job=>{
+          const row=document.createElement('div');
+          const excluded=job.excludeFromCompletedMetrics===true;
+          row.className='completed-metrics-row'+(excluded?' excluded':'');
+          const completedDate=job.completedAt?new Date(job.completedAt):null;
+          const when=completedDate&&!Number.isNaN(completedDate.getTime())?completedDate.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'—';
+          const summary=financialSummary(job.ticketNumber);
+          const title=job.title||job.displayTitle||('Ticket '+job.ticketNumber);
+          const reason=excluded?`<div class="completed-metrics-reason">${escapeHtml(completedMetricsReasonLabel(job.completedMetricsExclusionReason))}</div>`:'';
+          row.innerHTML=`<span>${escapeHtml(when)}</span><div class="completed-metrics-job"><div class="completed-metrics-title">${escapeHtml(title)}</div>${reason}</div><span class="completed-metrics-money ${profitClass(summary.net)}">${escapeHtml(formatCurrency(summary.net))}</span><span class="completed-metrics-action"><button type="button" class="${excluded?'secondary':'danger'}" data-toggle-completed-metrics="${escapeHtml(String(job.ticketNumber))}" data-excluded="${excluded?'true':'false'}">${excluded?'Restore':'Exclude'}</button></span>`;
+          rows.appendChild(row);
+        });
+      }
+      function openCompletedMetricsModal(){renderCompletedMetricsModal();document.getElementById('completedMetricsModalBackdrop').classList.add('open')}
+      async function toggleCompletedMetricsExclusion(ticket,currentlyExcluded){
+        const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket||''));
+        if(!job)return;
+        let reason='';
+        if(!currentlyExcluded){
+          const choice=prompt('Optional reason for excluding this completed job from Jobs Completed and Net Profit metrics:\n\nExamples: Client Cancelled, Abandoned, No Charge, Duplicate, Other','');
+          if(choice===null)return;
+          reason=String(choice||'').trim();
+        }
+        const data=await apiPost({action:'setCompletedMetricsExclusion',ticketNumber:job.ticketNumber,excluded:!currentlyExcluded,reason});
+        if(!data.success)throw new Error(data.error||'Unable to update completed metrics');
+        job.excludeFromCompletedMetrics=!!data.excluded;
+        job.completedMetricsExclusionReason=String(data.reason||'');
+        renderKpis();renderFinancialDashboard();renderCompletedMetricsModal();renderBoard();
       }
       function rawDueDate(j){return String(j.due||j.dueDate||'')}
       function isOverdueJob(j){
@@ -2028,6 +2099,13 @@
         }catch(err){alert(err.message)}finally{saveBtn.disabled=false}
       });
       document.getElementById('clearBtn').addEventListener('click',()=>{document.getElementById('jobForm').reset();document.getElementById('clientModal').classList.remove('open');document.getElementById('subclientModal').classList.remove('open');document.getElementById('dueDate').dataset.manual='';populateClients();syncNextId();document.getElementById('ticketPreview').style.display='none';document.getElementById('jobNumberWrap').style.display='none'});
+      document.getElementById('viewCompletedJobsBtn').addEventListener('click',openCompletedMetricsModal);
+      document.getElementById('closeCompletedMetricsBtn').addEventListener('click',()=>document.getElementById('completedMetricsModalBackdrop').classList.remove('open'));
+      document.getElementById('completedMetricsRows').addEventListener('click',async e=>{
+        const btn=e.target.closest('[data-toggle-completed-metrics]');if(!btn)return;
+        btn.disabled=true;
+        try{await toggleCompletedMetricsExclusion(btn.dataset.toggleCompletedMetrics,btn.dataset.excluded==='true')}catch(err){alert(err.message)}finally{btn.disabled=false}
+      });
       document.getElementById('overheadBtn').addEventListener('click',openOverheadModal);
       document.getElementById('cancelOverheadBtn').addEventListener('click',()=>document.getElementById('overheadModalBackdrop').classList.remove('open'));
       document.getElementById('addOverheadRowBtn').addEventListener('click',()=>makeOverheadRow({},'new'));
