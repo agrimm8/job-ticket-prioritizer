@@ -156,6 +156,12 @@
     #job-priority-app .edit-notes-btn{background:#b42318;color:#fff}
     #job-priority-app .notes-box{width:100%;min-height:180px;resize:vertical;padding:9px;border-radius:8px;border:1px solid light-dark(#cfcfca,#444);background:light-dark(#fff,#171717);color:inherit;font:inherit;line-height:1.4}
     #job-priority-app .notes-box[readonly]{opacity:.85;cursor:default}
+    #job-priority-app .client-notes-modal{width:min(640px,calc(100vw - 32px));max-height:88vh;overflow:auto}
+    #job-priority-app .client-notes-section{margin-top:14px}
+    #job-priority-app .client-notes-section:first-of-type{margin-top:0}
+    #job-priority-app .client-notes-label{display:flex;align-items:center;gap:7px;margin-bottom:6px;font-size:12px;font-weight:800}
+    #job-priority-app .client-pricing-hint{font-size:10px;font-weight:600;opacity:.62}
+    #job-priority-app .pricing-note-alert{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:999px;background:#b42318;color:#fff;font-size:10px;font-weight:900;line-height:1;text-decoration:none;vertical-align:middle;margin-left:3px}
     @media(max-width:980px){#job-priority-app .grid{grid-template-columns:1fr 1fr}#job-priority-app .kpi-strip{grid-column:1/-1}#job-priority-app .new-job-panel,#job-priority-app .todo-panel,#job-priority-app .wsiwon-panel{grid-column:auto}}
     @media(max-width:700px){#job-priority-app{padding:16px}#job-priority-app .grid{grid-template-columns:1fr}#job-priority-app .kpi-strip{grid-template-columns:1fr}#job-priority-app .status-panel{grid-column:auto}#job-priority-app .board{grid-template-columns:1fr}#job-priority-app .form-grid{grid-template-columns:1fr}#job-priority-app .full{grid-column:auto}#job-priority-app .client-tools{align-items:stretch;flex-direction:column}}
   
@@ -200,9 +206,6 @@
     #job-priority-app .financial-history-nav button{border:0;background:transparent;padding:0;color:#2563eb;font:inherit;cursor:pointer;text-decoration:underline}
     #job-priority-app .financial-history-nav button:disabled{color:#9ca3af;cursor:default;text-decoration:none}
     #job-priority-app .financial-notes-link{display:inline-block;margin-top:5px;color:#2563eb;font-size:11px;font-weight:700;text-decoration:underline;cursor:pointer}
-    #job-priority-app .financial-notes-box{display:none;margin:8px 0 2px;padding:10px 12px;border:1px solid #d9dee7;border-radius:9px;background:#f8fafc;font-size:11px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
-    #job-priority-app .financial-notes-box.show{display:block}
-    #job-priority-app .financial-notes-empty{color:#7a7a7a;font-style:italic}
     #job-priority-app .financial-history-separator{opacity:.45}
     #job-priority-app .financial-history-meta{font-size:10px;opacity:.68;margin:2px 0 4px}
     #job-priority-app .financial-readonly-banner{display:none;margin:9px 0 0;padding:7px 9px;border:1px solid #f1b7b2;border-radius:8px;background:#fff1f0;color:#8f1d16;font-size:10px;font-weight:800}
@@ -526,10 +529,17 @@
       </div>
     </div>
     <div class="timer-modal-backdrop" id="clientNotesModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="clientNotesModalTitle">
-      <div class="timer-modal">
+      <div class="timer-modal client-notes-modal">
         <h3 id="clientNotesModalTitle">Client Notes</h3>
         <p id="clientNotesModalClient" style="margin-bottom:10px"></p>
-        <textarea id="clientNotesTextarea" class="notes-box" readonly placeholder="No client notes yet."></textarea>
+        <div class="client-notes-section">
+          <label class="client-notes-label" for="clientNotesTextarea">General Notes</label>
+          <textarea id="clientNotesTextarea" class="notes-box" style="min-height:145px" readonly placeholder="No general client notes yet."></textarea>
+        </div>
+        <div class="client-notes-section">
+          <label class="client-notes-label" for="clientPricingNotesTextarea">Pricing Notes <span class="client-pricing-hint">Special rates, discounts, fees, or billing instructions</span></label>
+          <textarea id="clientPricingNotesTextarea" class="notes-box" style="min-height:125px" readonly placeholder="No pricing notes yet."></textarea>
+        </div>
         <div class="actions"><button class="edit-notes-btn" id="editClientNotesBtn" type="button">Edit Notes</button><button class="primary" id="doneClientNotesBtn" type="button" style="display:none">Done</button><button class="secondary" id="editClientNameBtn" type="button">Edit Client Name</button><button class="secondary" id="closeClientNotesBtn" type="button">Close</button></div>
       </div>
     </div>
@@ -569,8 +579,7 @@
         <p id="jobFinancialsModalJob" style="margin-bottom:2px"></p>
         <div class="financial-history-nav"><button id="previousClientFinancialBtn" type="button">‹ Previous</button><span class="financial-history-separator">|</span><button id="nextClientFinancialBtn" type="button">Next ›</button></div>
         <div class="financial-history-meta" id="jobFinancialsHistoryMeta"></div>
-        <a class="financial-notes-link" id="jobFinancialsNotesLink">View Job Notes</a>
-        <div class="financial-notes-box" id="jobFinancialsNotesBox"></div>
+        <a class="financial-notes-link" id="jobFinancialsNotesLink">View Client Notes</a>
         <div class="financial-readonly-banner" id="jobFinancialsReadonlyBanner">Viewing another job for this client — read only.</div>
         <div class="financial-grid">
           <section class="financial-panel">
@@ -693,6 +702,7 @@
       let jobTitleEditTicket='';
       let clientReviewMoveTicket='';
       let clientNotesTarget=null;
+      let clientNotesReturnToFinancial=false;
       let clientNameEditTarget=null;
       let lastActivityAt=Date.now();
       let idlePausedTimerKey='';
@@ -718,6 +728,7 @@
       let copyToastTimer=null;
       const timerState={};
       const clientNotes={};
+      const clientPricingNotes={};
       function dateParts(d){return new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));}
       function today(){const n=new Date();return dateParts(n)}
       function iso(d){return d.toISOString().slice(0,10)}
@@ -1602,10 +1613,7 @@
         jobFinancialsTicket=isOrigin?jobFinancialsOriginTicket:'';
         document.getElementById('jobFinancialsModalJob').textContent=job.title||job.displayTitle||'';
         document.getElementById('jobFinancialsHistoryMeta').textContent=financialHistoryMeta(job);
-        const notesBox=document.getElementById('jobFinancialsNotesBox');
-        const notesLink=document.getElementById('jobFinancialsNotesLink');
-        if(notesBox){notesBox.classList.remove('show');notesBox.innerHTML=''}
-        if(notesLink){notesLink.textContent='View Job Notes';notesLink.dataset.ticket=String(ticket)}
+        updateJobFinancialsClientNotesLink(job);
         const readonlyBanner=document.getElementById('jobFinancialsReadonlyBanner');readonlyBanner.classList.toggle('show',!isOrigin);
         document.getElementById('backToCurrentFinancialBtn').classList.toggle('show',!isOrigin);
         document.getElementById('saveJobFinancialsBtn').style.display=isOrigin?'':'none';
@@ -1688,7 +1696,7 @@
         q.querySelectorAll('[data-edit-title-ticket]').forEach(btn=>btn.addEventListener('click',()=>openJobTitleModal(btn.getAttribute('data-edit-title-ticket'))));
         q.querySelectorAll('[data-change-due-ticket]').forEach(btn=>btn.addEventListener('click',()=>openDueDateModal(btn.getAttribute('data-change-due-ticket'))));
         q.querySelectorAll('[data-edit-time-ticket]').forEach(btn=>btn.addEventListener('click',()=>openTimeEditModal(btn.getAttribute('data-edit-time-ticket'))));
-        q.querySelectorAll('[data-client-notes-primary]').forEach(link=>link.addEventListener('click',()=>openClientNotesModal(link.getAttribute('data-client-notes-primary'),link.getAttribute('data-client-notes-secondary')||'')));
+        q.querySelectorAll('[data-client-notes-primary]').forEach(link=>link.addEventListener('click',()=>{clientNotesReturnToFinancial=false;openClientNotesModal(link.getAttribute('data-client-notes-primary'),link.getAttribute('data-client-notes-secondary')||'')}));
         q.querySelectorAll('[data-job-notes-ticket]').forEach(link=>link.addEventListener('click',()=>openJobNotesModal(link.getAttribute('data-job-notes-ticket'))));
         q.querySelectorAll('[data-time-record-ticket]').forEach(link=>link.addEventListener('click',()=>openTimeRecordModal(link.getAttribute('data-time-record-ticket'))));
       }
@@ -1703,13 +1711,27 @@
         target.querySelectorAll('[data-change-due-ticket]').forEach(btn=>btn.addEventListener('click',()=>openDueDateModal(btn.getAttribute('data-change-due-ticket'))));
         target.querySelectorAll('[data-change-follow-up-ticket]').forEach(btn=>btn.addEventListener('click',()=>openFollowUpDateModal(btn.getAttribute('data-change-follow-up-ticket'))));
         target.querySelectorAll('[data-edit-time-ticket]').forEach(btn=>btn.addEventListener('click',()=>openTimeEditModal(btn.getAttribute('data-edit-time-ticket'))));
-        target.querySelectorAll('[data-client-notes-primary]').forEach(link=>link.addEventListener('click',()=>openClientNotesModal(link.getAttribute('data-client-notes-primary'),link.getAttribute('data-client-notes-secondary')||'')));
+        target.querySelectorAll('[data-client-notes-primary]').forEach(link=>link.addEventListener('click',()=>{clientNotesReturnToFinancial=false;openClientNotesModal(link.getAttribute('data-client-notes-primary'),link.getAttribute('data-client-notes-secondary')||'')}));
         target.querySelectorAll('[data-job-notes-ticket]').forEach(link=>link.addEventListener('click',()=>openJobNotesModal(link.getAttribute('data-job-notes-ticket'))));
         target.querySelectorAll('[data-time-record-ticket]').forEach(link=>link.addEventListener('click',()=>openTimeRecordModal(link.getAttribute('data-time-record-ticket'))));
         target.querySelectorAll('[data-copy-title]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();copyJobTitle(btn.getAttribute('data-copy-title')||'')}));
       }
       function openTimeEditModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;timeEditTicket=String(ticket);document.getElementById('timeEditModalJob').textContent=job.title||job.displayTitle||'';document.getElementById('timeAccruedInput').value=getTimeAccruedHours(job).toFixed(2);document.getElementById('estimatedRemainingInput').value=Number(job.hours??job.estimatedHoursRemaining??0).toFixed(2);document.getElementById('timeEditModalBackdrop').classList.add('open');document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'))}
       function clientNotesKey(primaryClientId,secondaryClientId=''){return secondaryClientId?`secondary:${primaryClientId}:${secondaryClientId}`:`primary:${primaryClientId}`}
+      function pricingNotesForClient(primaryClientId,secondaryClientId=''){return String(clientPricingNotes[clientNotesKey(primaryClientId,secondaryClientId)]||'')}
+      function updateJobFinancialsClientNotesLink(job){
+        const link=document.getElementById('jobFinancialsNotesLink');if(!link)return;
+        if(!job){link.style.display='none';return}
+        const primaryClientId=String(job.primaryClientId||job.primaryClientID||job.clientId||'');
+        const secondaryClientId=String(job.secondaryClientId||'');
+        if(!primaryClientId){link.style.display='none';return}
+        const hasPricingNotes=!!pricingNotesForClient(primaryClientId,secondaryClientId).trim();
+        link.style.display='inline-block';
+        link.dataset.primaryClientId=primaryClientId;
+        link.dataset.secondaryClientId=secondaryClientId;
+        link.innerHTML=`View Client Notes${hasPricingNotes?' <span class="pricing-note-alert" title="Pricing Notes available" aria-label="Pricing Notes available">!</span>':''}`;
+        link.title=hasPricingNotes?'Pricing Notes are saved for this client':'View Client Notes';
+      }
       function openClientNotesModal(primaryClientId,secondaryClientId=''){
         if(!primaryClientId)return;
         clientNotesTarget={primaryClientId,secondaryClientId:secondaryClientId||''};
@@ -1724,8 +1746,11 @@
         }
         document.getElementById('clientNotesModalClient').textContent=label;
         const textarea=document.getElementById('clientNotesTextarea');
+        const pricingTextarea=document.getElementById('clientPricingNotesTextarea');
         textarea.value=clientNotes[key]||'';
+        pricingTextarea.value=clientPricingNotes[key]||'';
         textarea.readOnly=true;
+        pricingTextarea.readOnly=true;
         document.getElementById('editClientNotesBtn').style.display='inline-block';
         document.getElementById('doneClientNotesBtn').style.display='none';
         document.getElementById('clientNotesModalBackdrop').classList.add('open')
@@ -2037,8 +2062,9 @@
           const data=await apiGet(); if(!data.success)throw new Error(data.error||'Backend error');
           clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[]; statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; workSets=data.workSets||[]; holidayCalendar=data.holidayCalendar||[]; jobFinancials=data.jobFinancials||[]; overheadTemplates=data.overheadTemplates||[]; currentMonthlyOverhead=data.currentMonthlyOverhead||{month:currentMonthKey(),entries:[],total:0}; await reconcileOpenWorkSession(data.openWorkSession||null);
           Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);
-          clients.forEach(c=>{clientNotes[clientNotesKey(c.id)]=String(c.notes||c.clientNotes||'')});
-          subclients.forEach(s=>{clientNotes[clientNotesKey(s.parentClientId,s.id)]=String(s.notes||s.clientNotes||'')});
+          Object.keys(clientPricingNotes).forEach(k=>delete clientPricingNotes[k]);
+          clients.forEach(c=>{const key=clientNotesKey(c.id);clientNotes[key]=String(c.notes||c.clientNotes||'');clientPricingNotes[key]=String(c.pricingNotes||'')});
+          subclients.forEach(s=>{const key=clientNotesKey(s.parentClientId,s.id);clientNotes[key]=String(s.notes||s.clientNotes||'');clientPricingNotes[key]=String(s.pricingNotes||'')});
           nextId=getNextSequentialId();
           populateClients(); syncNextId(); renderKpis(); renderQueue(); renderBoard(); setBackendStatus(true,'Live Google Sheets connection');
         }catch(err){setBackendStatus(false,'Connection failed');alert('Could not load Google Sheets data: '+err.message)}
@@ -2150,24 +2176,15 @@
       document.getElementById('previousClientFinancialBtn').addEventListener('click',e=>{const ticket=e.currentTarget.dataset.targetTicket;if(ticket)renderJobFinancialsView(ticket)});
       document.getElementById('nextClientFinancialBtn').addEventListener('click',e=>{const ticket=e.currentTarget.dataset.targetTicket;if(ticket)renderJobFinancialsView(ticket)});
       document.getElementById('jobFinancialsNotesLink').addEventListener('click',e=>{
-        const ticket=e.currentTarget.dataset.ticket||jobFinancialsViewTicket;
-        const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));
-        if(!job)return;
-        const box=document.getElementById('jobFinancialsNotesBox');
-        const opening=!box.classList.contains('show');
-        if(opening){
-          const notes=String(job.notes||'').trim();
-          box.innerHTML=notes?escapeHtml(notes):'<span class="financial-notes-empty">No Job Notes saved for this ticket.</span>';
-          box.classList.add('show');
-          e.currentTarget.textContent='Hide Job Notes';
-        }else{
-          box.classList.remove('show');
-          box.innerHTML='';
-          e.currentTarget.textContent='View Job Notes';
-        }
+        const primaryClientId=e.currentTarget.dataset.primaryClientId||'';
+        const secondaryClientId=e.currentTarget.dataset.secondaryClientId||'';
+        if(!primaryClientId)return;
+        clientNotesReturnToFinancial=true;
+        document.getElementById('jobFinancialsModalBackdrop').classList.remove('open');
+        openClientNotesModal(primaryClientId,secondaryClientId);
       });
       document.getElementById('backToCurrentFinancialBtn').addEventListener('click',()=>{if(jobFinancialsOriginTicket)renderJobFinancialsView(jobFinancialsOriginTicket)});
-      document.getElementById('cancelJobFinancialsBtn').addEventListener('click',()=>{jobFinancialsTicket='';jobFinancialsOriginTicket='';jobFinancialsViewTicket='';jobFinancialsOriginDraft=null;document.getElementById('jobFinancialsModalBackdrop').classList.remove('open')});
+      document.getElementById('cancelJobFinancialsBtn').addEventListener('click',()=>{jobFinancialsTicket='';jobFinancialsOriginTicket='';jobFinancialsViewTicket='';jobFinancialsOriginDraft=null;clientNotesReturnToFinancial=false;document.getElementById('jobFinancialsModalBackdrop').classList.remove('open')});
       document.getElementById('saveJobFinancialsBtn').addEventListener('click',async()=>{
         if(!jobFinancialsTicket)return;
         const saveBtn=document.getElementById('saveJobFinancialsBtn');
@@ -2375,33 +2392,41 @@
       });
       document.getElementById('cancelJobTimeBtn').addEventListener('click',()=>{timeEditTicket='';document.getElementById('timeEditModalBackdrop').classList.remove('open')});
       document.getElementById('saveJobTimeBtn').addEventListener('click',async()=>{const job=jobs.find(j=>String(j.ticketNumber||'')===timeEditTicket);if(!job)return;const accrued=Math.max(0,Number(document.getElementById('timeAccruedInput').value)||0);const estimated=Math.max(0,Number(document.getElementById('estimatedRemainingInput').value)||0);try{const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,dueDate:job.due||job.dueDate,estimatedHoursRemaining:estimated,timeAccruedHours:accrued});if(!data.success)throw new Error(data.error||'Unable to save job time');setTimeAccruedHours(job,accrued);job.hours=estimated;job.estimatedHoursRemaining=estimated;const state=ensureTimerState(job);state.remaining=recommendedWorkSeconds(job);state.blockStartRemaining=state.remaining;state.blockStartOvertime=state.overtime||0;state.committedSeconds=0;document.getElementById('timeEditModalBackdrop').classList.remove('open');timeEditTicket='';renderQueue();renderBoard()}catch(err){alert(err.message)}});
-      document.getElementById('editClientNotesBtn').addEventListener('click',()=>{const textarea=document.getElementById('clientNotesTextarea');textarea.readOnly=false;textarea.focus();document.getElementById('editClientNotesBtn').style.display='none';document.getElementById('doneClientNotesBtn').style.display='inline-block'});
+      document.getElementById('editClientNotesBtn').addEventListener('click',()=>{const textarea=document.getElementById('clientNotesTextarea');const pricingTextarea=document.getElementById('clientPricingNotesTextarea');textarea.readOnly=false;pricingTextarea.readOnly=false;textarea.focus();document.getElementById('editClientNotesBtn').style.display='none';document.getElementById('doneClientNotesBtn').style.display='inline-block'});
       document.getElementById('doneClientNotesBtn').addEventListener('click',async()=>{
         if(!clientNotesTarget)return;
         const textarea=document.getElementById('clientNotesTextarea');
+        const pricingTextarea=document.getElementById('clientPricingNotesTextarea');
         const notes=textarea.value;
+        const pricingNotes=pricingTextarea.value;
         const {primaryClientId,secondaryClientId}=clientNotesTarget;
         const key=clientNotesKey(primaryClientId,secondaryClientId);
         try{
           const payload=secondaryClientId
-            ?{action:'updateSubclientNotes',parentClientId:primaryClientId,subclientId:secondaryClientId,notes}
-            :{action:'updateClientNotes',clientId:primaryClientId,notes};
+            ?{action:'updateSubclientNotes',parentClientId:primaryClientId,subclientId:secondaryClientId,notes,pricingNotes}
+            :{action:'updateClientNotes',clientId:primaryClientId,notes,pricingNotes};
           const data=await apiPost(payload);
           if(!data.success)throw new Error(data.error||'Unable to save client notes');
           clientNotes[key]=notes;
+          clientPricingNotes[key]=pricingNotes;
           if(secondaryClientId){
             const sub=subclients.find(s=>s.parentClientId===primaryClientId&&s.id===secondaryClientId);
-            if(sub)sub.notes=notes;
+            if(sub){sub.notes=notes;sub.pricingNotes=pricingNotes}
           }else{
             const client=clients.find(c=>c.id===primaryClientId);
-            if(client)client.notes=notes;
+            if(client){client.notes=notes;client.pricingNotes=pricingNotes}
           }
           textarea.readOnly=true;
+          pricingTextarea.readOnly=true;
           document.getElementById('editClientNotesBtn').style.display='inline-block';
-          document.getElementById('doneClientNotesBtn').style.display='none'
+          document.getElementById('doneClientNotesBtn').style.display='none';
+          if(jobFinancialsViewTicket){
+            const financialJob=jobs.find(j=>String(j.ticketNumber||'')===String(jobFinancialsViewTicket));
+            if(financialJob)updateJobFinancialsClientNotesLink(financialJob);
+          }
         }catch(err){alert(err.message)}
       });
-      document.getElementById('closeClientNotesBtn').addEventListener('click',()=>{clientNotesTarget=null;document.getElementById('clientNotesModalBackdrop').classList.remove('open')});
+      document.getElementById('closeClientNotesBtn').addEventListener('click',()=>{const returnToFinancial=clientNotesReturnToFinancial;clientNotesTarget=null;clientNotesReturnToFinancial=false;document.getElementById('clientNotesModalBackdrop').classList.remove('open');if(returnToFinancial&&jobFinancialsViewTicket)document.getElementById('jobFinancialsModalBackdrop').classList.add('open')});
       document.getElementById('editJobNotesBtn').addEventListener('click',()=>{const textarea=document.getElementById('jobNotesTextarea');textarea.readOnly=false;textarea.focus();document.getElementById('editJobNotesBtn').style.display='none';document.getElementById('doneJobNotesBtn').style.display='inline-block'});
       document.getElementById('doneJobNotesBtn').addEventListener('click',async()=>{const job=jobs.find(j=>String(j.ticketNumber||'')===jobNotesTicket);if(!job)return;const textarea=document.getElementById('jobNotesTextarea');const notes=textarea.value;try{const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,dueDate:job.due||job.dueDate,estimatedHoursRemaining:Number(job.hours??job.estimatedHoursRemaining??0),timeAccruedHours:getTimeAccruedHours(job),notes});if(!data.success)throw new Error(data.error||'Unable to save job notes');job.notes=notes;textarea.readOnly=true;document.getElementById('editJobNotesBtn').style.display='inline-block';document.getElementById('doneJobNotesBtn').style.display='none'}catch(err){alert(err.message)}});
       document.getElementById('closeTimeRecordBtn').addEventListener('click',()=>{timeRecordTicket='';document.getElementById('timeRecordModalBackdrop').classList.remove('open')});
