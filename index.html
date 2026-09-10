@@ -199,6 +199,10 @@
     #job-priority-app .financial-history-nav{display:flex;align-items:center;gap:8px;margin:5px 0 2px;font-size:11px;font-weight:700}
     #job-priority-app .financial-history-nav button{border:0;background:transparent;padding:0;color:#2563eb;font:inherit;cursor:pointer;text-decoration:underline}
     #job-priority-app .financial-history-nav button:disabled{color:#9ca3af;cursor:default;text-decoration:none}
+    #job-priority-app .financial-notes-link{display:inline-block;margin-top:5px;color:#2563eb;font-size:11px;font-weight:700;text-decoration:underline;cursor:pointer}
+    #job-priority-app .financial-notes-box{display:none;margin:8px 0 2px;padding:10px 12px;border:1px solid #d9dee7;border-radius:9px;background:#f8fafc;font-size:11px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+    #job-priority-app .financial-notes-box.show{display:block}
+    #job-priority-app .financial-notes-empty{color:#7a7a7a;font-style:italic}
     #job-priority-app .financial-history-separator{opacity:.45}
     #job-priority-app .financial-history-meta{font-size:10px;opacity:.68;margin:2px 0 4px}
     #job-priority-app .financial-readonly-banner{display:none;margin:9px 0 0;padding:7px 9px;border:1px solid #f1b7b2;border-radius:8px;background:#fff1f0;color:#8f1d16;font-size:10px;font-weight:800}
@@ -565,6 +569,8 @@
         <p id="jobFinancialsModalJob" style="margin-bottom:2px"></p>
         <div class="financial-history-nav"><button id="previousClientFinancialBtn" type="button">‹ Previous</button><span class="financial-history-separator">|</span><button id="nextClientFinancialBtn" type="button">Next ›</button></div>
         <div class="financial-history-meta" id="jobFinancialsHistoryMeta"></div>
+        <a class="financial-notes-link" id="jobFinancialsNotesLink">View Job Notes</a>
+        <div class="financial-notes-box" id="jobFinancialsNotesBox"></div>
         <div class="financial-readonly-banner" id="jobFinancialsReadonlyBanner">Viewing another job for this client — read only.</div>
         <div class="financial-grid">
           <section class="financial-panel">
@@ -1596,6 +1602,10 @@
         jobFinancialsTicket=isOrigin?jobFinancialsOriginTicket:'';
         document.getElementById('jobFinancialsModalJob').textContent=job.title||job.displayTitle||'';
         document.getElementById('jobFinancialsHistoryMeta').textContent=financialHistoryMeta(job);
+        const notesBox=document.getElementById('jobFinancialsNotesBox');
+        const notesLink=document.getElementById('jobFinancialsNotesLink');
+        if(notesBox){notesBox.classList.remove('show');notesBox.innerHTML=''}
+        if(notesLink){notesLink.textContent='View Job Notes';notesLink.dataset.ticket=String(ticket)}
         const readonlyBanner=document.getElementById('jobFinancialsReadonlyBanner');readonlyBanner.classList.toggle('show',!isOrigin);
         document.getElementById('backToCurrentFinancialBtn').classList.toggle('show',!isOrigin);
         document.getElementById('saveJobFinancialsBtn').style.display=isOrigin?'':'none';
@@ -2139,6 +2149,23 @@
       document.getElementById('addExpenseFinancialRowBtn').addEventListener('click',()=>addFinancialRow('Expense'));
       document.getElementById('previousClientFinancialBtn').addEventListener('click',e=>{const ticket=e.currentTarget.dataset.targetTicket;if(ticket)renderJobFinancialsView(ticket)});
       document.getElementById('nextClientFinancialBtn').addEventListener('click',e=>{const ticket=e.currentTarget.dataset.targetTicket;if(ticket)renderJobFinancialsView(ticket)});
+      document.getElementById('jobFinancialsNotesLink').addEventListener('click',e=>{
+        const ticket=e.currentTarget.dataset.ticket||jobFinancialsViewTicket;
+        const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));
+        if(!job)return;
+        const box=document.getElementById('jobFinancialsNotesBox');
+        const opening=!box.classList.contains('show');
+        if(opening){
+          const notes=String(job.notes||'').trim();
+          box.innerHTML=notes?escapeHtml(notes):'<span class="financial-notes-empty">No Job Notes saved for this ticket.</span>';
+          box.classList.add('show');
+          e.currentTarget.textContent='Hide Job Notes';
+        }else{
+          box.classList.remove('show');
+          box.innerHTML='';
+          e.currentTarget.textContent='View Job Notes';
+        }
+      });
       document.getElementById('backToCurrentFinancialBtn').addEventListener('click',()=>{if(jobFinancialsOriginTicket)renderJobFinancialsView(jobFinancialsOriginTicket)});
       document.getElementById('cancelJobFinancialsBtn').addEventListener('click',()=>{jobFinancialsTicket='';jobFinancialsOriginTicket='';jobFinancialsViewTicket='';jobFinancialsOriginDraft=null;document.getElementById('jobFinancialsModalBackdrop').classList.remove('open')});
       document.getElementById('saveJobFinancialsBtn').addEventListener('click',async()=>{
