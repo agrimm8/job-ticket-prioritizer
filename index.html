@@ -1246,7 +1246,7 @@
         const sets=workSetsForTicket(job.ticketNumber);
         if(type==='Continuing Initial Draft'){const initial=sets.find(set=>set.workSetType==='Initial Draft');description.value=initial?initial.workDescription:'';description.readOnly=true}
         else if(type==='Continuing Change Order'){const selected=sets.find(set=>set.workSetId===setSelect.value);description.value=selected?selected.workDescription:'';description.readOnly=true}
-        else{if(description.readOnly)description.value='';description.readOnly=false;description.placeholder=type==='New Change Order'?'Describe the new client change request...':'Describe the work you are starting...'}
+        else{if(description.readOnly)description.value='';description.readOnly=false;if(type==='Initial Draft')description.value='Initial Design';description.placeholder=type==='New Change Order'?'Describe the new client change request...':'Describe the work you are starting...'}
         updatePunchInSubmitState();
       }
       function updatePunchInSubmitState(){const type=document.getElementById('punchInWorkType').value;const description=document.getElementById('punchInWorkDescription').value.trim();const workSetId=document.getElementById('punchInWorkSet').value;let valid=!!type;if(type==='Initial Draft'||type==='New Change Order'||type==='Continuing Initial Draft')valid=valid&&!!description;if(type==='Continuing Change Order')valid=valid&&!!workSetId&&!!description;document.getElementById('punchInStartBtn').disabled=!valid}
