@@ -162,6 +162,29 @@
     #job-priority-app .client-notes-label{display:flex;align-items:center;gap:7px;margin-bottom:6px;font-size:12px;font-weight:800}
     #job-priority-app .client-pricing-hint{font-size:10px;font-weight:600;opacity:.62}
     #job-priority-app .pricing-note-alert{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:999px;background:#b42318;color:#fff;font-size:10px;font-weight:900;line-height:1;text-decoration:none;vertical-align:middle;margin-left:3px}
+    #job-priority-app .panel-heading-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+    #job-priority-app .panel-heading-row h2{margin:0}
+    #job-priority-app .email-queue-btn{white-space:nowrap}
+    #job-priority-app .email-queue-modal{width:min(820px,calc(100vw - 32px));max-height:88vh;overflow:auto}
+    #job-priority-app .email-queue-toolbar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+    #job-priority-app .email-queue-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+    #job-priority-app .email-queue-item{border:1px solid light-dark(#d8d8d4,#444);border-radius:10px;padding:12px;background:light-dark(#fafaf8,#252525)}
+    #job-priority-app .email-queue-subject{font-size:13px;font-weight:800;line-height:1.3}
+    #job-priority-app .email-queue-meta{font-size:10px;opacity:.7;line-height:1.45;margin-top:5px}
+    #job-priority-app .email-queue-match{display:inline-block;margin-top:7px;padding:3px 7px;border-radius:999px;background:light-dark(#e5f3ea,#1d3b28);color:light-dark(#1f6b3b,#92d5aa);font-size:9px;font-weight:800}
+    #job-priority-app .email-queue-match.unmatched{background:light-dark(#f1ece5,#3b3227);color:light-dark(#775b35,#dec394)}
+    #job-priority-app .email-body-preview{margin-top:9px;padding:9px;border-radius:8px;background:light-dark(#f1f1ed,#1d1d1d);font-size:10px;line-height:1.4;white-space:pre-wrap;max-height:90px;overflow:hidden}
+    #job-priority-app .email-attachment-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+    #job-priority-app .email-attachment-chip{display:inline-flex;align-items:center;gap:5px;border:1px solid light-dark(#d7d7d2,#484848);border-radius:7px;padding:5px 7px;font-size:9px}
+    #job-priority-app .email-attachment-chip button{border:0;background:none;padding:0;color:#2f67b2;text-decoration:underline;cursor:pointer;font:inherit}
+    #job-priority-app .email-queue-actions{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-top:10px}
+    #job-priority-app .email-draft-panel{margin-top:2px;padding:11px;border-radius:10px;border:1px solid light-dark(#cfded5,#375243);background:light-dark(#f4faf6,#1c2a21)}
+    #job-priority-app .email-draft-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:9px}
+    #job-priority-app .email-draft-title{font-size:11px;font-weight:800}
+    #job-priority-app .email-draft-meta{font-size:9px;opacity:.68;margin-top:2px}
+    #job-priority-app .email-draft-actions{display:flex;gap:8px;align-items:center;margin-top:6px;font-size:9px}
+    #job-priority-app .email-draft-actions a{cursor:pointer;text-decoration:underline}
+    #job-priority-app .email-status-note{font-size:10px;opacity:.68;margin-top:6px}
     @media(max-width:980px){#job-priority-app .grid{grid-template-columns:1fr 1fr}#job-priority-app .kpi-strip{grid-column:1/-1}#job-priority-app .new-job-panel,#job-priority-app .todo-panel,#job-priority-app .wsiwon-panel{grid-column:auto}}
     @media(max-width:700px){#job-priority-app{padding:16px}#job-priority-app .grid{grid-template-columns:1fr}#job-priority-app .kpi-strip{grid-template-columns:1fr}#job-priority-app .status-panel{grid-column:auto}#job-priority-app .board{grid-template-columns:1fr}#job-priority-app .form-grid{grid-template-columns:1fr}#job-priority-app .full{grid-column:auto}#job-priority-app .client-tools{align-items:stretch;flex-direction:column}}
   
@@ -345,12 +368,19 @@
       </div>
 
       <section class="panel new-job-panel">
-        <h2>New Job</h2>
+        <div class="panel-heading-row"><h2>New Job</h2><button class="secondary email-queue-btn" id="emailQueueBtn" type="button">Email Queue (0)</button></div>
         <form id="jobForm">
           <div class="form-grid">
             <div class="full"><label for="primaryClient">Primary Client</label><select id="primaryClient"></select><div class="client-modal" id="clientModal"><div class="form-grid"><div><label for="newClientName">New Client Name</label><input id="newClientName" placeholder="e.g. Sari Ward"></div><div><label for="newClientId">3-Letter Client ID</label><input id="newClientId" maxlength="3" placeholder="e.g. SWD"><div id="clientIdAlert" class="meta" style="display:none;color:#b42318;font-weight:700"></div></div><div class="full"><label for="newClientType">Client Setup</label><select id="newClientType"><option value="Primary Only">Primary Client Only</option><option value="Has Secondary Clients">Has Secondary Clients</option></select></div></div><div class="actions"><button class="primary" id="saveClientBtn" type="button">Save Client</button><button class="secondary" id="cancelClientBtn" type="button">Cancel</button></div></div></div>
             <div id="secondaryWrap" class="full" style="display:none"><label for="secondaryClient">Secondary Client</label><select id="secondaryClient"></select><div class="client-modal" id="subclientModal"><div class="form-grid"><div><label for="newSubclientName">New Secondary Client Name</label><input id="newSubclientName" placeholder="e.g. Marcel & Vanessa"></div><div><label for="newSubclientId">3-Letter Secondary Client ID</label><input id="newSubclientId" maxlength="3" placeholder="e.g. MVA"><div id="subclientIdAlert" class="meta" style="display:none;color:#b42318;font-weight:700"></div></div></div><div class="actions"><button class="secondary" id="saveSubclientBtn" type="button">Save Secondary Client</button></div></div></div>
             <div class="full"><label for="description">Brief Job Description</label><input id="description" required placeholder="e.g. Just Listed Postcard"></div>
+            <div class="full email-draft-panel" id="emailDraftPanel" style="display:none">
+              <div class="email-draft-head"><div><div class="email-draft-title">Email Request</div><div class="email-draft-meta" id="emailDraftMeta"></div></div><button class="secondary" id="backToEmailQueueBtn" type="button">Back to Email Queue</button></div>
+              <label for="emailDraftJobNotes">Job Notes (from email)</label>
+              <textarea id="emailDraftJobNotes" class="notes-box" style="min-height:150px" placeholder="Email body will appear here. You can edit or delete it before creating the ticket."></textarea>
+              <div class="email-draft-actions"><a id="clearEmailDraftNotes">Clear Email Notes</a><span>·</span><span id="emailDraftRetentionNote">Source email will be retained for 7 days after ticket creation.</span></div>
+              <div id="emailDraftAttachments"></div>
+            </div>
             <div class="full"><label for="hours">Estimated Time Remaining (hours)</label><input id="hours" type="number" min="0.5" step="0.5" value="1" required><div class="quick-times">Quick Times: <a data-quick-hours="0.5">0.5 Hours</a> | <a data-quick-hours="1">1 Hour</a> | <a data-quick-hours="2">2 Hours</a> | <a data-quick-hours="3">3 Hours</a></div></div>
             <div class="full"><label for="dueDate">Due Date</label><input id="dueDate" type="date" required><div class="quick-dates">Quick Dates: <a data-quick-days="0">Same Day</a> | <a data-quick-days="1">1 Day</a> | <a data-quick-days="2">2 Days</a> | <a data-quick-days="3">3 Days</a> | <a data-quick-days="4">4 Days</a> | <a data-quick-days="5">5 Days</a></div></div>
             <div id="jobNumberWrap" class="full" style="display:none"><label for="jobNumber">Job Number</label><input id="jobNumber" type="number" min="1" step="1"><div id="jobNumberAlert" class="field-error" style="display:none">Job ID already in use</div></div>
@@ -531,6 +561,18 @@
         <div class="actions"><button class="primary" id="saveJobTimeBtn" type="button">Save</button><button class="secondary" id="cancelJobTimeBtn" type="button">Cancel</button></div>
       </div>
     </div>
+    <div class="timer-modal-backdrop" id="emailQueueModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="emailQueueModalTitle">
+      <div class="timer-modal email-queue-modal">
+        <div class="email-queue-toolbar">
+          <div><h3 id="emailQueueModalTitle">Email Ticket Queue</h3><p>Forward job requests to <strong>culvercreativejobs@gmail.com</strong>. Nothing becomes a ticket until you review it.</p></div>
+          <button class="secondary" id="scanEmailInboxBtn" type="button">Check Inbox Now</button>
+        </div>
+        <div class="email-status-note" id="emailQueueStatus"></div>
+        <div class="email-queue-list" id="emailQueueRows"></div>
+        <div id="emailRecentSection" style="display:none;margin-top:18px"><h3 style="font-size:12px;margin-bottom:7px">Recently Created from Email</h3><p class="muted">Attachments remain available here until the source email reaches its 7-day deletion date.</p><div class="email-queue-list" id="emailRecentRows"></div></div>
+        <div class="actions"><button class="secondary" id="closeEmailQueueBtn" type="button">Close</button></div>
+      </div>
+    </div>
     <div class="timer-modal-backdrop" id="clientNotesModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="clientNotesModalTitle">
       <div class="timer-modal client-notes-modal">
         <h3 id="clientNotesModalTitle">Client Notes</h3>
@@ -542,6 +584,10 @@
         <div class="client-notes-section">
           <label class="client-notes-label" for="clientPricingNotesTextarea">Pricing Notes <span class="client-pricing-hint">Special rates, discounts, fees, or billing instructions</span></label>
           <textarea id="clientPricingNotesTextarea" class="notes-box" style="min-height:125px" readonly placeholder="No pricing notes yet."></textarea>
+        </div>
+        <div class="client-notes-section">
+          <label class="client-notes-label" for="clientAssociatedEmailsTextarea">Associated Emails <span class="client-pricing-hint">Used to match forwarded emails to this client</span></label>
+          <textarea id="clientAssociatedEmailsTextarea" class="notes-box" style="min-height:105px" readonly placeholder="One email address per line, e.g. client@example.com"></textarea>
         </div>
         <div class="actions"><button class="edit-notes-btn" id="editClientNotesBtn" type="button">Edit Notes</button><button class="primary" id="doneClientNotesBtn" type="button" style="display:none">Done</button><button class="secondary" id="editClientNameBtn" type="button">Edit Client Name</button><button class="secondary" id="closeClientNotesBtn" type="button">Close</button></div>
       </div>
@@ -706,6 +752,10 @@
       let clientReviewMoveTicket='';
       let clientNotesTarget=null;
       let clientNotesReturnToFinancial=false;
+      let emailQueue=[];
+      let recentEmailSources=[];
+      let emailDraftQueueId='';
+      let emailIntakeConfigured=false;
       let clientNameEditTarget=null;
       let lastActivityAt=Date.now();
       let idlePausedTimerKey='';
@@ -732,6 +782,7 @@
       const timerState={};
       const clientNotes={};
       const clientPricingNotes={};
+      const clientAssociatedEmails={};
       function dateParts(d){return new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));}
       function today(){const n=new Date();return dateParts(n)}
       function iso(d){return d.toISOString().slice(0,10)}
@@ -1753,10 +1804,13 @@
         document.getElementById('clientNotesModalClient').textContent=label;
         const textarea=document.getElementById('clientNotesTextarea');
         const pricingTextarea=document.getElementById('clientPricingNotesTextarea');
+        const associatedEmailsTextarea=document.getElementById('clientAssociatedEmailsTextarea');
         textarea.value=clientNotes[key]||'';
         pricingTextarea.value=clientPricingNotes[key]||'';
+        associatedEmailsTextarea.value=clientAssociatedEmails[key]||'';
         textarea.readOnly=true;
         pricingTextarea.readOnly=true;
+        associatedEmailsTextarea.readOnly=true;
         document.getElementById('editClientNotesBtn').style.display='inline-block';
         document.getElementById('doneClientNotesBtn').style.display='none';
         document.getElementById('clientNotesModalBackdrop').classList.add('open')
@@ -2066,15 +2120,70 @@
         setBackendStatus(false,'Connecting to Google Sheets…');
         try{
           const data=await apiGet(); if(!data.success)throw new Error(data.error||'Backend error');
-          clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[]; statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; workSets=data.workSets||[]; holidayCalendar=data.holidayCalendar||[]; jobFinancials=data.jobFinancials||[]; overheadTemplates=data.overheadTemplates||[]; currentMonthlyOverhead=data.currentMonthlyOverhead||{month:currentMonthKey(),entries:[],total:0}; await reconcileOpenWorkSession(data.openWorkSession||null);
+          clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[]; statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; workSets=data.workSets||[]; holidayCalendar=data.holidayCalendar||[]; jobFinancials=data.jobFinancials||[]; overheadTemplates=data.overheadTemplates||[]; currentMonthlyOverhead=data.currentMonthlyOverhead||{month:currentMonthKey(),entries:[],total:0}; emailQueue=data.emailQueue||[];recentEmailSources=data.recentEmailSources||[];emailIntakeConfigured=data.emailIntakeConfigured===true; await reconcileOpenWorkSession(data.openWorkSession||null);
           Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);
           Object.keys(clientPricingNotes).forEach(k=>delete clientPricingNotes[k]);
-          clients.forEach(c=>{const key=clientNotesKey(c.id);clientNotes[key]=String(c.notes||c.clientNotes||'');clientPricingNotes[key]=String(c.pricingNotes||'')});
-          subclients.forEach(s=>{const key=clientNotesKey(s.parentClientId,s.id);clientNotes[key]=String(s.notes||s.clientNotes||'');clientPricingNotes[key]=String(s.pricingNotes||'')});
+          Object.keys(clientAssociatedEmails).forEach(k=>delete clientAssociatedEmails[k]);
+          clients.forEach(c=>{const key=clientNotesKey(c.id);clientNotes[key]=String(c.notes||c.clientNotes||'');clientPricingNotes[key]=String(c.pricingNotes||'');clientAssociatedEmails[key]=String(c.associatedEmails||'')});
+          subclients.forEach(s=>{const key=clientNotesKey(s.parentClientId,s.id);clientNotes[key]=String(s.notes||s.clientNotes||'');clientPricingNotes[key]=String(s.pricingNotes||'');clientAssociatedEmails[key]=String(s.associatedEmails||'')});
+          renderEmailQueue();
           nextId=getNextSequentialId();
           populateClients(); syncNextId(); renderKpis(); renderQueue(); renderBoard(); setBackendStatus(true,'Live Google Sheets connection');
         }catch(err){setBackendStatus(false,'Connection failed');alert('Could not load Google Sheets data: '+err.message)}
       }
+      function formatBytes(bytes){const value=Math.max(0,Number(bytes)||0);if(value<1024)return value+' B';if(value<1048576)return (value/1024).toFixed(value<10240?1:0)+' KB';return (value/1048576).toFixed(value<10485760?1:0)+' MB'}
+      function emailQueueItem(queueId){return emailQueue.find(item=>String(item.queueId||'')===String(queueId||''))||null}
+      function matchedEmailClientLabel(item){
+        if(!item||!item.matchedPrimaryClientId)return '';
+        if(item.matchedSecondaryClientId){const sub=subclients.find(s=>s.parentClientId===item.matchedPrimaryClientId&&s.id===item.matchedSecondaryClientId);return sub?sub.name+' ('+sub.id+')':item.matchedSecondaryClientId}
+        const client=clients.find(c=>c.id===item.matchedPrimaryClientId);return client?client.name+' ('+client.id+')':item.matchedPrimaryClientId;
+      }
+      function renderEmailQueueBadge(){const btn=document.getElementById('emailQueueBtn');if(btn)btn.textContent=`Email Queue (${emailQueue.length})`}
+      function emailAttachmentMarkup(item,context='queue'){
+        const attachments=Array.isArray(item&&item.attachments)?item.attachments:[];if(!attachments.length)return '';
+        const chips=attachments.map((att,index)=>`<span class="email-attachment-chip"><span>${escapeHtml(att.name||('Attachment '+(index+1)))}${att.size?' · '+escapeHtml(formatBytes(att.size)):''}</span><button type="button" data-email-download="${escapeHtml(String(item.queueId||''))}" data-email-attachment-index="${index}">Download</button></span>`).join('');
+        const zip=attachments.length>1?`<button class="secondary" type="button" data-email-download-all="${escapeHtml(String(item.queueId||''))}">Download All (.zip)</button>`:'';
+        return `<div class="email-attachment-list">${chips}</div>${zip?`<div class="email-queue-actions">${zip}</div>`:''}`;
+      }
+      function attachEmailDownloadHandlers(root){
+        root.querySelectorAll('[data-email-download]').forEach(btn=>btn.addEventListener('click',()=>downloadEmailAttachment(btn.dataset.emailDownload,Number(btn.dataset.emailAttachmentIndex))));
+        root.querySelectorAll('[data-email-download-all]').forEach(btn=>btn.addEventListener('click',()=>downloadAllEmailAttachments(btn.dataset.emailDownloadAll)));
+      }
+      function renderEmailQueue(){
+        renderEmailQueueBadge();const rows=document.getElementById('emailQueueRows');const status=document.getElementById('emailQueueStatus');if(!rows)return;
+        status.textContent=emailIntakeConfigured?'Inbox connection ready. Queued emails remain in Gmail until 7 days after ticket creation.':'Queue is ready, but Gmail downloads/manual scanning will work after the Email Intake Apps Script is deployed and connected.';
+        if(!emailQueue.length){rows.innerHTML='<div class="muted">No forwarded emails are waiting for a ticket.</div>';return}
+        rows.innerHTML=emailQueue.map(item=>{
+          const sender=[item.originalSenderName,item.originalSenderEmail].filter(Boolean).join(item.originalSenderName&&item.originalSenderEmail?' · ':'');
+          const match=matchedEmailClientLabel(item);const body=String(item.body||'').trim();const preview=body.length>500?body.slice(0,500)+'…':body;
+          return `<div class="email-queue-item"><div class="email-queue-subject">${escapeHtml(item.cleanSubject||item.subject||'(No subject)')}</div><div class="email-queue-meta">From: ${escapeHtml(sender||item.outerSender||'Unknown sender')}<br>Received: ${escapeHtml(item.receivedAt||'')}</div><span class="email-queue-match${match?'':' unmatched'}">${escapeHtml(match?'Matched: '+match:'Client not matched')}</span>${preview?`<div class="email-body-preview">${escapeHtml(preview)}</div>`:''}${emailAttachmentMarkup(item)}<div class="email-queue-actions"><button class="primary" type="button" data-email-create="${escapeHtml(String(item.queueId||''))}">Create Ticket</button>${item.gmailPermalink?`<button class="secondary" type="button" data-email-open="${escapeHtml(String(item.queueId||''))}">Open Original Email</button>`:''}<button class="secondary" type="button" data-email-dismiss="${escapeHtml(String(item.queueId||''))}">Dismiss</button></div></div>`;
+        }).join('');
+        rows.querySelectorAll('[data-email-create]').forEach(btn=>btn.addEventListener('click',()=>loadEmailIntoNewJob(btn.dataset.emailCreate)));
+        rows.querySelectorAll('[data-email-open]').forEach(btn=>btn.addEventListener('click',()=>{const item=emailQueueItem(btn.dataset.emailOpen);if(item&&item.gmailPermalink)window.open(item.gmailPermalink,'_blank','noopener')}));
+        rows.querySelectorAll('[data-email-dismiss]').forEach(btn=>btn.addEventListener('click',()=>dismissEmailQueueItem(btn.dataset.emailDismiss)));
+        attachEmailDownloadHandlers(rows);
+        const recentSection=document.getElementById('emailRecentSection');const recentRows=document.getElementById('emailRecentRows');
+        if(recentEmailSources.length){recentSection.style.display='block';recentRows.innerHTML=recentEmailSources.map(item=>{const job=jobs.find(j=>String(j.ticketNumber||'')===String(item.ticketNumber||''));const title=job?(job.title||job.displayTitle||('Ticket '+item.ticketNumber)):(item.cleanSubject||item.subject||('Ticket '+item.ticketNumber));return `<div class="email-queue-item"><div class="email-queue-subject">${escapeHtml(title)}</div><div class="email-queue-meta">Source email retained until: ${escapeHtml(item.deleteAfter||'')}</div>${emailAttachmentMarkup(item)}<div class="email-queue-actions">${item.gmailPermalink?`<button class="secondary" type="button" data-recent-email-open="${escapeHtml(String(item.queueId||''))}">Open Original Email</button>`:''}</div></div>`}).join('');recentRows.querySelectorAll('[data-recent-email-open]').forEach(btn=>btn.addEventListener('click',()=>{const item=recentEmailSources.find(source=>String(source.queueId||'')===String(btn.dataset.recentEmailOpen||''));if(item&&item.gmailPermalink)window.open(item.gmailPermalink,'_blank','noopener')}));attachEmailDownloadHandlers(recentRows)}else{recentSection.style.display='none';recentRows.innerHTML=''}
+      }
+      function clearEmailDraftState(){emailDraftQueueId='';const panel=document.getElementById('emailDraftPanel');if(panel)panel.style.display='none';const notes=document.getElementById('emailDraftJobNotes');if(notes)notes.value='';const attachments=document.getElementById('emailDraftAttachments');if(attachments)attachments.innerHTML=''}
+      function loadEmailIntoNewJob(queueId){
+        const item=emailQueueItem(queueId);if(!item)return;emailDraftQueueId=String(queueId);
+        document.getElementById('jobForm').reset();document.getElementById('dueDate').dataset.manual='';populateClients();syncNextId();
+        if(item.matchedPrimaryClientId&&clients.some(c=>c.id===item.matchedPrimaryClientId)){document.getElementById('primaryClient').value=item.matchedPrimaryClientId;updateSecondaryVisibility();updateSubs();if(item.matchedSecondaryClientId&&subclients.some(s=>s.parentClientId===item.matchedPrimaryClientId&&s.id===item.matchedSecondaryClientId))document.getElementById('secondaryClient').value=item.matchedSecondaryClientId}
+        document.getElementById('description').value=item.cleanSubject||item.subject||'';document.getElementById('hours').value='1';document.getElementById('status').value='To Do';document.getElementById('emailDraftJobNotes').value=String(item.body||'');
+        const sender=[item.originalSenderName,item.originalSenderEmail].filter(Boolean).join(item.originalSenderName&&item.originalSenderEmail?' · ':'');document.getElementById('emailDraftMeta').textContent=`${sender||'Unknown sender'}${item.receivedAt?' · '+item.receivedAt:''}`;
+        const panel=document.getElementById('emailDraftPanel');panel.style.display='block';const attachments=document.getElementById('emailDraftAttachments');attachments.innerHTML=emailAttachmentMarkup(item,'draft');attachEmailDownloadHandlers(attachments);updatePreview();
+        document.getElementById('emailQueueModalBackdrop').classList.remove('open');document.querySelector('.new-job-panel').scrollIntoView({behavior:'smooth',block:'start'});
+      }
+      async function dismissEmailQueueItem(queueId){
+        if(!confirm('Dismiss this email request? It will leave the ticket queue and its source email will be scheduled for deletion in 7 days.'))return;
+        try{const data=await apiPost({action:'dismissEmailQueue',queueId});if(!data.success)throw new Error(data.error||'Unable to dismiss email');emailQueue=emailQueue.filter(item=>String(item.queueId)!==String(queueId));if(String(emailDraftQueueId)===String(queueId))clearEmailDraftState();renderEmailQueue()}catch(err){alert(err.message)}
+      }
+      function saveBase64Download(data){
+        if(!data||!data.base64)throw new Error('No attachment data was returned.');const binary=atob(data.base64);const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);const blob=new Blob([bytes],{type:data.mimeType||'application/octet-stream'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=data.fileName||'attachment';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)
+      }
+      async function downloadEmailAttachment(queueId,index){try{const data=await apiPost({action:'getEmailAttachment',queueId,attachmentIndex:index});if(!data.success)throw new Error(data.error||'Unable to download attachment');saveBase64Download(data)}catch(err){alert(err.message)}}
+      async function downloadAllEmailAttachments(queueId){try{const data=await apiPost({action:'getEmailAttachmentsZip',queueId});if(!data.success)throw new Error(data.error||'Unable to create attachment ZIP');saveBase64Download(data)}catch(err){alert(err.message)}}
       function formatHours(h){const mins=Math.round(Number(h)*60);if(mins<60)return mins+' min';const hrs=Math.floor(mins/60),rem=mins%60;return rem?hrs+' hr '+rem+' min':hrs+' hr'}
       function formatDate(v){const d=new Date(v+'T00:00:00Z');return d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',timeZone:'UTC'})}
       function escapeHtml(s){return String(s).replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[m]))}
@@ -2141,7 +2250,7 @@
           if(clientNotesTarget)openClientNotesModal(clientNotesTarget.primaryClientId,clientNotesTarget.secondaryClientId||'');
         }catch(err){alert(err.message)}finally{saveBtn.disabled=false}
       });
-      document.getElementById('clearBtn').addEventListener('click',()=>{document.getElementById('jobForm').reset();document.getElementById('clientModal').classList.remove('open');document.getElementById('subclientModal').classList.remove('open');document.getElementById('dueDate').dataset.manual='';populateClients();syncNextId();document.getElementById('ticketPreview').style.display='none';document.getElementById('jobNumberWrap').style.display='none'});
+      document.getElementById('clearBtn').addEventListener('click',()=>{document.getElementById('jobForm').reset();clearEmailDraftState();document.getElementById('clientModal').classList.remove('open');document.getElementById('subclientModal').classList.remove('open');document.getElementById('dueDate').dataset.manual='';populateClients();syncNextId();document.getElementById('ticketPreview').style.display='none';document.getElementById('jobNumberWrap').style.display='none'});
       document.getElementById('viewCompletedJobsBtn').addEventListener('click',openCompletedMetricsModal);
       document.getElementById('closeCompletedMetricsBtn').addEventListener('click',()=>document.getElementById('completedMetricsModalBackdrop').classList.remove('open'));
       document.getElementById('completedMetricsRows').addEventListener('click',async e=>{
@@ -2177,6 +2286,11 @@
         }catch(err){alert(err.message)}finally{btn.disabled=false;if(btn.textContent==='Saving…')btn.textContent='Save Overhead'}
       });
       document.getElementById('reloadBtn').addEventListener('click',loadBackend);
+      document.getElementById('emailQueueBtn').addEventListener('click',()=>{renderEmailQueue();document.getElementById('emailQueueModalBackdrop').classList.add('open')});
+      document.getElementById('closeEmailQueueBtn').addEventListener('click',()=>document.getElementById('emailQueueModalBackdrop').classList.remove('open'));
+      document.getElementById('scanEmailInboxBtn').addEventListener('click',async()=>{const btn=document.getElementById('scanEmailInboxBtn');btn.disabled=true;btn.textContent='Checking…';try{const data=await apiPost({action:'scanEmailInbox'});if(!data.success)throw new Error(data.error||'Unable to check email inbox');emailQueue=data.emailQueue||[];recentEmailSources=data.recentEmailSources||[];emailIntakeConfigured=true;renderEmailQueue()}catch(err){alert(err.message)}finally{btn.disabled=false;btn.textContent='Check Inbox Now'}});
+      document.getElementById('backToEmailQueueBtn').addEventListener('click',()=>{renderEmailQueue();document.getElementById('emailQueueModalBackdrop').classList.add('open')});
+      document.getElementById('clearEmailDraftNotes').addEventListener('click',()=>{document.getElementById('emailDraftJobNotes').value=''});
       document.getElementById('addIncomeFinancialRowBtn').addEventListener('click',()=>addFinancialRow('Income'));
       document.getElementById('addExpenseFinancialRowBtn').addEventListener('click',()=>addFinancialRow('Expense'));
       document.getElementById('previousClientFinancialBtn').addEventListener('click',e=>{const ticket=e.currentTarget.dataset.targetTicket;if(ticket)renderJobFinancialsView(ticket)});
@@ -2427,32 +2541,36 @@
       });
       document.getElementById('cancelJobTimeBtn').addEventListener('click',()=>{timeEditTicket='';document.getElementById('timeEditModalBackdrop').classList.remove('open')});
       document.getElementById('saveJobTimeBtn').addEventListener('click',async()=>{const job=jobs.find(j=>String(j.ticketNumber||'')===timeEditTicket);if(!job)return;const accrued=Math.max(0,Number(document.getElementById('timeAccruedInput').value)||0);const estimated=Math.max(0,Number(document.getElementById('estimatedRemainingInput').value)||0);try{const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,dueDate:job.due||job.dueDate,estimatedHoursRemaining:estimated,timeAccruedHours:accrued});if(!data.success)throw new Error(data.error||'Unable to save job time');setTimeAccruedHours(job,accrued);job.hours=estimated;job.estimatedHoursRemaining=estimated;const state=ensureTimerState(job);state.remaining=recommendedWorkSeconds(job);state.blockStartRemaining=state.remaining;state.blockStartOvertime=state.overtime||0;state.committedSeconds=0;document.getElementById('timeEditModalBackdrop').classList.remove('open');timeEditTicket='';renderQueue();renderBoard()}catch(err){alert(err.message)}});
-      document.getElementById('editClientNotesBtn').addEventListener('click',()=>{const textarea=document.getElementById('clientNotesTextarea');const pricingTextarea=document.getElementById('clientPricingNotesTextarea');textarea.readOnly=false;pricingTextarea.readOnly=false;textarea.focus();document.getElementById('editClientNotesBtn').style.display='none';document.getElementById('doneClientNotesBtn').style.display='inline-block'});
+      document.getElementById('editClientNotesBtn').addEventListener('click',()=>{const textarea=document.getElementById('clientNotesTextarea');const pricingTextarea=document.getElementById('clientPricingNotesTextarea');const associatedEmailsTextarea=document.getElementById('clientAssociatedEmailsTextarea');textarea.readOnly=false;pricingTextarea.readOnly=false;associatedEmailsTextarea.readOnly=false;textarea.focus();document.getElementById('editClientNotesBtn').style.display='none';document.getElementById('doneClientNotesBtn').style.display='inline-block'});
       document.getElementById('doneClientNotesBtn').addEventListener('click',async()=>{
         if(!clientNotesTarget)return;
         const textarea=document.getElementById('clientNotesTextarea');
         const pricingTextarea=document.getElementById('clientPricingNotesTextarea');
+        const associatedEmailsTextarea=document.getElementById('clientAssociatedEmailsTextarea');
         const notes=textarea.value;
         const pricingNotes=pricingTextarea.value;
+        const associatedEmails=associatedEmailsTextarea.value;
         const {primaryClientId,secondaryClientId}=clientNotesTarget;
         const key=clientNotesKey(primaryClientId,secondaryClientId);
         try{
           const payload=secondaryClientId
-            ?{action:'updateSubclientNotes',parentClientId:primaryClientId,subclientId:secondaryClientId,notes,pricingNotes}
-            :{action:'updateClientNotes',clientId:primaryClientId,notes,pricingNotes};
+            ?{action:'updateSubclientNotes',parentClientId:primaryClientId,subclientId:secondaryClientId,notes,pricingNotes,associatedEmails}
+            :{action:'updateClientNotes',clientId:primaryClientId,notes,pricingNotes,associatedEmails};
           const data=await apiPost(payload);
           if(!data.success)throw new Error(data.error||'Unable to save client notes');
           clientNotes[key]=notes;
           clientPricingNotes[key]=pricingNotes;
+          clientAssociatedEmails[key]=associatedEmails;
           if(secondaryClientId){
             const sub=subclients.find(s=>s.parentClientId===primaryClientId&&s.id===secondaryClientId);
-            if(sub){sub.notes=notes;sub.pricingNotes=pricingNotes}
+            if(sub){sub.notes=notes;sub.pricingNotes=pricingNotes;sub.associatedEmails=associatedEmails}
           }else{
             const client=clients.find(c=>c.id===primaryClientId);
-            if(client){client.notes=notes;client.pricingNotes=pricingNotes}
+            if(client){client.notes=notes;client.pricingNotes=pricingNotes;client.associatedEmails=associatedEmails}
           }
           textarea.readOnly=true;
           pricingTextarea.readOnly=true;
+          associatedEmailsTextarea.readOnly=true;
           document.getElementById('editClientNotesBtn').style.display='inline-block';
           document.getElementById('doneClientNotesBtn').style.display='none';
           if(jobFinancialsViewTicket){
@@ -2511,8 +2629,11 @@
         e.preventDefault(); const desc=document.getElementById('description').value.trim(); const primary=document.getElementById('primaryClient').value; const requestedTicketNumber=Number(document.getElementById('jobNumber').value); if(!desc||!clients.length||!primary||primary==='__ADD_CLIENT__'||!validateJobNumber())return;
         const status=document.getElementById('status').value; const selectedClient=clients.find(c=>c.id===primary); const secondary=selectedClient&&(selectedClient.type==='Has Secondary Clients'||selectedClient.id==='TPT')?document.getElementById('secondaryClient').value:'';
         try{
-          const data=await apiPost({action:'createJob',ticketNumber:requestedTicketNumber,primaryClientId:primary,secondaryClientId:secondary,description:desc,designType:'',estimatedHoursRemaining:Number(document.getElementById('hours').value),status,dueDate:document.getElementById('dueDate').dataset.manual?document.getElementById('dueDate').value:''});
-          if(!data.success)throw new Error(data.error||'Unable to create job'); jobs.push(data.job); renderQueue(); renderBoard(); document.getElementById('jobForm').reset(); document.getElementById('clientModal').classList.remove('open'); document.getElementById('subclientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; document.getElementById('clientIdAlert').style.display='none'; document.getElementById('clientIdAlert').textContent=''; document.getElementById('newSubclientName').value=''; document.getElementById('newSubclientId').value=''; document.getElementById('subclientIdAlert').style.display='none'; document.getElementById('subclientIdAlert').textContent=''; document.getElementById('dueDate').dataset.manual=''; populateClients(); syncNextId(); document.getElementById('ticketPreview').style.display='none'; document.getElementById('jobNumberWrap').style.display='none';
+          const createAction=emailDraftQueueId?'createJobFromEmailQueue':'createJob';
+          const payload={action:createAction,ticketNumber:requestedTicketNumber,primaryClientId:primary,secondaryClientId:secondary,description:desc,designType:'',estimatedHoursRemaining:Number(document.getElementById('hours').value),status,dueDate:document.getElementById('dueDate').dataset.manual?document.getElementById('dueDate').value:'',notes:emailDraftQueueId?document.getElementById('emailDraftJobNotes').value:''};
+          if(emailDraftQueueId)payload.queueId=emailDraftQueueId;
+          const data=await apiPost(payload);
+          if(!data.success)throw new Error(data.error||'Unable to create job'); jobs.push(data.job);if(emailDraftQueueId){const source=emailQueueItem(emailDraftQueueId);if(source)recentEmailSources.unshift({...source,ticketNumber:data.job.ticketNumber,deleteAfter:data.deleteAfter||''});emailQueue=emailQueue.filter(item=>String(item.queueId||'')!==String(emailDraftQueueId))}clearEmailDraftState();renderEmailQueue(); renderQueue(); renderBoard(); document.getElementById('jobForm').reset(); document.getElementById('clientModal').classList.remove('open'); document.getElementById('subclientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; document.getElementById('clientIdAlert').style.display='none'; document.getElementById('clientIdAlert').textContent=''; document.getElementById('newSubclientName').value=''; document.getElementById('newSubclientId').value=''; document.getElementById('subclientIdAlert').style.display='none'; document.getElementById('subclientIdAlert').textContent=''; document.getElementById('dueDate').dataset.manual=''; populateClients(); syncNextId(); document.getElementById('ticketPreview').style.display='none'; document.getElementById('jobNumberWrap').style.display='none';
         }catch(err){alert(err.message)}
       });
       const markActivity=()=>{if(systemIdleDetectionState==='active')lastActivityAt=Date.now()};
@@ -2539,7 +2660,7 @@
       },1000);
       document.addEventListener('click',()=>document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open')));
       window.addEventListener('beforeunload',event=>{if(!activeWorkSession||!activeWorkSession.sessionId)return;if(activeTimerKey)saveTimerSnapshot(activeTimerKey);saveActiveWorkSession(activeWorkSession);event.preventDefault();event.returnValue=''});
-      loadIdleAlarmPreference();populateClients();renderQueue();renderBoard();renderNotificationTray();loadBackend();setInterval(checkForOrphanPunch,60000);
+      loadIdleAlarmPreference();populateClients();renderQueue();renderBoard();renderNotificationTray();renderEmailQueue();loadBackend();setInterval(checkForOrphanPunch,60000);
     })();
   </script>
 </div>
