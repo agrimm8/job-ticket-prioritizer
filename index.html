@@ -216,6 +216,9 @@
     #job-priority-app .financial-readonly-empty{font-size:11px;opacity:.55;font-style:italic}
     #job-priority-app .financial-go-back{display:none}
     #job-priority-app .financial-go-back.show{display:inline-flex}
+    #job-priority-app .financial-job-title-row{display:flex;align-items:flex-start;gap:6px;margin-bottom:2px}
+    #job-priority-app .financial-job-title-row #jobFinancialsModalJob{min-width:0}
+    #job-priority-app .financial-move-completed{margin-left:auto;background:#b42318!important;color:#fff!important;border-color:#b42318!important}
     @media(max-width:700px){#job-priority-app .financial-grid{grid-template-columns:1fr}#job-priority-app .financial-columns-head,#job-priority-app .financial-entry-row,#job-priority-app .financial-total-row,#job-priority-app .financial-entry-row.readonly{grid-template-columns:minmax(0,1fr) 105px 22px}}
   
 
@@ -285,7 +288,7 @@
           <span id="idleAlarmStateLabel">Idle Alarm On</span>
         </div>
         <button class="secondary" id="overheadBtn" type="button">Overhead</button>
-        <button class="secondary" id="reloadBtn" type="button">Reload Data</button>
+        <button class="secondary" id="reloadBtn" type="button">Sync Data</button>
       </div>
     </div>
 
@@ -576,7 +579,7 @@
     <div class="timer-modal-backdrop" id="jobFinancialsModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="jobFinancialsModalTitle">
       <div class="timer-modal financial-modal">
         <h3 id="jobFinancialsModalTitle">Job Income &amp; Expense</h3>
-        <p id="jobFinancialsModalJob" style="margin-bottom:2px"></p>
+        <div class="financial-job-title-row"><p id="jobFinancialsModalJob"></p><button class="copy-title-btn" id="jobFinancialsCopyTitleBtn" type="button" aria-label="Copy job ticket title" title="Copy job ticket title"></button></div>
         <div class="financial-history-nav"><button id="previousClientFinancialBtn" type="button">‹ Previous</button><span class="financial-history-separator">|</span><button id="nextClientFinancialBtn" type="button">Next ›</button></div>
         <div class="financial-history-meta" id="jobFinancialsHistoryMeta"></div>
         <a class="financial-notes-link" id="jobFinancialsNotesLink">View Client Notes</a>
@@ -598,7 +601,7 @@
           </section>
         </div>
         <div class="financial-net"><span>Project Net Profit</span><span class="financial-net-value zero" id="jobFinancialNetTotal">$0.00</span></div>
-        <div class="actions"><button class="secondary financial-go-back" id="backToCurrentFinancialBtn" type="button">Go Back to Current Job</button><button class="primary" id="saveJobFinancialsBtn" type="button">Save</button><button class="secondary" id="cancelJobFinancialsBtn" type="button">Cancel</button></div>
+        <div class="actions"><button class="secondary financial-go-back" id="backToCurrentFinancialBtn" type="button">Go Back to Current Job</button><button class="primary" id="saveJobFinancialsBtn" type="button">Save</button><button class="secondary" id="cancelJobFinancialsBtn" type="button">Cancel</button><button class="financial-move-completed" id="moveFinancialJobToCompletedBtn" type="button">Move to Completed</button></div>
       </div>
     </div>
     <div class="timer-modal-backdrop" id="overheadModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="overheadModalTitle">
@@ -1611,12 +1614,15 @@
         jobFinancialsViewTicket=String(ticket);
         const isOrigin=jobFinancialsViewTicket===jobFinancialsOriginTicket;
         jobFinancialsTicket=isOrigin?jobFinancialsOriginTicket:'';
-        document.getElementById('jobFinancialsModalJob').textContent=job.title||job.displayTitle||'';
+        const financialJobTitle=job.title||job.displayTitle||'';
+        document.getElementById('jobFinancialsModalJob').textContent=financialJobTitle;
+        const financialCopyBtn=document.getElementById('jobFinancialsCopyTitleBtn');financialCopyBtn.innerHTML=COPY_ICON;financialCopyBtn.dataset.copyTitle=financialJobTitle;
         document.getElementById('jobFinancialsHistoryMeta').textContent=financialHistoryMeta(job);
         updateJobFinancialsClientNotesLink(job);
         const readonlyBanner=document.getElementById('jobFinancialsReadonlyBanner');readonlyBanner.classList.toggle('show',!isOrigin);
         document.getElementById('backToCurrentFinancialBtn').classList.toggle('show',!isOrigin);
         document.getElementById('saveJobFinancialsBtn').style.display=isOrigin?'':'none';
+        document.getElementById('moveFinancialJobToCompletedBtn').style.display=isOrigin&&String(job.status||'')!=='Completed'?'':'none';
         document.getElementById('addIncomeFinancialRowBtn').style.display=isOrigin?'':'none';
         document.getElementById('addExpenseFinancialRowBtn').style.display=isOrigin?'':'none';
         document.getElementById('cancelJobFinancialsBtn').textContent=isOrigin?'Cancel':'Close';
@@ -2185,19 +2191,48 @@
       });
       document.getElementById('backToCurrentFinancialBtn').addEventListener('click',()=>{if(jobFinancialsOriginTicket)renderJobFinancialsView(jobFinancialsOriginTicket)});
       document.getElementById('cancelJobFinancialsBtn').addEventListener('click',()=>{jobFinancialsTicket='';jobFinancialsOriginTicket='';jobFinancialsViewTicket='';jobFinancialsOriginDraft=null;clientNotesReturnToFinancial=false;document.getElementById('jobFinancialsModalBackdrop').classList.remove('open')});
-      document.getElementById('saveJobFinancialsBtn').addEventListener('click',async()=>{
-        if(!jobFinancialsTicket)return;
+      async function saveCurrentJobFinancials(closeAfterSave=true){
+        if(!jobFinancialsTicket)return false;
+        const ticket=String(jobFinancialsTicket);
         const saveBtn=document.getElementById('saveJobFinancialsBtn');
         try{
           const entries=[...readFinancialRows('Income',true),...readFinancialRows('Expense',true)];
           saveBtn.disabled=true;saveBtn.textContent='Saving…';
-          const data=await apiPost({action:'saveJobFinancials',ticketNumber:jobFinancialsTicket,entries});
+          const data=await apiPost({action:'saveJobFinancials',ticketNumber:ticket,entries});
           if(!data.success)throw new Error(data.error||'Unable to save job financials');
-          jobFinancials=jobFinancials.filter(entry=>String(entry.ticketNumber||'')!==String(jobFinancialsTicket));
-          (data.entries||entries).forEach(entry=>jobFinancials.push({...entry,ticketNumber:Number(jobFinancialsTicket)}));
-          document.getElementById('jobFinancialsModalBackdrop').classList.remove('open');jobFinancialsTicket='';jobFinancialsOriginTicket='';jobFinancialsViewTicket='';jobFinancialsOriginDraft=null;renderQueue();renderBoard();
-        }catch(err){alert(err.message)}finally{saveBtn.disabled=false;saveBtn.textContent='Save'}
-      });
+          jobFinancials=jobFinancials.filter(entry=>String(entry.ticketNumber||'')!==ticket);
+          (data.entries||entries).forEach(entry=>jobFinancials.push({...entry,ticketNumber:Number(ticket)}));
+          jobFinancialsOriginDraft={income:entries.filter(entry=>entry.type==='Income'),expense:entries.filter(entry=>entry.type==='Expense')};
+          if(closeAfterSave){
+            document.getElementById('jobFinancialsModalBackdrop').classList.remove('open');jobFinancialsTicket='';jobFinancialsOriginTicket='';jobFinancialsViewTicket='';jobFinancialsOriginDraft=null;clientNotesReturnToFinancial=false;renderQueue();renderBoard();
+          }
+          return true;
+        }catch(err){alert(err.message);return false}finally{saveBtn.disabled=false;saveBtn.textContent='Save'}
+      }
+      async function moveCurrentFinancialJobToCompleted(){
+        if(!jobFinancialsTicket)return;
+        const ticket=String(jobFinancialsTicket);
+        const job=jobs.find(j=>String(j.ticketNumber||'')===ticket);if(!job||String(job.status||'')==='Completed')return;
+        const moveBtn=document.getElementById('moveFinancialJobToCompletedBtn');
+        moveBtn.disabled=true;moveBtn.textContent='Saving & Moving…';
+        const saved=await saveCurrentJobFinancials(false);
+        if(!saved){moveBtn.disabled=false;moveBtn.textContent='Move to Completed';return}
+        try{
+          const key=timerKeyFor(job);const state=ensureTimerState(job);
+          if(state.running||activeTimerKey===key||(activeWorkSession&&activeWorkSession.timerKey===key)){
+            const paused=await pauseTimer(key);if(paused===false)throw new Error('Unable to stop the active timer before completing this job.');
+          }
+          const effectiveHours=Number(job.hours??job.estimatedHoursRemaining??0);
+          const data=await apiPost({action:'updateJob',ticketNumber:ticket,status:'Completed',dueDate:job.due||job.dueDate||'',followUpDate:job.followUpDate||'',estimatedHoursRemaining:effectiveHours});
+          if(!data.success)throw new Error(data.error||'Unable to move job to Completed');
+          const savedDue=data.dueDate||job.due||job.dueDate||'';
+          job.status='Completed';job.dueDate=savedDue;job.due=savedDue;job.followUpDate=data.followUpDate!==undefined?data.followUpDate:(job.followUpDate||'');job.hours=effectiveHours;job.estimatedHoursRemaining=effectiveHours;job.completedAt=(data.job&&data.job.completedAt)||new Date().toISOString();
+          document.getElementById('jobFinancialsModalBackdrop').classList.remove('open');jobFinancialsTicket='';jobFinancialsOriginTicket='';jobFinancialsViewTicket='';jobFinancialsOriginDraft=null;clientNotesReturnToFinancial=false;renderQueue();renderBoard();
+        }catch(err){alert('Financials were saved, but the job could not be moved to Completed: '+err.message)}finally{moveBtn.disabled=false;moveBtn.textContent='Move to Completed'}
+      }
+      document.getElementById('saveJobFinancialsBtn').addEventListener('click',()=>saveCurrentJobFinancials(true));
+      document.getElementById('jobFinancialsCopyTitleBtn').addEventListener('click',e=>copyJobTitle(e.currentTarget.dataset.copyTitle||''));
+      document.getElementById('moveFinancialJobToCompletedBtn').addEventListener('click',moveCurrentFinancialJobToCompleted);
       document.getElementById('notificationTrayMinimizeBtn').addEventListener('click',()=>{notificationTrayMinimized=true;renderNotificationTray()});
       document.getElementById('notificationTrayCollapsedBtn').addEventListener('click',()=>{notificationTrayMinimized=false;renderNotificationTray()});
       document.getElementById('notificationFixOrphanBtn').addEventListener('click',()=>{
