@@ -157,6 +157,12 @@
     #job-priority-app .notes-box{width:100%;min-height:180px;resize:vertical;padding:9px;border-radius:8px;border:1px solid light-dark(#cfcfca,#444);background:light-dark(#fff,#171717);color:inherit;font:inherit;line-height:1.4}
     #job-priority-app .notes-box[readonly]{opacity:.85;cursor:default}
     #job-priority-app .client-notes-modal{width:min(640px,calc(100vw - 32px));max-height:88vh;overflow:auto}
+    #job-priority-app .job-notes-modal{width:min(760px,calc(100vw - 32px));max-height:88vh;overflow:auto}
+    #job-priority-app .job-notes-modal .notes-box{min-height:300px}
+    #job-priority-app .job-notes-email-source{margin-top:14px;padding:12px;border:1px solid light-dark(#d8d8d4,#444);border-radius:10px;background:light-dark(#f7f7f4,#252525)}
+    #job-priority-app .job-notes-email-source-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:5px}
+    #job-priority-app .job-notes-email-source-title{font-size:11px;font-weight:850}
+    #job-priority-app .job-notes-email-source-meta{font-size:9px;opacity:.68;line-height:1.4}
     #job-priority-app .client-notes-section{margin-top:14px}
     #job-priority-app .client-notes-section:first-of-type{margin-top:0}
     #job-priority-app .client-notes-label{display:flex;align-items:center;gap:7px;margin-bottom:6px;font-size:12px;font-weight:800}
@@ -180,6 +186,17 @@
     #job-priority-app .email-queue-actions{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-top:10px}
     #job-priority-app .email-attachment-group{margin-top:9px}
     #job-priority-app .email-attachment-group-label{font-size:9px;font-weight:800;letter-spacing:.02em;opacity:.72;margin-bottom:5px}
+    #job-priority-app .email-recent-item{padding:0;overflow:hidden}
+    #job-priority-app .email-recent-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;cursor:pointer;user-select:none}
+    #job-priority-app .email-recent-summary:focus{outline:2px solid #2f67b2;outline-offset:-2px}
+    #job-priority-app .email-recent-summary-main{min-width:0}
+    #job-priority-app .email-recent-summary-title{font-size:11px;font-weight:800;line-height:1.3}
+    #job-priority-app .email-recent-summary-meta{font-size:9px;opacity:.65;margin-top:2px}
+    #job-priority-app .email-recent-chevron{font-size:12px;opacity:.6;transition:transform .15s ease}
+    #job-priority-app .email-recent-item.expanded .email-recent-chevron{transform:rotate(90deg)}
+    #job-priority-app .email-recent-details{display:none;padding:0 12px 12px;border-top:1px solid light-dark(#e3e3df,#3b3b3b)}
+    #job-priority-app .email-recent-item.expanded .email-recent-details{display:block}
+    #job-priority-app .email-recent-actions{display:flex;flex-wrap:nowrap;gap:7px;align-items:center;margin-top:10px}
     #job-priority-app .email-source-link{font-weight:700}
     #job-priority-app .email-source-expired{font-size:10px;opacity:.62}
     #job-priority-app .email-source-reminder{margin:0 0 12px;padding:9px 10px;border:1px solid light-dark(#cdd9e7,#465467);border-radius:8px;background:light-dark(#f3f7fb,#222b34);font-size:11px;line-height:1.4}
@@ -576,7 +593,7 @@
         </div>
         <div class="email-status-note" id="emailQueueStatus"></div>
         <div class="email-queue-list" id="emailQueueRows"></div>
-        <div id="emailRecentSection" style="display:none;margin-top:18px"><h3 style="font-size:12px;margin-bottom:7px">Recently Created from Email</h3><p class="muted">Attachments remain available here until the source email reaches its 7-day deletion date.</p><div class="email-queue-list" id="emailRecentRows"></div></div>
+        <div id="emailRecentSection" style="display:none;margin-top:18px"><h3 style="font-size:12px;margin-bottom:7px">Recently Created from Email</h3><p class="muted">Shows email-created jobs for 2 days. Source email and attachments stay available from the job itself for the full 7-day retention period.</p><div class="email-queue-list" id="emailRecentRows"></div></div>
         <div class="actions"><button class="secondary" id="closeEmailQueueBtn" type="button">Close</button></div>
       </div>
     </div>
@@ -611,10 +628,11 @@
       </div>
     </div>
     <div class="timer-modal-backdrop" id="jobNotesModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="jobNotesModalTitle">
-      <div class="timer-modal">
+      <div class="timer-modal job-notes-modal">
         <h3 id="jobNotesModalTitle">Job Notes</h3>
         <p id="jobNotesModalJob" style="margin-bottom:10px"></p>
         <textarea id="jobNotesTextarea" class="notes-box" readonly placeholder="No job notes yet."></textarea>
+        <div id="jobNotesEmailSource" class="job-notes-email-source" style="display:none"></div>
         <div class="actions"><button class="edit-notes-btn" id="editJobNotesBtn" type="button">Edit</button><button class="primary" id="doneJobNotesBtn" type="button" style="display:none">Done</button><button class="secondary" id="closeJobNotesBtn" type="button">Close</button></div>
       </div>
     </div>
@@ -1856,7 +1874,16 @@
         renderQueue();
         renderBoard();
       }
-      function openJobNotesModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;jobNotesTicket=String(ticket);document.getElementById('jobNotesModalJob').textContent=job.title||job.displayTitle||'';const textarea=document.getElementById('jobNotesTextarea');textarea.value=String(job.notes||'');textarea.readOnly=true;document.getElementById('editJobNotesBtn').style.display='inline-block';document.getElementById('doneJobNotesBtn').style.display='none';document.getElementById('jobNotesModalBackdrop').classList.add('open')}
+      function renderJobNotesEmailSource(job){
+        const holder=document.getElementById('jobNotesEmailSource');if(!holder)return;const source=emailSourceForJob(job);
+        if(!source){holder.style.display='none';holder.innerHTML='';return}
+        holder.style.display='block';
+        if(!emailSourceIsAvailable(source)){holder.innerHTML=`<div class="job-notes-email-source-head"><div><div class="job-notes-email-source-title">✉ Email Source</div><div class="job-notes-email-source-meta">Source email expired. Attachment downloads are no longer available.</div></div></div>`;return}
+        const attachments=Array.isArray(source.attachments)?source.attachments:[];const count=attachments.length;
+        holder.innerHTML=`<div class="job-notes-email-source-head"><div><div class="job-notes-email-source-title">✉ Email Source</div><div class="job-notes-email-source-meta">${count?count+' downloadable file'+(count===1?'':'s')+' · ':''}Retained until ${escapeHtml(source.deleteAfter||'the 7-day expiration date')}</div></div></div>${emailAttachmentMarkup(source,'job-notes')}<div class="email-recent-actions">${count?`<button class="secondary" type="button" data-email-download-all="${escapeHtml(String(source.queueId||''))}">Download Attachments (.zip)</button>`:''}${source.gmailPermalink?`<button class="secondary" type="button" data-job-notes-email-open>Open Original Email</button>`:''}</div>`;
+        attachEmailDownloadHandlers(holder);const openBtn=holder.querySelector('[data-job-notes-email-open]');if(openBtn)openBtn.addEventListener('click',()=>window.open(source.gmailPermalink,'_blank','noopener'));
+      }
+      function openJobNotesModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;jobNotesTicket=String(ticket);document.getElementById('jobNotesModalJob').textContent=job.title||job.displayTitle||'';const textarea=document.getElementById('jobNotesTextarea');textarea.value=String(job.notes||'');textarea.readOnly=true;document.getElementById('editJobNotesBtn').style.display='inline-block';document.getElementById('doneJobNotesBtn').style.display='none';renderJobNotesEmailSource(job);document.getElementById('jobNotesModalBackdrop').classList.add('open')}
       function formatSessionDuration(minutes){
         const totalSeconds=Math.max(0,Math.round(Number(minutes||0)*60));
         const h=Math.floor(totalSeconds/3600),m=Math.floor((totalSeconds%3600)/60),sec=totalSeconds%60;
@@ -2163,11 +2190,12 @@
         const client=clients.find(c=>c.id===item.matchedPrimaryClientId);return client?client.name+' ('+client.id+')':item.matchedPrimaryClientId;
       }
       function renderEmailQueueBadge(){const btn=document.getElementById('emailQueueBtn');if(btn)btn.textContent=`Email Queue (${emailQueue.length})`}
+      function recentEmailSourceIsVisible(source){if(!emailSourceIsAvailable(source))return false;if(!source.processedAt)return true;const processed=new Date(source.processedAt).getTime();return !Number.isFinite(processed)||(Date.now()-processed)<(2*24*60*60*1000)}
       function emailAttachmentMarkup(item,context='queue'){
         const attachments=Array.isArray(item&&item.attachments)?item.attachments:[];if(!attachments.length)return '';
         const renderGroup=(label,items)=>{if(!items.length)return '';const chips=items.map(({att,index})=>`<span class="email-attachment-chip"><span>${escapeHtml(att.name||((att.kind==='inline'?'Inline image ':'Attachment ')+(index+1)))}${att.size?' · '+escapeHtml(formatBytes(att.size)):''}</span><button type="button" data-email-download="${escapeHtml(String(item.queueId||''))}" data-email-attachment-index="${index}">Download</button></span>`).join('');return `<div class="email-attachment-group"><div class="email-attachment-group-label">${escapeHtml(label)} (${items.length})</div><div class="email-attachment-list">${chips}</div></div>`};
         const indexed=attachments.map((att,index)=>({att,index}));const normal=indexed.filter(item=>item.att.kind!=='inline');const inline=indexed.filter(item=>item.att.kind==='inline');
-        const zip=attachments.length?`<button class="secondary" type="button" data-email-download-all="${escapeHtml(String(item.queueId||''))}">Download All (.zip)</button>`:'';
+        const showZip=context!=='recent'&&context!=='job-notes';const zip=showZip&&attachments.length?`<button class="secondary" type="button" data-email-download-all="${escapeHtml(String(item.queueId||''))}">Download All (.zip)</button>`:'';
         return `${renderGroup('Attachments',normal)}${renderGroup('Inline Images',inline)}${zip?`<div class="email-queue-actions">${zip}</div>`:''}`;
       }
       function attachEmailDownloadHandlers(root){
@@ -2189,8 +2217,16 @@
           rows.querySelectorAll('[data-email-dismiss]').forEach(btn=>btn.addEventListener('click',()=>dismissEmailQueueItem(btn.dataset.emailDismiss)));
           attachEmailDownloadHandlers(rows);
         }
-        const recentSection=document.getElementById('emailRecentSection');const recentRows=document.getElementById('emailRecentRows');const availableSources=recentEmailSources.filter(emailSourceIsAvailable);
-        if(availableSources.length){recentSection.style.display='block';recentRows.innerHTML=availableSources.map(item=>{const job=jobs.find(j=>String(j.ticketNumber||'')===String(item.ticketNumber||''));const title=job?(job.title||job.displayTitle||('Ticket '+item.ticketNumber)):(item.cleanSubject||item.subject||('Ticket '+item.ticketNumber));return `<div class="email-queue-item"><div class="email-queue-subject">${escapeHtml(title)}</div><div class="email-queue-meta">Source email retained until: ${escapeHtml(item.deleteAfter||'')}</div>${emailAttachmentMarkup(item)}<div class="email-queue-actions">${item.gmailPermalink?`<button class="secondary" type="button" data-recent-email-open="${escapeHtml(String(item.queueId||''))}">Open Original Email</button>`:''}</div></div>`}).join('');recentRows.querySelectorAll('[data-recent-email-open]').forEach(btn=>btn.addEventListener('click',()=>{const item=recentEmailSources.find(source=>String(source.queueId||'')===String(btn.dataset.recentEmailOpen||''));if(item&&item.gmailPermalink)window.open(item.gmailPermalink,'_blank','noopener')}));attachEmailDownloadHandlers(recentRows)}else{recentSection.style.display='none';recentRows.innerHTML=''}
+        const recentSection=document.getElementById('emailRecentSection');const recentRows=document.getElementById('emailRecentRows');const availableSources=recentEmailSources.filter(recentEmailSourceIsVisible);
+        if(availableSources.length){
+          recentSection.style.display='block';recentRows.innerHTML=availableSources.map(item=>{
+            const job=jobs.find(j=>String(j.ticketNumber||'')===String(item.ticketNumber||''));const title=job?(job.title||job.displayTitle||('Ticket '+item.ticketNumber)):(item.cleanSubject||item.subject||('Ticket '+item.ticketNumber));const attachments=Array.isArray(item.attachments)?item.attachments:[];const count=attachments.length;const created=item.processedAt?formatSessionDateTime(item.processedAt):'Just created';
+            return `<div class="email-queue-item email-recent-item"><div class="email-recent-summary" data-recent-email-toggle="${escapeHtml(String(item.queueId||''))}" role="button" tabindex="0"><div class="email-recent-summary-main"><div class="email-recent-summary-title">${escapeHtml(title)}</div><div class="email-recent-summary-meta">${escapeHtml(created)}${count?' · '+count+' file'+(count===1?'':'s'):''}</div></div><span class="email-recent-chevron">▶</span></div><div class="email-recent-details"><div class="email-queue-meta">Source email retained until: ${escapeHtml(item.deleteAfter||'')}</div>${emailAttachmentMarkup(item,'recent')}<div class="email-recent-actions">${count?`<button class="secondary" type="button" data-email-download-all="${escapeHtml(String(item.queueId||''))}">Download All (.zip)</button>`:''}${item.gmailPermalink?`<button class="secondary" type="button" data-recent-email-open="${escapeHtml(String(item.queueId||''))}">Open Original Email</button>`:''}</div></div></div>`
+          }).join('');
+          const toggleRecent=toggle=>{const item=toggle.closest('.email-recent-item');if(item)item.classList.toggle('expanded')};
+          recentRows.querySelectorAll('[data-recent-email-toggle]').forEach(toggle=>{toggle.addEventListener('click',()=>toggleRecent(toggle));toggle.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleRecent(toggle)}})});
+          recentRows.querySelectorAll('[data-recent-email-open]').forEach(btn=>btn.addEventListener('click',()=>{const item=recentEmailSources.find(source=>String(source.queueId||'')===String(btn.dataset.recentEmailOpen||''));if(item&&item.gmailPermalink)window.open(item.gmailPermalink,'_blank','noopener')}));attachEmailDownloadHandlers(recentRows)
+        }else{recentSection.style.display='none';recentRows.innerHTML=''}
       }
       function clearEmailDraftState(){emailDraftQueueId='';const panel=document.getElementById('emailDraftPanel');if(panel)panel.style.display='none';const notes=document.getElementById('emailDraftJobNotes');if(notes)notes.value='';const attachments=document.getElementById('emailDraftAttachments');if(attachments)attachments.innerHTML=''}
       function loadEmailIntoNewJob(queueId){
