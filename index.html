@@ -580,10 +580,20 @@
 
         <div id="clientReviewChangeOrderNotesWrap" style="margin-top:12px">
           <label for="clientReviewChangeOrderNotes">Change Order Notes</label>
-          <textarea id="clientReviewChangeOrderNotes" class="notes-box" style="min-height:145px" placeholder="Describe the client's requested changes..."></textarea>
+          <textarea id="clientReviewChangeOrderNotes" class="notes-box" style="min-height:145px" placeholder="Type the requested changes here, or leave this blank if the details will arrive by email."></textarea>
           <p class="muted" style="margin-top:6px">These notes will be carried into the next New Change Order when you punch into this job.</p>
+
+          <div id="clientReviewChangeOrderEmailBox" class="change-order-email-box show">
+            <div class="job-notes-email-source-title" id="clientReviewChangeOrderEmailLabel">Email additional notes or files to this Change Order</div>
+            <div class="change-order-email-row" style="margin-top:8px">
+              <div id="clientReviewChangeOrderEmailAddress" class="change-order-email-address"></div>
+              <button class="secondary" id="copyClientReviewChangeOrderEmailBtn" type="button" style="display:none">Copy Email Address</button>
+            </div>
+            <p class="muted" id="clientReviewChangeOrderEmailHelp" style="margin-top:7px"></p>
+          </div>
         </div>
 
+        <div id="clientReviewReturnCompleteMessage" class="email-status-note" style="display:none;margin-top:14px"></div>
         <div class="actions" style="margin-top:16px">
           <button class="primary" id="clientReviewSubmitBtn" type="button" disabled>Submit</button>
           <button class="secondary" id="clientReviewCancelBtn" type="button">Cancel</button>
@@ -807,6 +817,7 @@
       let followUpDateEditTicket='';
       let jobTitleEditTicket='';
       let clientReviewMoveTicket='';
+      let clientReviewReturnCompleted=false;
       let clientNotesTarget=null;
       let clientNotesReturnToFinancial=false;
       let emailQueue=[];
@@ -1916,7 +1927,7 @@
       function pendingChangeOrderIntakeForJob(job){return changeOrderIntakesForJob(job).find(item=>item.status==='Pending')||null}
       function combinedChangeOrderNotes(intake){if(!intake)return '';const parts=[];const manual=String(intake.manualNotes||'').trim();if(manual)parts.push(manual);changeOrderEmailSourcesForIntake(intake).forEach((source,index)=>{const body=String(source.body||'').trim();if(body)parts.push(`Email ${index+1}${source.receivedAt?' · '+source.receivedAt:''}:\n${body}`)});return parts.join('\n\n--------------------\n\n')}
       function changeOrderEmailSourcesForIntake(intake){return changeOrderEmailSources.filter(source=>String(source.changeOrderIntakeId||'')===String(intake&&intake.changeOrderIntakeId||'')).sort((a,b)=>String(a.receivedAt||'').localeCompare(String(b.receivedAt||'')))}
-      function changeOrderMenuButton(job){if(!job||job.status==='Completed')return '';const pending=pendingChangeOrderIntakeForJob(job);return `<button type="button" data-change-order-ticket="${escapeHtml(String(job.ticketNumber||''))}">${pending?'View Pending Change Order':'Create Change Order'}</button>`}
+      function changeOrderMenuButton(job){if(!job||job.status==='Completed')return '';const pending=pendingChangeOrderIntakeForJob(job);if(job.status==='Client Review'&&!pending)return '';return `<button type="button" data-change-order-ticket="${escapeHtml(String(job.ticketNumber||''))}">${pending?'View Pending Change Order':'Create Change Order'}</button>`}
       function changeOrderSourceAvailable(source){if(!source||source.sourceDeletedAt||source.available===false)return false;if(source.deleteAfter){const expires=new Date(source.deleteAfter).getTime();if(Number.isFinite(expires)&&expires<=Date.now())return false}return true}
       function changeOrderSourceMarkup(source){
         const subject=source.cleanSubject||source.subject||'Change Order email';const sender=[source.originalSenderName,source.originalSenderEmail].filter(Boolean).join(source.originalSenderName&&source.originalSenderEmail?' · ':'');
@@ -2054,34 +2065,78 @@
       }
       function openDueDateModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;dueDateEditTicket=String(ticket);document.getElementById('dueDateModalJob').textContent=job.title||job.displayTitle||'';document.getElementById('dueDateModalInput').value=job.due||job.dueDate||'';document.getElementById('dueDateModalBackdrop').classList.add('open');document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'))}
       function openFollowUpDateModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;followUpDateEditTicket=String(ticket);document.getElementById('followUpDateModalJob').textContent=job.title||job.displayTitle||'';document.getElementById('followUpDateModalInput').value=job.followUpDate||defaultFollowUpDate();document.getElementById('followUpDateModalBackdrop').classList.add('open');document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'))}
+      function clientReviewPendingChangeOrder(){
+        const job=jobs.find(j=>String(j.ticketNumber||'')===String(clientReviewMoveTicket||''));
+        return job?pendingChangeOrderIntakeForJob(job):null;
+      }
+      function renderClientReviewChangeOrderEmail(){
+        const reason=document.getElementById('clientReviewReturnReason').value;
+        const box=document.getElementById('clientReviewChangeOrderEmailBox');
+        const address=document.getElementById('clientReviewChangeOrderEmailAddress');
+        const copyBtn=document.getElementById('copyClientReviewChangeOrderEmailBtn');
+        const help=document.getElementById('clientReviewChangeOrderEmailHelp');
+        if(reason!=='Change Order'){box.style.display='none';address.textContent='';copyBtn.style.display='none';help.textContent='';return}
+        box.style.display='block';
+        const pending=clientReviewPendingChangeOrder();
+        if(pending&&pending.emailAddress){
+          address.textContent=pending.emailAddress;
+          copyBtn.style.display='inline-block';
+          help.textContent=`Change Order #${Number(pending.changeOrderNumber||0)} is already reserved. Forward client emails here and they will attach to this Change Order.`;
+        }else{
+          address.textContent='A dedicated email address will be created when you submit.';
+          copyBtn.style.display='none';
+          help.textContent='Manual notes are optional. After submission, this window will show the new Change Order email address so you can forward the client message and any files.';
+        }
+      }
       function updateClientReviewReturnFields(){
         const reason=document.getElementById('clientReviewReturnReason').value;
         document.getElementById('clientReviewChangeOrderNotesWrap').style.display=reason==='Change Order'?'block':'none';
+        renderClientReviewChangeOrderEmail();
         updateClientReviewSubmitState();
       }
       function updateClientReviewSubmitState(){
+        if(clientReviewReturnCompleted){document.getElementById('clientReviewSubmitBtn').disabled=false;return}
         const etr=document.getElementById('clientReviewEtrSelect').value;
         const due=document.getElementById('clientReviewDueSelect').value;
         const reason=document.getElementById('clientReviewReturnReason').value;
-        const notes=document.getElementById('clientReviewChangeOrderNotes').value.trim();
         const validReason=reason==='Change Order'||reason==='Correction';
-        const validNotes=reason!=='Change Order'||!!notes;
-        document.getElementById('clientReviewSubmitBtn').disabled=!(etr!==''&&due!==''&&validReason&&validNotes);
+        document.getElementById('clientReviewSubmitBtn').disabled=!(etr!==''&&due!==''&&validReason);
+      }
+      function setClientReviewReturnFormDisabled(disabled){
+        ['clientReviewEtrSelect','clientReviewDueSelect','clientReviewReturnReason','clientReviewChangeOrderNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=disabled});
       }
       function openClientReviewDueChoice(ticket){
         const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));
         if(!job)return;
         clientReviewMoveTicket=String(ticket);
+        clientReviewReturnCompleted=false;
+        setClientReviewReturnFormDisabled(false);
+        document.getElementById('clientReviewDueChoiceTitle').textContent='Return Job to To Do';
         document.getElementById('clientReviewDueChoiceJob').textContent=job.title||job.displayTitle||'';
         document.getElementById('clientReviewEtrSelect').value='';
         document.getElementById('clientReviewDueSelect').value='';
         document.getElementById('clientReviewReturnReason').value='Change Order';
-        document.getElementById('clientReviewChangeOrderNotes').value=String(job.pendingChangeOrderNotes||'');
+        const pending=pendingChangeOrderIntakeForJob(job);
+        document.getElementById('clientReviewChangeOrderNotes').value=pending?String(pending.manualNotes||''):String(job.pendingChangeOrderNotes||'');
+        const complete=document.getElementById('clientReviewReturnCompleteMessage');complete.style.display='none';complete.textContent='';
+        document.getElementById('clientReviewCancelBtn').style.display='inline-block';
+        const submit=document.getElementById('clientReviewSubmitBtn');submit.textContent='Create Change Order & Move to To Do';
         updateClientReviewReturnFields();
         document.getElementById('clientReviewDueChoiceBackdrop').classList.add('open');
         document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'));
       }
+      async function copyClientReviewChangeOrderEmail(){
+        const pending=clientReviewPendingChangeOrder();if(!pending||!pending.emailAddress)return;
+        try{
+          if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(pending.emailAddress);
+          else{const input=document.createElement('textarea');input.value=pending.emailAddress;input.style.position='fixed';input.style.opacity='0';document.body.appendChild(input);input.select();document.execCommand('copy');input.remove()}
+          const btn=document.getElementById('copyClientReviewChangeOrderEmailBtn');const old=btn.textContent;btn.textContent='Copied!';setTimeout(()=>btn.textContent=old,1400);
+        }catch(err){alert('Unable to copy the Change Order email address.')}
+      }
       async function submitClientReviewReturn(){
+        if(clientReviewReturnCompleted){
+          clientReviewReturnCompleted=false;clientReviewMoveTicket='';document.getElementById('clientReviewDueChoiceBackdrop').classList.remove('open');return;
+        }
         const ticket=clientReviewMoveTicket;
         const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));
         if(!job)return;
@@ -2091,47 +2146,57 @@
         const returnReason=document.getElementById('clientReviewReturnReason').value;
         const changeOrderNotes=document.getElementById('clientReviewChangeOrderNotes').value.trim();
         if(!newHours||dueOffsetValue===''||!returnReason)return;
-        if(returnReason==='Change Order'&&!changeOrderNotes)return;
 
         const dueOffset=Number(dueOffsetValue);
         const newDue=dueOffset===0?todayISO():iso(addWorkdays(today(),dueOffset));
-        const pendingChangeOrderNotes=returnReason==='Change Order'?changeOrderNotes:'';
+        let pendingChangeOrderNotes='';
+        let changeOrderRecord=null;
+        const submitBtn=document.getElementById('clientReviewSubmitBtn');
+        const originalText=submitBtn.textContent;submitBtn.disabled=true;submitBtn.textContent=returnReason==='Change Order'?'Creating Change Order…':'Moving…';
 
         try{
-          const data=await apiPost({
+          if(returnReason==='Change Order'){
+            const existing=pendingChangeOrderIntakeForJob(job);
+            const intakePayload=existing
+              ?{action:'updateChangeOrderIntake',changeOrderIntakeId:existing.changeOrderIntakeId,notes:changeOrderNotes}
+              :{action:'createChangeOrderIntake',ticketNumber:job.ticketNumber,notes:changeOrderNotes};
+            const intakeData=await apiPost(intakePayload);
+            if(!intakeData.success)throw new Error(intakeData.error||'Unable to create Change Order');
+            changeOrderRecord=intakeData.changeOrderIntake;
+            const intakeIndex=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===changeOrderRecord.changeOrderIntakeId);
+            if(intakeIndex>=0)changeOrderIntakes[intakeIndex]=changeOrderRecord;else changeOrderIntakes.push(changeOrderRecord);
+            pendingChangeOrderNotes=String(changeOrderRecord.manualNotes||'');
+          }
+
+          const updatePayload={
             action:'updateJob',
             ticketNumber:ticket,
             status:'To Do',
             dueDate:newDue,
             followUpDate:job.followUpDate||'',
-            estimatedHoursRemaining:newHours,
-            pendingChangeOrderNotes
-          });
+            estimatedHoursRemaining:newHours
+          };
+          if(returnReason==='Change Order')updatePayload.pendingChangeOrderNotes=pendingChangeOrderNotes;
+          else if(!pendingChangeOrderIntakeForJob(job))updatePayload.pendingChangeOrderNotes='';
+          const data=await apiPost(updatePayload);
           if(!data.success)throw new Error(data.error||'Unable to update job');
 
-          job.status='To Do';
-          job.dueDate=newDue;
-          job.due=newDue;
-          job.hours=newHours;
-          job.estimatedHoursRemaining=newHours;
-          job.pendingChangeOrderNotes=pendingChangeOrderNotes;
-          const pendingIntake=pendingChangeOrderIntakeForJob(job);if(pendingIntake&&returnReason==='Change Order')pendingIntake.manualNotes=changeOrderNotes;
+          job.status='To Do';job.dueDate=newDue;job.due=newDue;job.hours=newHours;job.estimatedHoursRemaining=newHours;if(returnReason==='Change Order'||!pendingChangeOrderIntakeForJob(job))job.pendingChangeOrderNotes=pendingChangeOrderNotes;
+          const state=ensureTimerState(job);state.running=false;state.remaining=Math.round(newHours*3600);state.overtime=0;state.blockStartRemaining=state.remaining;state.blockStartOvertime=0;state.committedSeconds=0;
+          renderQueue();renderBoard();
 
-          const state=ensureTimerState(job);
-          state.running=false;
-          state.remaining=Math.round(newHours*3600);
-          state.overtime=0;
-          state.blockStartRemaining=state.remaining;
-          state.blockStartOvertime=0;
-          state.committedSeconds=0;
-
-          document.getElementById('clientReviewDueChoiceBackdrop').classList.remove('open');
-          clientReviewMoveTicket='';
-          renderQueue();
-          renderBoard();
-        }catch(err){
-          alert(err.message);
-        }
+          if(returnReason==='Change Order'&&changeOrderRecord){
+            clientReviewReturnCompleted=true;
+            setClientReviewReturnFormDisabled(true);
+            document.getElementById('clientReviewDueChoiceTitle').textContent=`Change Order #${Number(changeOrderRecord.changeOrderNumber||0)} Created`;
+            const complete=document.getElementById('clientReviewReturnCompleteMessage');complete.style.display='block';complete.textContent='Job moved to To Do. You can now forward additional notes or files to the Change Order email address below.';
+            renderClientReviewChangeOrderEmail();
+            document.getElementById('clientReviewCancelBtn').style.display='none';
+            submitBtn.textContent='Done';submitBtn.disabled=false;
+          }else{
+            document.getElementById('clientReviewDueChoiceBackdrop').classList.remove('open');clientReviewMoveTicket='';
+          }
+        }catch(err){alert(err.message);submitBtn.disabled=false;submitBtn.textContent=originalText}
       }
       function renderTodo(list){renderCards('todoList',list)}
       async function quickClientReviewReturnAndPunch(ticket){
@@ -2607,11 +2672,15 @@
       document.getElementById('cancelFollowUpDateBtn').addEventListener('click',()=>{followUpDateEditTicket='';document.getElementById('followUpDateModalBackdrop').classList.remove('open')});
       document.getElementById('clientReviewEtrSelect').addEventListener('change',updateClientReviewSubmitState);
       document.getElementById('clientReviewDueSelect').addEventListener('change',updateClientReviewSubmitState);
-      document.getElementById('clientReviewReturnReason').addEventListener('change',updateClientReviewReturnFields);
+      document.getElementById('clientReviewReturnReason').addEventListener('change',()=>{
+        if(!clientReviewReturnCompleted){document.getElementById('clientReviewSubmitBtn').textContent=document.getElementById('clientReviewReturnReason').value==='Change Order'?'Create Change Order & Move to To Do':'Move to To Do'}
+        updateClientReviewReturnFields();
+      });
       document.getElementById('clientReviewChangeOrderNotes').addEventListener('input',updateClientReviewSubmitState);
+      document.getElementById('copyClientReviewChangeOrderEmailBtn').addEventListener('click',copyClientReviewChangeOrderEmail);
       document.getElementById('clientReviewSubmitBtn').addEventListener('click',submitClientReviewReturn);
       document.getElementById('clientReviewCancelBtn').addEventListener('click',()=>{
-        clientReviewMoveTicket='';
+        clientReviewReturnCompleted=false;clientReviewMoveTicket='';setClientReviewReturnFormDisabled(false);
         document.getElementById('clientReviewDueChoiceBackdrop').classList.remove('open');
       });
       document.getElementById('punchInWorkType').addEventListener('change',updatePunchInFields);
