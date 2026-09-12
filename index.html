@@ -2262,7 +2262,7 @@
         const attachments=Array.isArray(item&&item.attachments)?item.attachments:[];if(!attachments.length)return '';
         const renderGroup=(label,items)=>{if(!items.length)return '';const chips=items.map(({att,index})=>`<span class="email-attachment-chip"><span>${escapeHtml(att.name||((att.kind==='inline'?'Inline image ':'Attachment ')+(index+1)))}${att.size?' · '+escapeHtml(formatBytes(att.size)):''}</span><button type="button" data-email-download="${escapeHtml(String(item.queueId||''))}" data-email-attachment-index="${index}">Download</button></span>`).join('');return `<div class="email-attachment-group"><div class="email-attachment-group-label">${escapeHtml(label)} (${items.length})</div><div class="email-attachment-list">${chips}</div></div>`};
         const indexed=attachments.map((att,index)=>({att,index}));const normal=indexed.filter(item=>item.att.kind!=='inline');const inline=indexed.filter(item=>item.att.kind==='inline');
-        const showZip=context!=='recent'&&context!=='job-notes';const zip=showZip&&attachments.length?`<button class="secondary" type="button" data-email-download-all="${escapeHtml(String(item.queueId||''))}">Download All (.zip)</button>`:'';
+        const showZip=context!=='recent'&&context!=='job-notes'&&context!=='change-order';const zip=showZip&&attachments.length?`<button class="secondary" type="button" data-email-download-all="${escapeHtml(String(item.queueId||''))}">Download All (.zip)</button>`:'';
         return `${renderGroup('Attachments',normal)}${renderGroup('Inline Images',inline)}${zip?`<div class="email-queue-actions">${zip}</div>`:''}`;
       }
       function attachEmailDownloadHandlers(root){
