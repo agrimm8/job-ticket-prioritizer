@@ -137,6 +137,23 @@
     #job-priority-app .orphan-punch-banner{display:none;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;padding:9px 11px;border:1px solid #b42318;border-radius:9px;background:light-dark(#fff1f0,#3a1715);color:light-dark(#8d1b12,#ffb4ac);font-size:11px;font-weight:800}
     #job-priority-app .orphan-punch-banner.show{display:flex}
     #job-priority-app .orphan-punch-banner button{white-space:nowrap;background:#b42318;color:#fff;border-color:#b42318;font-size:10px;padding:5px 8px}
+    #job-priority-app .active-job-bar{display:none;position:sticky;top:8px;z-index:120;margin:0 0 12px;padding:9px 11px;border:1px solid light-dark(#b9cee8,#365573);border-left:4px solid #3b82f6;border-radius:10px;background:light-dark(rgba(245,250,255,.97),rgba(27,39,52,.97));box-shadow:0 7px 22px rgba(0,0,0,.12);backdrop-filter:blur(8px)}
+    #job-priority-app .active-job-bar.show{display:flex;align-items:center;justify-content:space-between;gap:14px}
+    #job-priority-app .active-job-main{min-width:0;display:flex;align-items:center;gap:10px;flex:1}
+    #job-priority-app .active-job-dot{width:8px;height:8px;min-width:8px;border-radius:999px;background:#16a34a;box-shadow:0 0 0 3px light-dark(#dcfce7,#173724)}
+    #job-priority-app .active-job-copy{min-width:0}
+    #job-priority-app .active-job-kicker{font-size:8px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#2563eb;margin-bottom:2px}
+    #job-priority-app .active-job-title{font-size:11px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #job-priority-app .active-job-meta{font-size:9px;opacity:.68;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #job-priority-app .active-job-times{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    #job-priority-app .active-job-time{display:flex;flex-direction:column;gap:1px;min-width:76px}
+    #job-priority-app .active-job-time-label{font-size:8px;font-weight:800;opacity:.58}
+    #job-priority-app .active-job-time-value{font-size:11px;font-weight:900;font-variant-numeric:tabular-nums}
+    #job-priority-app .active-job-actions{display:flex;align-items:center;gap:6px;white-space:nowrap}
+    #job-priority-app .active-job-actions button{font-size:9px;min-height:28px;padding:5px 8px}
+    #job-priority-app .active-job-stop{background:#b42318;color:#fff;border-color:#b42318}
+    #job-priority-app .active-job-stop:hover{background:#921b13}
+    @media(max-width:700px){#job-priority-app .active-job-bar.show{align-items:flex-start;flex-direction:column}#job-priority-app .active-job-main{width:100%}#job-priority-app .active-job-times{width:100%}#job-priority-app .active-job-actions{width:100%;justify-content:flex-end}}
     #job-priority-app .tag-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
     #job-priority-app .card-tag{display:inline-block;padding:2px 6px;border-radius:999px;background:light-dark(#e8e8e3,#333);font-size:9px;font-weight:800;line-height:1.4}
     #job-priority-app .card-tag.invoice{background:#c8f3dc;color:#145c3a}
@@ -450,6 +467,24 @@
     <div class="orphan-punch-banner" id="orphanPunchBanner" role="alert">
       <span id="orphanPunchBannerText">⚠ Unresolved punch found.</span>
       <button type="button" id="fixOrphanPunchBtn">Fix Punch</button>
+    </div>
+    <div class="active-job-bar" id="activeJobBar" role="status" aria-live="polite">
+      <div class="active-job-main">
+        <span class="active-job-dot" aria-hidden="true"></span>
+        <div class="active-job-copy">
+          <div class="active-job-kicker">Active Job</div>
+          <div class="active-job-title" id="activeJobTitle">—</div>
+          <div class="active-job-meta" id="activeJobMeta">—</div>
+        </div>
+      </div>
+      <div class="active-job-times">
+        <div class="active-job-time"><span class="active-job-time-label">Session</span><span class="active-job-time-value" id="activeJobSessionTime">00:00:00</span></div>
+        <div class="active-job-time"><span class="active-job-time-label">Block Remaining</span><span class="active-job-time-value" id="activeJobBlockTime">—</span></div>
+      </div>
+      <div class="active-job-actions">
+        <button class="secondary" id="activeJobDetailsBtn" type="button">View Job Details</button>
+        <button class="active-job-stop" id="activeJobStopBtn" type="button">Stop Timer</button>
+      </div>
     </div>
     <div class="notification-tray" id="notificationTray" aria-live="polite" aria-label="Job alerts">
       <div class="notification-tray-shell">
@@ -1483,11 +1518,11 @@
       function updatePunchInSubmitState(){const type=document.getElementById('punchInWorkType').value;const description=document.getElementById('punchInWorkDescription').value.trim();const workSetId=document.getElementById('punchInWorkSet').value;let valid=!!type;if(type==='Initial Draft'||type==='New Change Order'||type==='Continuing Initial Draft')valid=valid&&!!description;if(type==='Continuing Change Order')valid=valid&&!!workSetId&&!!description;document.getElementById('punchInStartBtn').disabled=!valid}
       async function closeActiveWorkSession(punchOutAt){
         clearIdleWarning(true);if(!activeWorkSession||!activeWorkSession.sessionId)return true;
-        try{const payload={action:'endWorkSession',sessionId:activeWorkSession.sessionId};if(punchOutAt)payload.punchOutAt=punchOutAt;const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch out');const localSession=activeWorkSession;const found=workSessions.find(s=>s.sessionId===localSession.sessionId);if(found){found.punchOut=data.punchOut||'';found.durationMinutes=Number(data.durationMinutes||0)}saveActiveWorkSession(null);clearTimerSnapshot();return true}catch(err){alert('Punch Out could not be saved: '+err.message);return false}
+        try{const payload={action:'endWorkSession',sessionId:activeWorkSession.sessionId};if(punchOutAt)payload.punchOutAt=punchOutAt;const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch out');const localSession=activeWorkSession;const found=workSessions.find(s=>s.sessionId===localSession.sessionId);if(found){found.punchOut=data.punchOut||'';found.durationMinutes=Number(data.durationMinutes||0)}saveActiveWorkSession(null);clearTimerSnapshot();renderActiveJobBar();return true}catch(err){alert('Punch Out could not be saved: '+err.message);return false}
       }
       async function beginWorkSessionForKey(key,workType,workDescription,workSetId='',punchInAt=''){
         const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return false;
-        try{const payload={action:'beginWorkSession',ticketNumber:job.ticketNumber,workType,workDescription,workSetId};if(punchInAt)payload.punchInAt=punchInAt;const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch in');const session=data.session;if(data.workSet&&!workSets.some(set=>set.workSetId===data.workSet.workSetId))workSets.push(data.workSet);if(data.pendingChangeOrderNotes!==undefined)job.pendingChangeOrderNotes=String(data.pendingChangeOrderNotes||'');if(data.changeOrderIntake){const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===data.changeOrderIntake.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=data.changeOrderIntake;else changeOrderIntakes.push(data.changeOrderIntake)}workSessions.push(session);applyWorkSessionContext(session,key);saveActiveWorkSession({...session,timerKey:key});return true}catch(err){alert('Punch In could not be saved: '+err.message);return false}
+        try{const payload={action:'beginWorkSession',ticketNumber:job.ticketNumber,workType,workDescription,workSetId};if(punchInAt)payload.punchInAt=punchInAt;const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch in');const session=data.session;if(data.workSet&&!workSets.some(set=>set.workSetId===data.workSet.workSetId))workSets.push(data.workSet);if(data.pendingChangeOrderNotes!==undefined)job.pendingChangeOrderNotes=String(data.pendingChangeOrderNotes||'');if(data.changeOrderIntake){const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===data.changeOrderIntake.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=data.changeOrderIntake;else changeOrderIntakes.push(data.changeOrderIntake)}workSessions.push(session);applyWorkSessionContext(session,key);saveActiveWorkSession({...session,timerKey:key});renderActiveJobBar();return true}catch(err){alert('Punch In could not be saved: '+err.message);return false}
       }
       async function resumeWorkSessionForKey(key,punchInAt=''){const context=workContextByKey[key];if(!context||!context.workSetId)return false;return beginWorkSessionForKey(key,context.workType,context.workDescription,context.workSetId,punchInAt)}
       async function requestStartTimer(key){
@@ -1633,11 +1668,17 @@
       function isBillableWorkWindow(d=new Date()){const day=d.getDay();const hour=d.getHours();return day>=1&&day<=5&&hour>=8&&hour<22}
       function resetNoJobTimer(){noJobElapsedSeconds=0;noJobAlertOpen=false;noJobLastRenderedMilestone=-1;noJobWorkdayKey=workdayKey();renderNotificationTray()}
       function updateActiveTimerReadout(key){const state=timerState[key];if(!state)return;const selector='[data-timer-readout=\"'+CSS.escape(String(key))+'\"]';document.querySelectorAll(selector).forEach(el=>{el.textContent=formatBlockTime(state)})}
+      function formatActiveSessionElapsed(){if(!activeWorkSession||!activeWorkSession.punchIn)return '00:00:00';const start=new Date(activeWorkSession.punchIn).getTime();if(!Number.isFinite(start))return '00:00:00';const seconds=Math.max(0,Math.floor((Date.now()-start)/1000));const h=Math.floor(seconds/3600);const m=Math.floor((seconds%3600)/60);const s=seconds%60;return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
+      function activeWorkSectionLabel(session){if(!session)return '';if(session.workSetType==='Change Order')return `Change Order ${Number(session.changeOrderNumber||0)||''}`.trim();return 'Initial Request'}
+      function updateActiveJobBarTimers(){const bar=document.getElementById('activeJobBar');if(!bar||!bar.classList.contains('show')||!activeWorkSession)return;const sessionEl=document.getElementById('activeJobSessionTime');if(sessionEl)sessionEl.textContent=formatActiveSessionElapsed();const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');const state=timerState[key];const blockEl=document.getElementById('activeJobBlockTime');if(blockEl)blockEl.textContent=state?formatBlockTime(state):'—'}
+      function renderActiveJobBar(){const bar=document.getElementById('activeJobBar');if(!bar)return;const hasActive=!!(activeWorkSession&&activeWorkSession.sessionId);bar.classList.toggle('show',hasActive);if(!hasActive)return;const job=jobs.find(j=>String(j.ticketNumber||'')===String(activeWorkSession.ticketNumber||''));const title=job?(job.title||job.displayTitle||`Ticket ${activeWorkSession.ticketNumber}`):`Ticket ${activeWorkSession.ticketNumber}`;const section=activeWorkSectionLabel(activeWorkSession);const type=String(activeWorkSession.workType||'').trim();document.getElementById('activeJobTitle').textContent=title;document.getElementById('activeJobMeta').textContent=[section,type].filter(Boolean).join(' · ');updateActiveJobBarTimers()}
+      function openActiveJobDetails(){if(!activeWorkSession)return;const ticket=String(activeWorkSession.ticketNumber||'');openJobDetailsModal(ticket);requestAnimationFrame(()=>{const key=activeWorkSession.workSetType==='Change Order'?`co-${Number(activeWorkSession.changeOrderNumber||0)}`:'initial';const section=document.querySelector(`#jobDetailsBody [data-job-details-section="${CSS.escape(key)}"]`);if(section)section.scrollIntoView({behavior:'smooth',block:'center'})})}
+      async function stopActiveJobFromBar(){if(!activeWorkSession)return;const btn=document.getElementById('activeJobStopBtn');const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');if(!key)return;btn.disabled=true;btn.textContent='Stopping…';try{const stopped=await pauseTimer(key);if(stopped){renderActiveJobBar();if(jobDetailsTicket)renderJobDetailsModal()}}finally{btn.disabled=false;btn.textContent='Stop Timer'}}
       async function startTimerInternal(key,resumeExisting=false){
         if(activeTimerKey&&activeTimerKey!==key&&timerState[activeTimerKey])timerState[activeTimerKey].running=false;
-        stopTimerInterval();activeTimerKey=key;if(!timerState[key])return;lastActivityAt=Date.now();resetNoJobTimer();const state=timerState[key];state.running=true;renderQueue();renderBoard();
+        stopTimerInterval();activeTimerKey=key;if(!timerState[key])return;lastActivityAt=Date.now();resetNoJobTimer();const state=timerState[key];state.running=true;renderQueue();renderBoard();renderActiveJobBar();
         await ensureSystemIdleDetection();if(!resumeExisting){state.blockStartRemaining=state.remaining;state.blockStartOvertime=state.overtime||0;state.committedSeconds=0}saveTimerSnapshot(key);
-        activeTimerInterval=setInterval(async()=>{const state=timerState[key];if(!state||!state.running)return;if(state.remaining>0){state.remaining=Math.max(0,state.remaining-1);if(state.remaining<=0){state.running=false;saveTimerSnapshot(key);stopTimerInterval();await commitElapsedTime(key);await closeActiveWorkSession();activeTimerKey='';resetNoJobTimer();renderQueue();renderBoard();showTimerComplete(key);return}}else{state.overtime=(state.overtime||0)+1}saveTimerSnapshot(key);updateActiveTimerReadout(key)},1000);updateActiveTimerReadout(key);
+        activeTimerInterval=setInterval(async()=>{const state=timerState[key];if(!state||!state.running)return;if(state.remaining>0){state.remaining=Math.max(0,state.remaining-1);if(state.remaining<=0){state.running=false;saveTimerSnapshot(key);stopTimerInterval();await commitElapsedTime(key);await closeActiveWorkSession();activeTimerKey='';resetNoJobTimer();renderQueue();renderBoard();showTimerComplete(key);return}}else{state.overtime=(state.overtime||0)+1}saveTimerSnapshot(key);updateActiveTimerReadout(key);updateActiveJobBarTimers()},1000);updateActiveTimerReadout(key);updateActiveJobBarTimers();
       }
       async function pauseTimer(key){
         if(pendingPunchKeys.has(key))return false;
@@ -2912,6 +2953,8 @@
         clientReviewReturnCompleted=false;clientReviewMoveTicket='';setClientReviewReturnFormDisabled(false);
         document.getElementById('clientReviewDueChoiceBackdrop').classList.remove('open');
       });
+      document.getElementById('activeJobDetailsBtn').addEventListener('click',openActiveJobDetails);
+      document.getElementById('activeJobStopBtn').addEventListener('click',stopActiveJobFromBar);
       document.getElementById('punchInWorkType').addEventListener('change',updatePunchInFields);
       document.getElementById('punchInWorkSet').addEventListener('change',updatePunchInFields);
       document.getElementById('punchInWorkDescription').addEventListener('input',updatePunchInSubmitState);
@@ -2922,7 +2965,7 @@
       document.getElementById('resumeOpenSessionBtn').addEventListener('click',async()=>{
         if(!recoveryOpenSession)return;
         const session=recoveryOpenSession;const key=sessionRecoveryKey(session);const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;
-        document.getElementById('openSessionRecoveryBackdrop').classList.remove('open');recoveryOpenSession=null;applyWorkSessionContext(session,key);saveActiveWorkSession({...session,timerKey:key});
+        document.getElementById('openSessionRecoveryBackdrop').classList.remove('open');recoveryOpenSession=null;applyWorkSessionContext(session,key);saveActiveWorkSession({...session,timerKey:key});renderActiveJobBar();
         const state=ensureTimerState(job);state.remaining=recommendedWorkSeconds(job);state.overtime=0;state.blockStartRemaining=state.remaining;state.blockStartOvertime=0;state.committedSeconds=0;state.running=true;activeTimerKey=key;renderQueue();renderBoard();
         await startTimerInternal(key,false);
       });
@@ -3093,7 +3136,7 @@
       },1000);
       document.addEventListener('click',()=>document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open')));
       window.addEventListener('beforeunload',event=>{if(!activeWorkSession||!activeWorkSession.sessionId)return;if(activeTimerKey)saveTimerSnapshot(activeTimerKey);saveActiveWorkSession(activeWorkSession);event.preventDefault();event.returnValue=''});
-      loadIdleAlarmPreference();populateClients();renderQueue();renderBoard();renderNotificationTray();renderEmailQueue();loadBackend();setInterval(checkForOrphanPunch,60000);
+      loadIdleAlarmPreference();populateClients();renderQueue();renderBoard();renderActiveJobBar();renderNotificationTray();renderEmailQueue();loadBackend();setInterval(checkForOrphanPunch,60000);
     })();
   </script>
 </div>
