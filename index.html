@@ -255,14 +255,15 @@
     #job-priority-app .job-details-attachments-zip:hover{opacity:1}
     #job-priority-app .job-details-attachments-list{display:none;margin:4px 0 0 18px;border-left:1px solid light-dark(#deded9,#414141);padding-left:7px}
     #job-priority-app .job-details-attachments-list.open{display:block}
-    #job-priority-app .job-details-attachment-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:3px 0;font-size:9px}
-    #job-priority-app .job-details-attachment-name{min-width:0;overflow-wrap:anywhere;opacity:.82}
-    #job-priority-app .job-details-attachment-row button{min-height:0;padding:0;background:none;color:inherit;text-decoration:underline;font-size:9px;font-weight:650;opacity:.7;white-space:nowrap}
-    #job-priority-app .job-details-attachment-row button:hover{opacity:1}
-    #job-priority-app .job-details-source-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:5px}
-    #job-priority-app .job-details-source-actions a,#job-priority-app .job-details-source-actions button{font-size:9px}
-    #job-priority-app .job-details-source-actions a{color:inherit;text-decoration:underline;opacity:.75}
-    #job-priority-app .job-details-source-expired{font-size:9px;opacity:.55;text-align:right;margin-top:6px}
+    #job-priority-app .job-details-source-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+    #job-priority-app .job-details-source-head .change-order-source-title{min-width:0}
+    #job-priority-app .job-details-source-email-link{font-size:9px;font-weight:700;color:inherit;text-decoration:underline;opacity:.75;white-space:nowrap}
+    #job-priority-app .job-details-source-email-link:hover{opacity:1}
+    #job-priority-app .job-details-source-expired{font-size:9px;opacity:.55;white-space:nowrap}
+    #job-priority-app .job-details-attachment-row{padding:3px 0;font-size:9px}
+    #job-priority-app .job-details-attachment-link{display:inline;min-height:0;padding:0;background:none;color:inherit;text-decoration:underline;font-size:9px;font-weight:500;line-height:1.35;text-align:left;opacity:.82;white-space:normal;overflow-wrap:anywhere}
+    #job-priority-app .job-details-attachment-link:hover{opacity:1}
+    #job-priority-app .job-details-source-actions{display:none}
     #job-priority-app .job-details-orphan{margin:0 12px 10px}
     @media(max-width:620px){#job-priority-app .job-details-head{flex-direction:column}#job-priority-app .job-details-add-co{width:100%}#job-priority-app .job-details-client-grid{grid-template-columns:1fr}#job-priority-app .job-details-client-grid .full{grid-column:auto}#job-priority-app .job-details-time-row{grid-template-columns:1fr auto}#job-priority-app .job-details-time-actions{grid-column:1/-1;justify-content:flex-end}}
 
@@ -2086,7 +2087,7 @@
       function jobDetailsAttachmentMarkup(source){
         const attachments=Array.isArray(source&&source.attachments)?source.attachments:[];if(!attachments.length)return '';
         const queueId=escapeHtml(String(source.queueId||''));
-        const rows=attachments.map((att,index)=>`<div class="job-details-attachment-row"><span class="job-details-attachment-name">${escapeHtml(att.name||((att.kind==='inline'?'Inline image ':'Attachment ')+(index+1)))}${att.size?' · '+escapeHtml(formatBytes(att.size)):''}</span><button type="button" data-email-download="${queueId}" data-email-attachment-index="${index}">Download</button></div>`).join('');
+        const rows=attachments.map((att,index)=>{const label=`${att.name||((att.kind==='inline'?'Inline image ':'Attachment ')+(index+1))}${att.size?' · '+formatBytes(att.size):''}`;return `<div class="job-details-attachment-row"><button class="job-details-attachment-link" type="button" data-email-download="${queueId}" data-email-attachment-index="${index}">${escapeHtml(label)}</button></div>`}).join('');
         return `<div class="job-details-attachments"><div class="job-details-attachments-head"><button class="job-details-attachments-toggle" type="button" data-job-details-attachments-toggle="${queueId}" aria-expanded="false" aria-label="Show attachment list">▶</button><button class="job-details-attachments-zip" type="button" data-email-download-all="${queueId}">Download All Attachments (.zip)</button></div><div class="job-details-attachments-list" data-job-details-attachments-list="${queueId}">${rows}</div></div>`;
       }
       function jobDetailsSourceMarkup(source,index=0,total=1){
@@ -2095,7 +2096,7 @@
         const subject=source.cleanSubject||source.subject||'Source email';const sender=[source.originalSenderName,source.originalSenderEmail].filter(Boolean).join(source.originalSenderName&&source.originalSenderEmail?' · ':'');const body=String(source.body||'').trim();const preview=body.length>700?body.slice(0,700)+'…':body;
         const attachmentHtml=sourceAvailable?jobDetailsAttachmentMarkup(source):'';
         const linkLabel=total>1?`View Source Email ${index+1}`:'View Source Email';
-        return `<div class="job-details-source"><div class="change-order-source-title">${escapeHtml(subject)}</div><div class="job-details-source-meta">${escapeHtml(sender)}${source.receivedAt?' · '+escapeHtml(source.receivedAt):''}</div>${preview?`<div class="job-details-source-body">${escapeHtml(preview)}</div>`:''}${attachmentHtml}${linkAvailable?`<div class="job-details-source-actions"><a href="${escapeHtml(source.gmailPermalink)}" target="_blank" rel="noopener noreferrer">${escapeHtml(linkLabel)}</a></div>`:(sourceAvailable?'':'<div class="job-details-source-expired">Source Email Expired</div>')}</div>`;
+        return `<div class="job-details-source"><div class="job-details-source-head"><div class="change-order-source-title">${escapeHtml(subject)}</div>${linkAvailable?`<a class="job-details-source-email-link" href="${escapeHtml(source.gmailPermalink)}" target="_blank" rel="noopener noreferrer">${escapeHtml(linkLabel)}</a>`:(sourceAvailable?'':'<span class="job-details-source-expired">Source Email Expired</span>')}</div><div class="job-details-source-meta">${escapeHtml(sender)}${source.receivedAt?' · '+escapeHtml(source.receivedAt):''}</div>${preview?`<div class="job-details-source-body">${escapeHtml(preview)}</div>`:''}${attachmentHtml}</div>`;
       }
       function jobDetailsSectionMarkup(job,kind,number=0){
         const ticket=Number(job.ticketNumber||0);let record=null;let set=null;let title='Initial Request';let notes=String(job.notes||'');let status='';let sources=[];
