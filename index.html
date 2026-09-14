@@ -2167,10 +2167,10 @@
       function jobDetailsSourceMarkup(source,index=0,total=1){
         if(!source)return '';
         const sourceAvailable=(!source.sourceDeletedAt)&&source.available!==false&&(!source.deleteAfter||new Date(source.deleteAfter).getTime()>Date.now());const linkAvailable=sourceAvailable&&!!source.gmailPermalink;
-        const subject=source.cleanSubject||source.subject||'Source email';const sender=[source.originalSenderName,source.originalSenderEmail].filter(Boolean).join(source.originalSenderName&&source.originalSenderEmail?' · ':'');const body=String(source.body||'').trim();const preview=body.length>700?body.slice(0,700)+'…':body;
+        const subject=source.cleanSubject||source.subject||'Source email';const sender=[source.originalSenderName,source.originalSenderEmail].filter(Boolean).join(source.originalSenderName&&source.originalSenderEmail?' · ':'');
         const attachmentHtml=sourceAvailable?jobDetailsAttachmentMarkup(source):'';
         const linkLabel=total>1?`View Source Email ${index+1}`:'View Source Email';
-        return `<div class="job-details-source"><div class="job-details-source-head"><div class="change-order-source-title">${escapeHtml(subject)}</div>${linkAvailable?`<a class="job-details-source-email-link" href="${escapeHtml(source.gmailPermalink)}" target="_blank" rel="noopener noreferrer">${escapeHtml(linkLabel)}</a>`:(sourceAvailable?'':'<span class="job-details-source-expired">Source Email Expired</span>')}</div><div class="job-details-source-meta">${escapeHtml(sender)}${source.receivedAt?' · '+escapeHtml(source.receivedAt):''}</div>${preview?`<div class="job-details-source-body">${escapeHtml(preview)}</div>`:''}${attachmentHtml}</div>`;
+        return `<div class="job-details-source"><div class="job-details-source-head"><div class="change-order-source-title">${escapeHtml(subject)}</div>${linkAvailable?`<a class="job-details-source-email-link" href="${escapeHtml(source.gmailPermalink)}" target="_blank" rel="noopener noreferrer">${escapeHtml(linkLabel)}</a>`:(sourceAvailable?'':'<span class="job-details-source-expired">Source Email Expired</span>')}</div><div class="job-details-source-meta">${escapeHtml(sender)}${source.receivedAt?' · '+escapeHtml(source.receivedAt):''}</div>${attachmentHtml}</div>`;
       }
       function jobDetailsSectionMarkup(job,kind,number=0){
         const ticket=Number(job.ticketNumber||0);let record=null;let set=null;let title='Initial Request';let notes=String(job.notes||'');let status='';let sources=[];
