@@ -220,6 +220,11 @@
     #job-priority-app .job-details-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:11px 12px 8px}
     #job-priority-app .job-details-section-heading{display:flex;align-items:flex-start;gap:7px;min-width:0}
     #job-priority-app .job-details-cancel-co{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;min-width:18px;min-height:18px;padding:0;margin-top:-1px;border-radius:5px;background:transparent;color:inherit;font-size:14px;font-weight:800;line-height:1;opacity:.52}
+    #job-priority-app .job-details-section-controls{display:flex;align-items:center;gap:6px}
+    #job-priority-app .job-details-play{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;min-width:24px;min-height:24px;padding:0;border-radius:6px;background:transparent;color:inherit}
+    #job-priority-app .job-details-play svg{display:block;width:17px;height:17px}
+    #job-priority-app .job-details-play:disabled{cursor:not-allowed;opacity:.48}
+    #job-priority-app .punch-in-targeted label[for="punchInWorkType"],#job-priority-app .punch-in-targeted #punchInWorkType,#job-priority-app .punch-in-targeted #punchInWorkSetWrap{display:none!important}
     #job-priority-app .job-details-cancel-co:hover{background:light-dark(#f3e9e7,#3a2624);color:#b42318;opacity:1}
     #job-priority-app .job-details-section-title{font-size:13px;font-weight:850;line-height:1.25}
     #job-priority-app .job-details-section-status{font-size:9px;opacity:.62;margin-top:2px}
@@ -945,6 +950,7 @@
       let jobDetailsTicket='';
       let jobDetailsClientOpen=false;
       let jobDetailsClientEditing=false;
+      let pendingPunchPreset=null;
       let editPunchSessionId='';
       let deletePunchSessionId='';
       let repairOpenSessionId='';
@@ -1486,8 +1492,36 @@
       async function resumeWorkSessionForKey(key,punchInAt=''){const context=workContextByKey[key];if(!context||!context.workSetId)return false;return beginWorkSessionForKey(key,context.workType,context.workDescription,context.workSetId,punchInAt)}
       async function requestStartTimer(key){
         const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;if(activeWorkSession&&activeWorkSession.sessionId){alert(`Ticket ${activeWorkSession.ticketNumber} already has an active punch. Punch out of that session before starting another job.`);return}
+        pendingPunchPreset=null;document.getElementById('punchInModalBackdrop').classList.remove('punch-in-targeted');
         const pendingIntake=pendingChangeOrderIntakeForJob(job);const pendingNotes=pendingIntake?(combinedChangeOrderNotes(pendingIntake)||String(job.pendingChangeOrderNotes||'').trim()):String(job.pendingChangeOrderNotes||'').trim();
         pendingPunchTimerKey=key;document.getElementById('punchInModalTitle').textContent=job.title||job.displayTitle||'Punch In';updatePunchInEmailSourceReminder(job);document.getElementById('punchInWorkDescription').readOnly=false;document.getElementById('punchInWorkDescription').value=pendingNotes;populatePunchInChoices(job);document.getElementById('punchInWorkType').value=(pendingIntake||pendingNotes)?'New Change Order':'';document.getElementById('punchInWorkSet').value='';updatePunchInFields();document.getElementById('punchInModalBackdrop').classList.add('open');
+      }
+      function openJobDetailsPunchIn(job,kind,number=0){
+        if(!job)return;const key=timerKeyFor(job);const ticket=Number(job.ticketNumber||0);let set=null;let workType='';let workSetId='';let description='';let label='Initial Request';
+        if(kind==='change-order'){
+          label=`Change Order ${Number(number)}`;set=workSets.find(item=>Number(item.ticketNumber)===ticket&&item.workSetType==='Change Order'&&Number(item.changeOrderNumber||0)===Number(number))||null;
+          const record=changeOrderIntakesForJob(job).find(item=>Number(item.changeOrderNumber||0)===Number(number))||null;
+          if(set){workType='Continuing Change Order';workSetId=set.workSetId||'';description=String(set.workDescription||'').trim()}
+          else{workType='New Change Order';description=record?(combinedChangeOrderNotes(record)||String(record.manualNotes||'').trim()):''}
+        }else{
+          set=workSets.find(item=>Number(item.ticketNumber)===ticket&&item.workSetType==='Initial Draft')||null;
+          if(set){workType='Continuing Initial Draft';workSetId=set.workSetId||'';description=String(set.workDescription||'').trim()}
+          else{workType='Initial Draft';description=String(job.notes||'').trim()||'Initial Design'}
+        }
+        if(activeWorkSession&&activeWorkSession.sessionId){alert(`Ticket ${activeWorkSession.ticketNumber} already has an active punch. Punch out of that session before starting another section.`);return}
+        pendingPunchPreset={kind,number:Number(number||0),workType,workSetId,label};pendingPunchTimerKey=key;
+        const backdrop=document.getElementById('punchInModalBackdrop');backdrop.classList.add('punch-in-targeted');
+        document.getElementById('punchInModalTitle').textContent=`Punch In — ${label}`;updatePunchInEmailSourceReminder(job);populatePunchInChoices(job);
+        const type=document.getElementById('punchInWorkType');const setSelect=document.getElementById('punchInWorkSet');const area=document.getElementById('punchInWorkDescription');
+        type.value=workType;setSelect.value=workSetId;area.readOnly=false;area.value=description;updatePunchInFields();
+        if(workType==='Continuing Initial Draft'||workType==='Continuing Change Order')area.readOnly=true;
+        updatePunchInSubmitState();backdrop.classList.add('open');
+      }
+      async function handleJobDetailsPlay(btn){
+        const job=jobs.find(item=>String(item.ticketNumber||'')===String(jobDetailsTicket));if(!job)return;const kind=btn.getAttribute('data-job-details-play-kind')||'initial';const number=Number(btn.getAttribute('data-job-details-play-number')||0);const key=timerKeyFor(job);
+        const isThisSectionActive=activeWorkSession&&String(activeWorkSession.ticketNumber||'')===String(job.ticketNumber||'')&&((kind==='initial'&&activeWorkSession.workSetType==='Initial Draft')||(kind==='change-order'&&activeWorkSession.workSetType==='Change Order'&&Number(activeWorkSession.changeOrderNumber||0)===number));
+        if(isThisSectionActive){const paused=await pauseTimer(key);if(paused&&jobDetailsTicket)renderJobDetailsModal();return}
+        openJobDetailsPunchIn(job,kind,number);
       }
       function sessionRecoveryKey(session){return String(session&&session.ticketNumber||'')}
       function orphanOpenSessions(){
@@ -1922,11 +1956,10 @@
             : `<div class="wsiwon-stat"><div class="wsiwon-stat-label">Today's Minimum</div><div class="wsiwon-stat-value">${formatHours(pace.todayMinimumRemaining)} left</div><div class="wsiwon-stat-sub">${formatHours(pace.todaysMinimum)} total</div></div>`;
           const row=document.createElement('div');
           row.className='queue-item'+((jobTimer.running||isActivelyPunched)?' timer-active':'');
-          row.innerHTML=`<div class="rank-stack"><div class="rank">${i+1}</div><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}"><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-job-financials-ticket="${ticket}">Job Income &amp; Expense</button><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button><button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div>${jobDetailsButton(ticket)}<button class="secondary timer-btn${punchLocked?' punch-locked':''}" type="button" data-timer-key="${escapeHtml(key)}" aria-label="${escapeHtml(timerActionLabel)}" title="${escapeHtml(timerActionLabel)}" ${(punchPending||punchLocked)?'disabled':''}>${timerLabel}</button></div><div><div class="title-copy-row"><div class="qtitle">${escapeHtml(title)}</div><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<div class="wsiwon-stats"><div class="wsiwon-stat"><div class="wsiwon-stat-label">Due Date</div><div class="wsiwon-stat-value">${formatDate(dueValue)}</div></div><div class="wsiwon-stat"><div class="wsiwon-stat-label">Time Accrued</div><div class="wsiwon-stat-value">${formatHours(accrued)}</div></div><div class="wsiwon-stat"><div class="wsiwon-stat-label">Est. Remaining</div><div class="wsiwon-stat-value">${formatHours(hours)}</div></div>${paceTile}<div class="wsiwon-stat"><div class="wsiwon-stat-label">Rec. Block</div><div class="wsiwon-stat-value">${formatCountdown(recommendedSeconds)}</div></div><div class="wsiwon-stat is-block"><div class="wsiwon-stat-label">Block Remaining</div><div class="wsiwon-stat-value"><span class="timer-readout" data-timer-readout="${escapeHtml(key)}">${formatBlockTime(jobTimer)}</span></div><a class="reset-block-link" data-reset-block="${escapeHtml(key)}">Reset Block</a></div></div></div>`;
+          row.innerHTML=`<div class="rank-stack"><div class="rank">${i+1}</div><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}"><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-job-financials-ticket="${ticket}">Job Income &amp; Expense</button><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button><button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div>${jobDetailsButton(ticket)}</div><div><div class="title-copy-row"><div class="qtitle">${escapeHtml(title)}</div><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<div class="wsiwon-stats"><div class="wsiwon-stat"><div class="wsiwon-stat-label">Due Date</div><div class="wsiwon-stat-value">${formatDate(dueValue)}</div></div><div class="wsiwon-stat"><div class="wsiwon-stat-label">Time Accrued</div><div class="wsiwon-stat-value">${formatHours(accrued)}</div></div><div class="wsiwon-stat"><div class="wsiwon-stat-label">Est. Remaining</div><div class="wsiwon-stat-value">${formatHours(hours)}</div></div>${paceTile}<div class="wsiwon-stat"><div class="wsiwon-stat-label">Rec. Block</div><div class="wsiwon-stat-value">${formatCountdown(recommendedSeconds)}</div></div><div class="wsiwon-stat is-block"><div class="wsiwon-stat-label">Block Remaining</div><div class="wsiwon-stat-value"><span class="timer-readout" data-timer-readout="${escapeHtml(key)}">${formatBlockTime(jobTimer)}</span></div><a class="reset-block-link" data-reset-block="${escapeHtml(key)}">Reset Block</a></div></div></div>`;
           q.appendChild(row);
         };
         dueToday.forEach((j,i)=>addQueueItem(j,i)); const divider=document.createElement('div');divider.className='eod-divider';divider.textContent='End of Day · 10:00 PM';q.appendChild(divider); later.forEach((j,i)=>addQueueItem(j,dueToday.length+i));
-        q.querySelectorAll('[data-timer-key]').forEach(btn=>btn.addEventListener('click',async()=>{if(btn.disabled)return;const key=btn.getAttribute('data-timer-key');if(pendingPunchKeys.has(key))return;const state=timerState[key];if(state&&state.running)await pauseTimer(key);else await requestStartTimer(key)}));
         q.querySelectorAll('[data-reset-block]').forEach(link=>link.addEventListener('click',e=>{e.stopPropagation();resetBlock(link.getAttribute('data-reset-block')||'')}));
         q.querySelectorAll('[data-copy-title]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();copyJobTitle(btn.getAttribute('data-copy-title')||'')}));
         q.querySelectorAll('[data-menu-ticket]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const ticket=btn.getAttribute('data-menu-ticket');const menu=q.querySelector(`[data-move-menu="${ticket}"]`);document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>{if(m!==menu)m.classList.remove('open')});menu.classList.toggle('open')}));
@@ -2112,7 +2145,9 @@
         const key=kind==='change-order'?`co-${number}`:'initial';
         const editable=kind==='initial'||!!record;
         const canCancel=kind==='change-order'&&record&&record.status==='Pending'&&!set&&!sources.length;
-        let html=`<section class="job-details-section" data-job-details-section="${escapeHtml(key)}"><div class="job-details-section-head"><div class="job-details-section-heading">${canCancel?`<button class="job-details-cancel-co" type="button" data-job-details-cancel-co="${escapeHtml(record.changeOrderIntakeId)}" aria-label="Cancel ${escapeHtml(title)}" title="Cancel ${escapeHtml(title)}">×</button>`:''}<div><div class="job-details-section-title">${escapeHtml(title)}</div>${status?`<div class="job-details-section-status">${escapeHtml(status)}</div>`:''}</div></div></div>`;
+        const sectionActive=activeWorkSession&&String(activeWorkSession.ticketNumber||'')===String(job.ticketNumber||'')&&((kind==='initial'&&activeWorkSession.workSetType==='Initial Draft')||(kind==='change-order'&&activeWorkSession.workSetType==='Change Order'&&Number(activeWorkSession.changeOrderNumber||0)===Number(number)));
+        const anotherActive=activeWorkSession&&activeWorkSession.sessionId&&!sectionActive;const playIcon=sectionActive?PUNCH_OUT_ICON:(anotherActive?PUNCH_DISABLED_ICON:PUNCH_IN_ICON);const playTitle=sectionActive?`Pause ${title}`:(anotherActive?'Another work section is currently active':`Start work on ${title}`);
+        let html=`<section class="job-details-section${sectionActive?' timer-active':''}" data-job-details-section="${escapeHtml(key)}"><div class="job-details-section-head"><div class="job-details-section-heading">${canCancel?`<button class="job-details-cancel-co" type="button" data-job-details-cancel-co="${escapeHtml(record.changeOrderIntakeId)}" aria-label="Cancel ${escapeHtml(title)}" title="Cancel ${escapeHtml(title)}">×</button>`:''}<div><div class="job-details-section-title">${escapeHtml(title)}</div>${status?`<div class="job-details-section-status">${escapeHtml(status)}</div>`:''}</div></div><div class="job-details-section-controls"><button class="job-details-play" type="button" data-job-details-play-kind="${escapeHtml(kind)}" data-job-details-play-number="${Number(number||0)}" aria-label="${escapeHtml(playTitle)}" title="${escapeHtml(playTitle)}" ${anotherActive?'disabled':''}>${playIcon}</button></div></div>`;
         const orphan=orphanSessionForTicket(ticket);if(orphan&&((kind==='initial'&&(!set||String(orphan.workSetId||'')===String(set.workSetId||'')))||(kind==='change-order'&&set&&String(orphan.workSetId||'')===String(set.workSetId||''))))html+=`<div class="orphan-punch-banner show job-details-orphan"><span>⚠ This section has an unresolved open punch.</span><button type="button" data-job-details-fix-orphan="${escapeHtml(orphan.sessionId)}">Fix Punch</button></div>`;
         html+=jobDetailsTimeMarkup(set,ticket,title);
         html+=`<div class="job-details-notes-wrap"><div class="job-details-notes-head"><div class="job-details-notes-label">Notes / Request</div>${editable?`<div class="job-details-notes-actions"><button class="secondary" type="button" data-job-details-edit-notes="${escapeHtml(key)}">Edit</button><button class="primary" type="button" data-job-details-save-notes="${escapeHtml(key)}" style="display:none">Save</button></div>`:''}</div><textarea class="notes-box job-details-notes" data-job-details-notes="${escapeHtml(key)}" readonly placeholder="No notes yet.">${escapeHtml(notes)}</textarea>`;
@@ -2132,6 +2167,7 @@
         const holder=body;attachEmailDownloadHandlers(holder);
         holder.querySelectorAll('[data-job-details-attachments-toggle]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.getAttribute('data-job-details-attachments-toggle')||'';const list=holder.querySelector(`[data-job-details-attachments-list="${id}"]`);if(!list)return;const open=list.classList.toggle('open');btn.textContent=open?'▼':'▶';btn.setAttribute('aria-expanded',open?'true':'false');btn.setAttribute('aria-label',open?'Hide attachment list':'Show attachment list')}));
         holder.querySelectorAll('[data-job-details-cancel-co]').forEach(btn=>btn.addEventListener('click',()=>cancelJobDetailsChangeOrder(btn)));
+        holder.querySelectorAll('[data-job-details-play-kind]').forEach(btn=>btn.addEventListener('click',()=>handleJobDetailsPlay(btn)));
         const toggle=holder.querySelector('#jobDetailsClientToggle');if(toggle)toggle.addEventListener('click',()=>{jobDetailsClientOpen=!jobDetailsClientOpen;jobDetailsClientEditing=false;renderJobDetailsModal()});
         const editClient=holder.querySelector('#jobDetailsEditClientNotesBtn');if(editClient)editClient.addEventListener('click',()=>{jobDetailsClientEditing=true;['jobDetailsClientGeneral','jobDetailsClientPricing','jobDetailsClientEmails'].forEach(id=>{const el=document.getElementById(id);if(el)el.readOnly=false});editClient.style.display='none';const save=holder.querySelector('#jobDetailsSaveClientNotesBtn');if(save)save.style.display='inline-block';const general=document.getElementById('jobDetailsClientGeneral');if(general)general.focus()});
         const saveClient=holder.querySelector('#jobDetailsSaveClientNotesBtn');if(saveClient)saveClient.addEventListener('click',()=>saveJobDetailsClientNotes(job));
@@ -2880,8 +2916,8 @@
       document.getElementById('punchInWorkSet').addEventListener('change',updatePunchInFields);
       document.getElementById('punchInWorkDescription').addEventListener('input',updatePunchInSubmitState);
       document.getElementById('punchInCancelBtn').addEventListener('click',()=>{
-        pendingPunchTimerKey='';
-        document.getElementById('punchInModalBackdrop').classList.remove('open');
+        pendingPunchTimerKey='';pendingPunchPreset=null;
+        const backdrop=document.getElementById('punchInModalBackdrop');backdrop.classList.remove('open');backdrop.classList.remove('punch-in-targeted');
       });
       document.getElementById('resumeOpenSessionBtn').addEventListener('click',async()=>{
         if(!recoveryOpenSession)return;
@@ -2919,9 +2955,9 @@
           }
           const started=await beginWorkSessionForKey(key,workType,workDescription,workSetId);
           if(!started)return;
-          document.getElementById('punchInModalBackdrop').classList.remove('open');
-          pendingPunchTimerKey='';
-          await startTimerInternal(key);
+          const punchBackdrop=document.getElementById('punchInModalBackdrop');punchBackdrop.classList.remove('open');punchBackdrop.classList.remove('punch-in-targeted');
+          pendingPunchTimerKey='';pendingPunchPreset=null;
+          await startTimerInternal(key);if(jobDetailsTicket)renderJobDetailsModal();
         }finally{
           pendingPunchKeys.delete(key);
           startBtn.textContent='Punch In & Start Timer';
