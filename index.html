@@ -1045,6 +1045,7 @@
       let jobDetailsClientOpen=false;
       let jobDetailsClientEditing=false;
       let changeOrderRefreshBusy=false;
+      let emailQueueRefreshBusy=false;
       let pendingPunchPreset=null;
       let editPunchSessionId='';
       let deletePunchSessionId='';
@@ -2729,6 +2730,32 @@
         }catch(ignore){}finally{changeOrderRefreshBusy=false}
       }
 
+      function emailQueueRefreshSignature(items){
+        return JSON.stringify((items||[]).map(item=>({
+          queueId:String(item.queueId||''),
+          receivedAt:String(item.receivedAt||''),
+          subject:String(item.cleanSubject||item.subject||''),
+          sender:String(item.originalSenderEmail||item.outerSender||''),
+          primary:String(item.matchedPrimaryClientId||''),
+          secondary:String(item.matchedSecondaryClientId||''),
+          attachmentCount:Array.isArray(item.attachments)?item.attachments.length:0
+        })));
+      }
+      async function refreshEmailQueue(){
+        if(emailQueueRefreshBusy)return;
+        emailQueueRefreshBusy=true;
+        const before=emailQueueRefreshSignature(emailQueue);
+        try{
+          const data=await apiPost({action:'getEmailQueueUpdates'});
+          if(!data.success)return;
+          const nextQueue=data.emailQueue||[];
+          const after=emailQueueRefreshSignature(nextQueue);
+          emailQueue=nextQueue;
+          if(before!==after)renderEmailQueue();
+          else renderEmailQueueBadge();
+        }catch(ignore){}finally{emailQueueRefreshBusy=false}
+      }
+
       async function loadBackend(){
         setBackendStatus(false,'Connecting to Google Sheets…');
         try{
@@ -3332,7 +3359,7 @@
       },1000);
       document.addEventListener('click',()=>document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open')));
       window.addEventListener('beforeunload',event=>{if(!activeWorkSession||!activeWorkSession.sessionId)return;if(activeTimerKey)saveTimerSnapshot(activeTimerKey);saveActiveWorkSession(activeWorkSession);event.preventDefault();event.returnValue=''});
-      loadIdleAlarmPreference();populateClients();renderQueue();renderBoard();renderActiveJobBar();renderNotificationTray();renderEmailQueue();loadBackend();setInterval(checkForOrphanPunch,60000);setInterval(refreshChangeOrderDetails,30000);
+      loadIdleAlarmPreference();populateClients();renderQueue();renderBoard();renderActiveJobBar();renderNotificationTray();renderEmailQueue();loadBackend();setInterval(checkForOrphanPunch,60000);setInterval(refreshChangeOrderDetails,30000);setInterval(refreshEmailQueue,60000);
     })();
   </script>
 </div>
