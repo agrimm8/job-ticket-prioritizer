@@ -642,6 +642,7 @@
         <div class="motivator-select-clock" id="motivatorSelectPromptClock">00:00</div>
         <div class="actions" style="margin-top:16px">
           <button class="primary" id="motivatorSelectContinueBtn" type="button">Continue 10 Minutes</button>
+          <button class="secondary" id="motivatorSelectIndefiniteBtn" type="button">Continue Indefinitely</button>
           <button class="secondary" id="motivatorSelectStopBtn" type="button">Stop</button>
         </div>
       </div>
@@ -2768,6 +2769,7 @@
         }finally{pendingPunchKeys.delete(key);renderQueue();renderBoard()}
       }
       async function continueMotivatorSelect(){const backdrop=document.getElementById('motivatorSelectModalBackdrop');backdrop.classList.remove('open');const state=timerState[motivatorSelectKey];if(!state||!activeWorkSession||!activeWorkSession.sessionId)return;state.running=true;await startTimerInternal(motivatorSelectKey,true);startMotivatorSelectCountdown()}
+      async function continueMotivatorSelectIndefinitely(){const backdrop=document.getElementById('motivatorSelectModalBackdrop');backdrop.classList.remove('open');clearMotivatorSelectInterval();const key=motivatorSelectKey;const state=timerState[key];if(!state||!activeWorkSession||!activeWorkSession.sessionId)return;state.running=true;await startTimerInternal(key,true);motivatorSelectKey='';motivatorSelectTicket='';motivatorSelectSeconds=0;renderQueue();renderBoard();renderActiveJobBar();if(jobDetailsTicket)renderJobDetailsModal()}
       async function stopMotivatorSelect(){const btn=document.getElementById('motivatorSelectStopBtn');const original=btn.innerHTML;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Stopping…</span>';try{document.getElementById('motivatorSelectModalBackdrop').classList.remove('open');clearMotivatorSelectInterval();if(motivatorSelectKey)await pauseTimer(motivatorSelectKey);motivatorSelectKey='';motivatorSelectTicket='';motivatorSelectSeconds=0;if(jobDetailsTicket)renderJobDetailsModal()}finally{btn.disabled=false;btn.innerHTML=original}}
       async function launchMotivator(level){level=String(level||'GO').toUpperCase();openMotivatorModal(level);if(level==='GO'){renderMotivatorGo();return}const info=motivatorGateInfo(level);if(!info.eligible){renderMotivatorGateLocked(level);return}renderMotivatorUnlock(level)}
 
@@ -3016,6 +3018,7 @@
       });
       document.getElementById('motivatorModalBackdrop').addEventListener('keydown',async e=>{if(e.key==='Enter'&&document.getElementById('motivatorCodeInput')){e.preventDefault();await unlockMotivator()}else if(e.key==='Escape')closeMotivatorModal()});
       document.getElementById('motivatorSelectContinueBtn').addEventListener('click',continueMotivatorSelect);
+      document.getElementById('motivatorSelectIndefiniteBtn').addEventListener('click',continueMotivatorSelectIndefinitely);
       document.getElementById('motivatorSelectStopBtn').addEventListener('click',stopMotivatorSelect);
       updateMotivatorLockLabels();
       document.getElementById('overheadBtn').addEventListener('click',openOverheadModal);
