@@ -451,9 +451,14 @@
     #job-priority-app .notification-row-actions button.is-loading{display:inline-flex;align-items:center;gap:5px}
     @media (max-width:600px){#job-priority-app .notification-tray{right:10px;bottom:10px;width:calc(100vw - 20px)}}
 
-    #job-priority-app .motivator-control{display:flex;align-items:center;gap:5px}
-    #job-priority-app .motivator-control select{width:72px;min-width:72px;height:30px;padding:4px 22px 4px 7px;font-size:10px;font-weight:850}
-    #job-priority-app .motivator-launch{white-space:nowrap}
+    #job-priority-app .motivator-control{position:relative;display:inline-flex;align-items:center}
+    #job-priority-app .motivator-launch{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+    #job-priority-app .motivator-launch-caret{font-size:9px;opacity:.68}
+    #job-priority-app .motivator-menu{position:absolute;top:calc(100% + 5px);right:0;z-index:80;display:none;min-width:150px;padding:5px;background:light-dark(#fff,#252525);border:1px solid light-dark(#d8d8d4,#444);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,0,.2)}
+    #job-priority-app .motivator-menu.open{display:block}
+    #job-priority-app .motivator-menu button{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:30px;padding:6px 8px;background:transparent;color:inherit;text-align:left;font-size:10px}
+    #job-priority-app .motivator-menu button:hover{background:light-dark(#f0f0ec,#303030)}
+    #job-priority-app .motivator-menu-lock{font-size:9px;opacity:.62}
     #job-priority-app .motivator-backdrop{z-index:13000}
     #job-priority-app .motivator-modal{width:min(720px,calc(100vw - 32px));max-height:90vh;overflow:auto}
     #job-priority-app .motivator-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
@@ -482,9 +487,13 @@
           <span id="idleAlarmStateLabel">Idle Alarm On</span>
         </div>
         <button class="secondary" id="overheadBtn" type="button">Overhead</button>
-        <div class="motivator-control" aria-label="Motivator controls">
-          <select id="motivatorLevel" aria-label="Motivator level"><option value="GO">GO</option><option value="R">R 🔒</option><option value="X">X 🔒</option></select>
-          <button class="secondary motivator-launch" id="motivatorBtn" type="button">Motivator</button>
+        <div class="motivator-control" id="motivatorControl" aria-label="Motivator controls">
+          <button class="secondary motivator-launch" id="motivatorBtn" type="button" aria-haspopup="menu" aria-expanded="false">Motivator <span class="motivator-launch-caret">▾</span></button>
+          <div class="motivator-menu" id="motivatorMenu" role="menu" aria-label="Choose Motivator level">
+            <button type="button" role="menuitem" data-motivator-level="GO"><span>Motivator GO</span></button>
+            <button type="button" role="menuitem" data-motivator-level="R"><span>Motivator R</span><span class="motivator-menu-lock">🔒</span></button>
+            <button type="button" role="menuitem" data-motivator-level="X"><span>Motivator X</span><span class="motivator-menu-lock">🔒</span></button>
+          </div>
         </div>
         <button class="secondary" id="reloadBtn" type="button">Sync Data</button>
       </div>
@@ -2645,7 +2654,7 @@
       let motivatorNeedsRefresh=false;
       function motivatorToken(){return motivatorSessionToken||''}
       function setMotivatorToken(token){motivatorSessionToken=String(token||'');updateMotivatorLockLabels()}
-      function updateMotivatorLockLabels(){const select=document.getElementById('motivatorLevel');if(!select)return;const r=select.querySelector('option[value="R"]');const x=select.querySelector('option[value="X"]');if(r)r.textContent='R 🔒';if(x)x.textContent='X 🔒'}
+      function updateMotivatorLockLabels(){}
       function openMotivatorModal(level){motivatorCurrentLevel=level;motivatorCurrentFileId='';const badge=document.getElementById('motivatorLevelBadge');badge.textContent=level;badge.className='motivator-level-badge'+(level==='X'?' x':'');document.getElementById('motivatorModalTitle').textContent='Motivator';document.getElementById('motivatorModalSubtitle').textContent=level==='GO'?'Motivation GO':('Motivator '+level);document.getElementById('motivatorModalBackdrop').classList.add('open')}
       function closeMotivatorModal(){const video=document.querySelector('#motivatorModalBody video');if(video){try{video.pause()}catch(e){}}setMotivatorToken('');motivatorNeedsRefresh=false;document.getElementById('motivatorModalBackdrop').classList.remove('open');document.getElementById('motivatorModalBody').innerHTML='';document.getElementById('motivatorModalActions').innerHTML=''}
       function motivatorDoneButton(){return '<button class="secondary" type="button" data-motivator-done>Done</button>'}
@@ -2655,7 +2664,7 @@
       function renderMotivatorLoading(){document.getElementById('motivatorModalBody').innerHTML='<div class="motivator-loading">'+PUNCH_LOADING_ICON+'<span>Loading motivator…</span></div>';document.getElementById('motivatorModalActions').innerHTML=motivatorDoneButton()}
       async function loadMotivatorMedia(level,excludeFileId='',forceRefresh=false){const token=motivatorToken();if(!token){renderMotivatorUnlock(level);return}renderMotivatorLoading();try{const data=await apiPost({action:'getMotivatorMedia',level,token,excludeFileId,forceRefresh:!!forceRefresh});if(!data.success){if(data.locked){setMotivatorToken('');renderMotivatorUnlock(level,data.error||'Enter the access code again.');return}throw new Error(data.error||'Unable to load motivator media')}motivatorNeedsRefresh=false;motivatorCurrentFileId=data.fileId||'';const mime=String(data.mimeType||'');let media='';if(mime.startsWith('video/'))media='<video controls autoplay playsinline src="'+escapeHtml(data.dataUrl)+'"></video>';else media='<img src="'+escapeHtml(data.dataUrl)+'" alt="Motivator '+escapeHtml(level)+' media">';document.getElementById('motivatorModalBody').innerHTML='<div class="motivator-media-wrap">'+media+'</div><div class="motivator-media-meta">'+escapeHtml(data.name||'Media')+' · '+formatMotivatorBytes(data.size)+'</div>';document.getElementById('motivatorModalActions').innerHTML='<button type="button" data-motivator-another>Another One</button>'+motivatorDoneButton()}catch(err){motivatorNeedsRefresh=true;document.getElementById('motivatorModalBody').innerHTML='<div class="preview"><strong>Unable to load Motivator '+escapeHtml(level)+'</strong><div class="meta">'+escapeHtml(err.message)+'</div></div>';document.getElementById('motivatorModalActions').innerHTML='<button type="button" data-motivator-another>Try Again</button>'+motivatorDoneButton()}}
       async function unlockMotivator(){const input=document.getElementById('motivatorCodeInput');const btn=document.getElementById('motivatorUnlockBtn');if(!input||!btn)return;const code=input.value;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Unlocking…</span>';try{const data=await apiPost({action:'unlockMotivator',code});if(!data.success){renderMotivatorUnlock(motivatorCurrentLevel,data.error||'Incorrect access code.');return}motivatorNeedsRefresh=false;setMotivatorToken(data.token);await loadMotivatorMedia(motivatorCurrentLevel,'',true)}catch(err){renderMotivatorUnlock(motivatorCurrentLevel,err.message)}finally{if(document.body.contains(btn))btn.disabled=false}}
-      async function launchMotivator(){const level=document.getElementById('motivatorLevel').value||'GO';openMotivatorModal(level);if(level==='GO')renderMotivatorGo();else await loadMotivatorMedia(level)}
+      async function launchMotivator(level){level=String(level||'GO').toUpperCase();openMotivatorModal(level);if(level==='GO')renderMotivatorGo();else await loadMotivatorMedia(level)}
 
       async function apiGet(){const res=await fetch(API_URL+'?action=bootstrap',{method:'GET'});if(!res.ok)throw new Error('Unable to reach backend');return res.json()}
       async function apiPost(payload){const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});if(!res.ok)throw new Error('Backend request failed');return res.json()}
@@ -2830,8 +2839,11 @@
         btn.disabled=true;
         try{await toggleCompletedMetricsExclusion(btn.dataset.toggleCompletedMetrics,btn.dataset.excluded==='true')}catch(err){alert(err.message)}finally{btn.disabled=false}
       });
-      document.getElementById('motivatorBtn').addEventListener('click',launchMotivator);
+      document.getElementById('motivatorBtn').addEventListener('click',e=>{e.stopPropagation();const menu=document.getElementById('motivatorMenu');const btn=document.getElementById('motivatorBtn');const open=!menu.classList.contains('open');menu.classList.toggle('open',open);btn.setAttribute('aria-expanded',open?'true':'false')});
+      document.getElementById('motivatorMenu').addEventListener('click',async e=>{const item=e.target.closest('[data-motivator-level]');if(!item)return;const menu=document.getElementById('motivatorMenu');menu.classList.remove('open');document.getElementById('motivatorBtn').setAttribute('aria-expanded','false');await launchMotivator(item.getAttribute('data-motivator-level'))});
+      document.addEventListener('click',e=>{const control=document.getElementById('motivatorControl');if(!control||control.contains(e.target))return;const menu=document.getElementById('motivatorMenu');if(menu)menu.classList.remove('open');const btn=document.getElementById('motivatorBtn');if(btn)btn.setAttribute('aria-expanded','false')});
       document.getElementById('motivatorModalBackdrop').addEventListener('click',async e=>{
+        if(e.target===e.currentTarget){closeMotivatorModal();return}
         const done=e.target.closest('[data-motivator-done]');if(done){closeMotivatorModal();return}
         const another=e.target.closest('[data-motivator-another]');if(another){if(motivatorCurrentLevel==='GO')renderMotivatorGo();else await loadMotivatorMedia(motivatorCurrentLevel,motivatorNeedsRefresh?'':motivatorCurrentFileId,motivatorNeedsRefresh);return}
         const unlock=e.target.closest('#motivatorUnlockBtn');if(unlock){await unlockMotivator();return}
@@ -3169,7 +3181,10 @@
         }catch(err){alert(err.message)}
       });
       document.getElementById('jobDetailsAddChangeOrderBtn').addEventListener('click',addJobDetailsChangeOrder);
-      document.getElementById('closeJobDetailsBtn').addEventListener('click',()=>{jobDetailsTicket='';jobDetailsClientOpen=false;jobDetailsClientEditing=false;document.getElementById('jobDetailsModalBackdrop').classList.remove('open');renderActiveJobBar()});
+      function jobDetailsHasUnsavedEdits(){if(jobDetailsClientEditing)return true;return Array.from(document.querySelectorAll('#jobDetailsBody [data-job-details-save-notes],#jobDetailsSaveClientNotesBtn')).some(btn=>btn.offsetParent!==null)}
+      function closeJobDetailsModal(){jobDetailsTicket='';jobDetailsClientOpen=false;jobDetailsClientEditing=false;document.getElementById('jobDetailsModalBackdrop').classList.remove('open');renderActiveJobBar()}
+      document.getElementById('closeJobDetailsBtn').addEventListener('click',closeJobDetailsModal);
+      document.getElementById('jobDetailsModalBackdrop').addEventListener('click',e=>{if(e.target!==e.currentTarget)return;if(jobDetailsHasUnsavedEdits())return;closeJobDetailsModal()});
       document.getElementById('closeClientNotesBtn').addEventListener('click',()=>{const returnToFinancial=clientNotesReturnToFinancial;clientNotesTarget=null;clientNotesReturnToFinancial=false;document.getElementById('clientNotesModalBackdrop').classList.remove('open');if(returnToFinancial&&jobFinancialsViewTicket)document.getElementById('jobFinancialsModalBackdrop').classList.add('open')});
       document.getElementById('editJobNotesBtn').addEventListener('click',()=>{const textarea=document.getElementById('jobNotesTextarea');textarea.readOnly=false;textarea.focus();document.getElementById('editJobNotesBtn').style.display='none';document.getElementById('doneJobNotesBtn').style.display='inline-block'});
       document.getElementById('doneJobNotesBtn').addEventListener('click',async()=>{const job=jobs.find(j=>String(j.ticketNumber||'')===jobNotesTicket);if(!job)return;const textarea=document.getElementById('jobNotesTextarea');const notes=textarea.value;try{const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,dueDate:job.due||job.dueDate,estimatedHoursRemaining:Number(job.hours??job.estimatedHoursRemaining??0),timeAccruedHours:getTimeAccruedHours(job),notes});if(!data.success)throw new Error(data.error||'Unable to save job notes');job.notes=notes;textarea.readOnly=true;document.getElementById('editJobNotesBtn').style.display='inline-block';document.getElementById('doneJobNotesBtn').style.display='none'}catch(err){alert(err.message)}});
