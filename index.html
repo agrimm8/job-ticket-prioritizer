@@ -177,6 +177,7 @@
     #job-priority-app .client-modal{display:none;margin:10px 0;padding:10px;border-radius:10px;background:light-dark(#f0f0ec,#292929);border:1px solid light-dark(#d8d8d4,#444)}
     #job-priority-app .client-modal.open{display:block}
     #job-priority-app .timer-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999}
+    #job-priority-app #punchInModalBackdrop{z-index:10050}
     #job-priority-app .timer-modal-backdrop.open{display:flex}
     #job-priority-app .timer-modal{width:min(430px,100%);background:light-dark(#fff,#202020);color:inherit;border:1px solid light-dark(#d8d8d4,#444);border-radius:14px;padding:16px;box-shadow:0 18px 50px rgba(0,0,0,.25)}
     #job-priority-app .timer-modal h3{font-size:15px;margin:0 0 8px}
@@ -241,7 +242,7 @@
     #job-priority-app .job-details-play{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;min-width:24px;min-height:24px;padding:0;border-radius:6px;background:transparent;color:inherit}
     #job-priority-app .job-details-play svg{display:block;width:17px;height:17px}
     #job-priority-app .job-details-play:disabled{cursor:not-allowed;opacity:.48}
-    #job-priority-app .punch-in-targeted label[for="punchInWorkType"],#job-priority-app .punch-in-targeted #punchInWorkType,#job-priority-app .punch-in-targeted #punchInWorkSetWrap{display:none!important}
+    #job-priority-app .punch-in-targeted label[for="punchInWorkType"],#job-priority-app .punch-in-targeted #punchInWorkType,#job-priority-app .punch-in-targeted #punchInWorkSetWrap,#job-priority-app .punch-in-targeted label[for="punchInWorkDescription"],#job-priority-app .punch-in-targeted #punchInWorkDescription{display:none!important}
     #job-priority-app .job-details-cancel-co:hover{background:light-dark(#f3e9e7,#3a2624);color:#b42318;opacity:1}
     #job-priority-app .job-details-section-title{font-size:13px;font-weight:850;line-height:1.25}
     #job-priority-app .job-details-section-status{font-size:9px;opacity:.62;margin-top:2px}
@@ -1543,6 +1544,7 @@
           if(set){workType='Continuing Initial Draft';workSetId=set.workSetId||'';description=String(set.workDescription||'').trim()}
           else{workType='Initial Draft';description=String(job.notes||'').trim()||'Initial Design'}
         }
+        if(!description)description=label;
         if(activeWorkSession&&activeWorkSession.sessionId){alert(`Ticket ${activeWorkSession.ticketNumber} already has an active punch. Punch out of that session before starting another section.`);return}
         pendingPunchPreset={kind,number:Number(number||0),workType,workSetId,label};pendingPunchTimerKey=key;
         const backdrop=document.getElementById('punchInModalBackdrop');backdrop.classList.add('punch-in-targeted');
