@@ -1044,6 +1044,7 @@
       let jobDetailsTicket='';
       let jobDetailsClientOpen=false;
       let jobDetailsClientEditing=false;
+      let changeOrderRefreshBusy=false;
       let pendingPunchPreset=null;
       let editPunchSessionId='';
       let deletePunchSessionId='';
@@ -2694,6 +2695,40 @@
 
       async function apiGet(){const res=await fetch(API_URL+'?action=bootstrap',{method:'GET'});if(!res.ok)throw new Error('Unable to reach backend');return res.json()}
       async function apiPost(payload){const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});if(!res.ok)throw new Error('Backend request failed');return res.json()}
+      function changeOrderRefreshSignatureForTicket(ticket){
+        const ticketText=String(ticket||'');
+        const intakes=changeOrderIntakes.filter(item=>String(item.ticketNumber||'')===ticketText).map(item=>({id:String(item.changeOrderIntakeId||''),number:Number(item.changeOrderNumber||0),status:String(item.status||''),notes:String(item.manualNotes||''),email:String(item.emailAddress||'')}));
+        const intakeIds=new Set(intakes.map(item=>item.id));
+        const sources=changeOrderEmailSources.filter(item=>intakeIds.has(String(item.changeOrderIntakeId||''))).map(item=>({id:String(item.queueId||item.messageId||''),intakeId:String(item.changeOrderIntakeId||''),body:String(item.body||''),subject:String(item.cleanSubject||item.subject||''),attachments:Array.isArray(item.attachments)?item.attachments.map(att=>[String(att.name||''),Number(att.size||0),String(att.kind||'')]):[],deleted:String(item.sourceDeletedAt||'')}));
+        return JSON.stringify({intakes,sources});
+      }
+      function jobDetailsIsActivelyEditing(){
+        if(jobDetailsClientEditing)return true;
+        return !!document.querySelector('#jobDetailsBody textarea:not([readonly])');
+      }
+      async function refreshChangeOrderDetails(){
+        if(changeOrderRefreshBusy)return;
+        const backdrop=document.getElementById('jobDetailsModalBackdrop');
+        if(!jobDetailsTicket||!backdrop||!backdrop.classList.contains('open'))return;
+        changeOrderRefreshBusy=true;
+        const ticket=String(jobDetailsTicket);
+        const before=changeOrderRefreshSignatureForTicket(ticket);
+        try{
+          const data=await apiPost({action:'getChangeOrderUpdates'});
+          if(!data.success)return;
+          changeOrderIntakes=data.changeOrderIntakes||changeOrderIntakes;
+          changeOrderEmailSources=data.changeOrderEmailSources||changeOrderEmailSources;
+          const after=changeOrderRefreshSignatureForTicket(ticket);
+          if(before!==after&&!jobDetailsIsActivelyEditing()){
+            const modal=document.querySelector('#jobDetailsModalBackdrop .job-details-modal');
+            const scrollTop=modal?modal.scrollTop:0;
+            renderJobDetailsModal();
+            const refreshed=document.querySelector('#jobDetailsModalBackdrop .job-details-modal');
+            if(refreshed)refreshed.scrollTop=scrollTop;
+          }
+        }catch(ignore){}finally{changeOrderRefreshBusy=false}
+      }
+
       async function loadBackend(){
         setBackendStatus(false,'Connecting to Google Sheets…');
         try{
@@ -3297,7 +3332,7 @@
       },1000);
       document.addEventListener('click',()=>document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open')));
       window.addEventListener('beforeunload',event=>{if(!activeWorkSession||!activeWorkSession.sessionId)return;if(activeTimerKey)saveTimerSnapshot(activeTimerKey);saveActiveWorkSession(activeWorkSession);event.preventDefault();event.returnValue=''});
-      loadIdleAlarmPreference();populateClients();renderQueue();renderBoard();renderActiveJobBar();renderNotificationTray();renderEmailQueue();loadBackend();setInterval(checkForOrphanPunch,60000);
+      loadIdleAlarmPreference();populateClients();renderQueue();renderBoard();renderActiveJobBar();renderNotificationTray();renderEmailQueue();loadBackend();setInterval(checkForOrphanPunch,60000);setInterval(refreshChangeOrderDetails,30000);
     })();
   </script>
 </div>
