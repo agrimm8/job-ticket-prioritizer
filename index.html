@@ -481,6 +481,10 @@
     #job-priority-app .motivator-error{display:none;margin-top:7px;color:#b42318;font-size:10px;font-weight:750}
     #job-priority-app .motivator-error.show{display:block}
     #job-priority-app .motivator-loading{display:flex;align-items:center;justify-content:center;gap:8px;min-height:220px;font-weight:800;opacity:.75}
+    #job-priority-app .motivator-select-backdrop{z-index:14000}
+    #job-priority-app .motivator-select-modal{width:min(430px,calc(100vw - 32px))}
+    #job-priority-app .motivator-select-clock{font-size:30px;font-weight:950;letter-spacing:.03em;margin:12px 0 5px}
+    #job-priority-app .motivator-select-meta{font-size:10px;opacity:.68}
     #job-priority-app .motivator-gate{padding:22px 16px;text-align:center}
     #job-priority-app .motivator-gate strong{display:block;font-size:16px;margin-bottom:7px}
     #job-priority-app .motivator-gate .meta{font-size:11px}
@@ -501,7 +505,8 @@
         <div class="motivator-control" id="motivatorControl" aria-label="Motivator controls">
           <button class="secondary motivator-launch" id="motivatorBtn" type="button" aria-haspopup="menu" aria-expanded="false">Motivator <span class="motivator-launch-caret">▾</span></button>
           <div class="motivator-menu" id="motivatorMenu" role="menu" aria-label="Choose Motivator level">
-            <button type="button" role="menuitem" data-motivator-level="GO"><span>Motivator GO</span></button>
+            <button type="button" role="menuitem" data-motivator-level="GO"><span>Motivator Says</span></button>
+            <button type="button" role="menuitem" data-motivator-select><span>Motivator Select</span></button>
             <button type="button" role="menuitem" data-motivator-level="R"><span>Motivator R</span><span class="motivator-menu-lock">🔒</span></button>
             <button type="button" role="menuitem" data-motivator-level="X"><span>Motivator X</span><span class="motivator-menu-lock">🔒</span></button>
           </div>
@@ -627,6 +632,18 @@
         </div>
         <div id="motivatorModalBody"></div>
         <div class="actions" id="motivatorModalActions"></div>
+      </div>
+    </div>
+
+    <div class="timer-modal-backdrop motivator-select-backdrop" id="motivatorSelectModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="motivatorSelectModalTitle">
+      <div class="timer-modal motivator-select-modal">
+        <h3 id="motivatorSelectModalTitle">10 Minutes Complete</h3>
+        <p id="motivatorSelectModalMessage">Keep going on this job?</p>
+        <div class="motivator-select-clock" id="motivatorSelectPromptClock">00:00</div>
+        <div class="actions" style="margin-top:16px">
+          <button class="primary" id="motivatorSelectContinueBtn" type="button">Continue 10 Minutes</button>
+          <button class="secondary" id="motivatorSelectStopBtn" type="button">Stop</button>
+        </div>
       </div>
     </div>
 
@@ -2639,6 +2656,10 @@
       }
       function setBackendStatus(ok,text){document.getElementById('backendText').textContent=text;document.getElementById('backendDot').style.background=ok?'#1f7a4d':'#b42318'}
       let motivatorCurrentLevel='GO';
+      let motivatorSelectInterval=null;
+      let motivatorSelectSeconds=0;
+      let motivatorSelectKey='';
+      let motivatorSelectTicket='';
       let motivatorCurrentFileId='';
       const MOTIVATOR_GO_QUOTES=[
         {quote:"If you don't build your dream, someone else will hire you to help them build theirs.",author:'Tony Gaskins'},
@@ -2704,7 +2725,7 @@
       function startMotivatorRewardSession(){if(motivatorRewardStarted)return;motivatorRewardStarted=true;motivatorRewardPeriod=1;motivatorRewardDeadline=Date.now()+10*60*1000;consumeMotivatorRewardUse(motivatorCurrentLevel);if(motivatorRewardTimer)clearInterval(motivatorRewardTimer);motivatorRewardTimer=setInterval(updateMotivatorRewardClock,1000);updateMotivatorRewardClock()}
       function motivatorRewardPeriodEnded(){if(motivatorRewardTimer){clearInterval(motivatorRewardTimer);motivatorRewardTimer=null}const video=document.querySelector('#motivatorModalBody video');if(video){try{video.pause()}catch(e){}}if(motivatorRewardPeriod===1){document.getElementById('motivatorModalSubtitle').textContent=`Motivator ${motivatorCurrentLevel} · 10-minute period complete`;document.getElementById('motivatorModalActions').innerHTML='<span class="motivator-session-note">10 minutes complete.</span><button type="button" data-motivator-extend>Extend 10 Minutes</button>'+motivatorDoneButton()}else{document.getElementById('motivatorModalSubtitle').textContent=`Motivator ${motivatorCurrentLevel} · 20-minute limit reached`;document.getElementById('motivatorModalActions').innerHTML='<span class="motivator-session-note">Session complete.</span>'+motivatorDoneButton()}}
       function extendMotivatorReward(){if(!motivatorRewardStarted||motivatorRewardPeriod!==1)return;motivatorRewardPeriod=2;motivatorRewardDeadline=Date.now()+10*60*1000;const video=document.querySelector('#motivatorModalBody video');if(video){try{video.play()}catch(e){}}motivatorRewardTimer=setInterval(updateMotivatorRewardClock,1000);document.getElementById('motivatorModalActions').innerHTML='<button type="button" data-motivator-another>Another One</button>'+motivatorDoneButton();updateMotivatorRewardClock()}
-      function openMotivatorModal(level){motivatorCurrentLevel=level;motivatorCurrentFileId='';motivatorRewardStarted=false;motivatorRewardPeriod=0;motivatorRewardDeadline=0;const badge=document.getElementById('motivatorLevelBadge');badge.textContent=level;badge.className='motivator-level-badge'+(level==='X'?' x':'');document.getElementById('motivatorModalTitle').textContent='Motivator';document.getElementById('motivatorModalSubtitle').textContent=level==='GO'?'Motivation GO':('Motivator '+level);document.getElementById('motivatorModalBackdrop').classList.add('open')}
+      function openMotivatorModal(level){motivatorCurrentLevel=level;motivatorCurrentFileId='';motivatorRewardStarted=false;motivatorRewardPeriod=0;motivatorRewardDeadline=0;const badge=document.getElementById('motivatorLevelBadge');badge.textContent=level;badge.className='motivator-level-badge'+(level==='X'?' x':'');document.getElementById('motivatorModalTitle').textContent='Motivator';document.getElementById('motivatorModalSubtitle').textContent=level==='GO'?'Motivator Says':('Motivator '+level);document.getElementById('motivatorModalBackdrop').classList.add('open')}
       function closeMotivatorModal(){const video=document.querySelector('#motivatorModalBody video');if(video){try{video.pause()}catch(e){}}if(motivatorRewardTimer){clearInterval(motivatorRewardTimer);motivatorRewardTimer=null}setMotivatorToken('');motivatorNeedsRefresh=false;motivatorRewardStarted=false;document.getElementById('motivatorModalBackdrop').classList.remove('open');document.getElementById('motivatorModalBody').innerHTML='';document.getElementById('motivatorModalActions').innerHTML=''}
       function motivatorDoneButton(){return '<button class="secondary" type="button" data-motivator-done>Done</button>'}
       function renderMotivatorGo(){const item=MOTIVATOR_GO_QUOTES[Math.floor(Math.random()*MOTIVATOR_GO_QUOTES.length)];document.getElementById('motivatorModalBody').innerHTML='<div class="motivator-quote">“'+escapeHtml(item.quote)+'”<cite>— '+escapeHtml(item.author)+'</cite></div>';document.getElementById('motivatorModalActions').innerHTML='<button type="button" data-motivator-another>Another One</button>'+motivatorDoneButton()}
@@ -2714,6 +2735,40 @@
       function renderMotivatorLoading(){document.getElementById('motivatorModalBody').innerHTML='<div class="motivator-loading">'+PUNCH_LOADING_ICON+'<span>Loading motivator…</span></div>';document.getElementById('motivatorModalActions').innerHTML=motivatorDoneButton()}
       async function loadMotivatorMedia(level,excludeFileId='',forceRefresh=false){const token=motivatorToken();if(!token){renderMotivatorUnlock(level);return}renderMotivatorLoading();try{const data=await apiPost({action:'getMotivatorMedia',level,token,excludeFileId,forceRefresh:!!forceRefresh});if(!data.success){if(data.locked){setMotivatorToken('');renderMotivatorUnlock(level,data.error||'Enter the access code again.');return}throw new Error(data.error||'Unable to load motivator media')}motivatorNeedsRefresh=false;motivatorCurrentFileId=data.fileId||'';if(!motivatorRewardStarted)startMotivatorRewardSession();const mime=String(data.mimeType||'');let media='';if(mime.startsWith('video/'))media='<video controls autoplay muted playsinline src="'+escapeHtml(data.dataUrl)+'"></video>';else media='<img src="'+escapeHtml(data.dataUrl)+'" alt="Motivator '+escapeHtml(level)+' media">';document.getElementById('motivatorModalBody').innerHTML='<div class="motivator-media-wrap">'+media+'</div><div class="motivator-media-meta">'+escapeHtml(data.name||'Media')+' · '+formatMotivatorBytes(data.size)+'</div>';document.getElementById('motivatorModalActions').innerHTML='<button type="button" data-motivator-another>Another One</button>'+motivatorDoneButton();updateMotivatorRewardClock();if(level==='X'&&mime.startsWith('video/')&&data.hasAlternative){const video=document.querySelector('#motivatorModalBody video');if(video)video.addEventListener('ended',async()=>{if(motivatorCurrentLevel!=='X'||!document.getElementById('motivatorModalBackdrop').classList.contains('open')||!motivatorRewardStarted)return;await loadMotivatorMedia('X',motivatorCurrentFileId,false)},{once:true})}}catch(err){motivatorNeedsRefresh=true;document.getElementById('motivatorModalBody').innerHTML='<div class="preview"><strong>Unable to load Motivator '+escapeHtml(level)+'</strong><div class="meta">'+escapeHtml(err.message)+'</div></div>';document.getElementById('motivatorModalActions').innerHTML='<button type="button" data-motivator-another>Try Again</button>'+motivatorDoneButton()}}
       async function unlockMotivator(){const input=document.getElementById('motivatorCodeInput');const btn=document.getElementById('motivatorUnlockBtn');if(!input||!btn)return;const info=motivatorGateInfo(motivatorCurrentLevel);if(!info.eligible){renderMotivatorGateLocked(motivatorCurrentLevel);return}const code=input.value;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Unlocking…</span>';try{const data=await apiPost({action:'unlockMotivator',code});if(!data.success){renderMotivatorUnlock(motivatorCurrentLevel,data.error||'Incorrect access code.');return}motivatorNeedsRefresh=false;setMotivatorToken(data.token);await loadMotivatorMedia(motivatorCurrentLevel,'',true)}catch(err){renderMotivatorUnlock(motivatorCurrentLevel,err.message)}finally{if(document.body.contains(btn))btn.disabled=false}}
+      function clearMotivatorSelectInterval(){if(motivatorSelectInterval){clearInterval(motivatorSelectInterval);motivatorSelectInterval=null}}
+      function formatMotivatorSelectClock(seconds){seconds=Math.max(0,Math.floor(Number(seconds)||0));const m=Math.floor(seconds/60);const sec=seconds%60;return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`}
+      function updateMotivatorSelectClock(){const el=document.getElementById('motivatorSelectPromptClock');if(el)el.textContent=formatMotivatorSelectClock(motivatorSelectSeconds)}
+      function motivatorSelectEligibleJobs(){const todayValue=todayISO();return jobs.filter(job=>String(job.status||'')==='To Do'&&!!rawDueDate(job)&&rawDueDate(job)<=todayValue)}
+      function motivatorSelectTargetForJob(job){
+        const ticket=Number(job&&job.ticketNumber||0);const intakes=changeOrderIntakesForJob(job);const sets=workSetsForTicket(ticket);const coNumbers=[];
+        intakes.forEach(item=>{const n=Number(item.changeOrderNumber||0);if(n>0)coNumbers.push(n)});sets.filter(item=>item.workSetType==='Change Order').forEach(item=>{const n=Number(item.changeOrderNumber||0);if(n>0)coNumbers.push(n)});
+        if(coNumbers.length){
+          const number=Math.max(...coNumbers);const set=sets.find(item=>item.workSetType==='Change Order'&&Number(item.changeOrderNumber||0)===number)||null;const record=intakes.find(item=>Number(item.changeOrderNumber||0)===number)||null;let workType,workSetId='',description;
+          if(set){workType='Continuing Change Order';workSetId=String(set.workSetId||'');description=String(set.workDescription||'').trim()}
+          else{workType='New Change Order';description=record?(combinedChangeOrderNotes(record)||String(record.manualNotes||'').trim()):''}
+          if(!description)description=`Change Order ${number}`;return {kind:'change-order',number,workType,workSetId,description,label:`Change Order ${number}`};
+        }
+        const initial=sets.find(item=>item.workSetType==='Initial Draft')||null;if(initial)return {kind:'initial',number:0,workType:'Continuing Initial Draft',workSetId:String(initial.workSetId||''),description:String(initial.workDescription||'').trim()||'Initial Design',label:'Initial Request'};
+        return {kind:'initial',number:0,workType:'Initial Draft',workSetId:'',description:String(job.notes||'').trim()||'Initial Design',label:'Initial Request'};
+      }
+      function startMotivatorSelectCountdown(){clearMotivatorSelectInterval();motivatorSelectSeconds=600;updateMotivatorSelectClock();motivatorSelectInterval=setInterval(()=>{
+        if(!activeWorkSession||!activeWorkSession.sessionId||String(activeWorkSession.ticketNumber||'')!==String(motivatorSelectTicket||'')){clearMotivatorSelectInterval();motivatorSelectKey='';motivatorSelectTicket='';return}
+        motivatorSelectSeconds=Math.max(0,motivatorSelectSeconds-1);updateMotivatorSelectClock();if(motivatorSelectSeconds>0)return;
+        clearMotivatorSelectInterval();const state=timerState[motivatorSelectKey];if(state){state.running=false;saveTimerSnapshot(motivatorSelectKey)}if(activeTimerKey===motivatorSelectKey)stopTimerInterval();
+        const job=jobs.find(j=>String(j.ticketNumber||'')===String(motivatorSelectTicket||''));document.getElementById('motivatorSelectModalMessage').textContent=job?`Continue working on ${job.title||job.displayTitle||('Ticket '+job.ticketNumber)}?`:'Continue working on this job?';document.getElementById('motivatorSelectModalBackdrop').classList.add('open');renderQueue();renderBoard();renderActiveJobBar();
+      },1000)}
+      async function launchMotivatorSelect(){
+        if(activeWorkSession&&activeWorkSession.sessionId){alert('You already have an active job. Stop that timer before using Motivator Select.');return}
+        const eligible=motivatorSelectEligibleJobs();if(!eligible.length){alert('Motivator Select could not find an Overdue or Due Today job in To Do.');return}
+        const job=eligible[Math.floor(Math.random()*eligible.length)];const target=motivatorSelectTargetForJob(job);const key=timerKeyFor(job);motivatorSelectKey=key;motivatorSelectTicket=String(job.ticketNumber||'');
+        pendingPunchKeys.add(key);renderQueue();try{
+          const started=await beginWorkSessionForKey(key,target.workType,target.description,target.workSetId);if(!started){motivatorSelectKey='';motivatorSelectTicket='';return}
+          const state=ensureTimerState(job);if(state.remaining<600){state.remaining=600;state.blockStartRemaining=600;state.blockStartOvertime=state.overtime||0;state.committedSeconds=0}
+          await startTimerInternal(key);openJobDetailsModal(String(job.ticketNumber||''));requestAnimationFrame(()=>{const sectionKey=target.kind==='change-order'?`co-${target.number}`:'initial';const section=document.querySelector(`#jobDetailsBody [data-job-details-section="${CSS.escape(sectionKey)}"]`);if(section)section.scrollIntoView({behavior:'smooth',block:'center'})});startMotivatorSelectCountdown();
+        }finally{pendingPunchKeys.delete(key);renderQueue();renderBoard()}
+      }
+      async function continueMotivatorSelect(){const backdrop=document.getElementById('motivatorSelectModalBackdrop');backdrop.classList.remove('open');const state=timerState[motivatorSelectKey];if(!state||!activeWorkSession||!activeWorkSession.sessionId)return;state.running=true;await startTimerInternal(motivatorSelectKey,true);startMotivatorSelectCountdown()}
+      async function stopMotivatorSelect(){const btn=document.getElementById('motivatorSelectStopBtn');const original=btn.innerHTML;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Stopping…</span>';try{document.getElementById('motivatorSelectModalBackdrop').classList.remove('open');clearMotivatorSelectInterval();if(motivatorSelectKey)await pauseTimer(motivatorSelectKey);motivatorSelectKey='';motivatorSelectTicket='';motivatorSelectSeconds=0;if(jobDetailsTicket)renderJobDetailsModal()}finally{btn.disabled=false;btn.innerHTML=original}}
       async function launchMotivator(level){level=String(level||'GO').toUpperCase();openMotivatorModal(level);if(level==='GO'){renderMotivatorGo();return}const info=motivatorGateInfo(level);if(!info.eligible){renderMotivatorGateLocked(level);return}renderMotivatorUnlock(level)}
 
       async function apiGet(){const res=await fetch(API_URL+'?action=bootstrap',{method:'GET'});if(!res.ok)throw new Error('Unable to reach backend');return res.json()}
@@ -2950,7 +3005,7 @@
         try{await toggleCompletedMetricsExclusion(btn.dataset.toggleCompletedMetrics,btn.dataset.excluded==='true')}catch(err){alert(err.message)}finally{btn.disabled=false}
       });
       document.getElementById('motivatorBtn').addEventListener('click',e=>{e.stopPropagation();refreshMotivatorMenuGateLabels();const menu=document.getElementById('motivatorMenu');const btn=document.getElementById('motivatorBtn');const open=!menu.classList.contains('open');menu.classList.toggle('open',open);btn.setAttribute('aria-expanded',open?'true':'false')});
-      document.getElementById('motivatorMenu').addEventListener('click',async e=>{const item=e.target.closest('[data-motivator-level]');if(!item)return;const menu=document.getElementById('motivatorMenu');menu.classList.remove('open');document.getElementById('motivatorBtn').setAttribute('aria-expanded','false');await launchMotivator(item.getAttribute('data-motivator-level'))});
+      document.getElementById('motivatorMenu').addEventListener('click',async e=>{const selectItem=e.target.closest('[data-motivator-select]');if(selectItem){const menu=document.getElementById('motivatorMenu');menu.classList.remove('open');document.getElementById('motivatorBtn').setAttribute('aria-expanded','false');await launchMotivatorSelect();return}const item=e.target.closest('[data-motivator-level]');if(!item)return;const menu=document.getElementById('motivatorMenu');menu.classList.remove('open');document.getElementById('motivatorBtn').setAttribute('aria-expanded','false');await launchMotivator(item.getAttribute('data-motivator-level'))});
       document.addEventListener('click',e=>{const control=document.getElementById('motivatorControl');if(!control||control.contains(e.target))return;const menu=document.getElementById('motivatorMenu');if(menu)menu.classList.remove('open');const btn=document.getElementById('motivatorBtn');if(btn)btn.setAttribute('aria-expanded','false')});
       document.getElementById('motivatorModalBackdrop').addEventListener('click',async e=>{
         if(e.target===e.currentTarget){closeMotivatorModal();return}
@@ -2960,6 +3015,8 @@
         const extend=e.target.closest('[data-motivator-extend]');if(extend){extendMotivatorReward();return}
       });
       document.getElementById('motivatorModalBackdrop').addEventListener('keydown',async e=>{if(e.key==='Enter'&&document.getElementById('motivatorCodeInput')){e.preventDefault();await unlockMotivator()}else if(e.key==='Escape')closeMotivatorModal()});
+      document.getElementById('motivatorSelectContinueBtn').addEventListener('click',continueMotivatorSelect);
+      document.getElementById('motivatorSelectStopBtn').addEventListener('click',stopMotivatorSelect);
       updateMotivatorLockLabels();
       document.getElementById('overheadBtn').addEventListener('click',openOverheadModal);
       document.getElementById('cancelOverheadBtn').addEventListener('click',()=>document.getElementById('overheadModalBackdrop').classList.remove('open'));
