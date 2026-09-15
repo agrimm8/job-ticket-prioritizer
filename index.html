@@ -2599,19 +2599,62 @@
       function setBackendStatus(ok,text){document.getElementById('backendText').textContent=text;document.getElementById('backendDot').style.background=ok?'#1f7a4d':'#b42318'}
       let motivatorCurrentLevel='GO';
       let motivatorCurrentFileId='';
-      const MOTIVATOR_GO_QUOTES=[{quote:"If you don't build your dream, someone else will hire you to help them build theirs.",author:'Tony Gaskins'}];
-      function motivatorToken(){try{return sessionStorage.getItem('jtpMotivatorToken')||''}catch(e){return ''}}
-      function setMotivatorToken(token){try{if(token)sessionStorage.setItem('jtpMotivatorToken',token);else sessionStorage.removeItem('jtpMotivatorToken')}catch(e){}updateMotivatorLockLabels()}
-      function updateMotivatorLockLabels(){const unlocked=!!motivatorToken();const select=document.getElementById('motivatorLevel');if(!select)return;const r=select.querySelector('option[value="R"]');const x=select.querySelector('option[value="X"]');if(r)r.textContent=unlocked?'R':'R 🔒';if(x)x.textContent=unlocked?'X':'X 🔒'}
+      const MOTIVATOR_GO_QUOTES=[
+        {quote:"If you don't build your dream, someone else will hire you to help them build theirs.",author:'Tony Gaskins'},
+        {quote:"You don't need to feel ready. You need to begin.",author:'Motivator GO'},
+        {quote:"No one is coming to clear the queue for you.",author:'Motivator GO'},
+        {quote:"The next completed job matters more than the next perfect plan.",author:'Motivator GO'},
+        {quote:"Working alone means you set the pace. Set it.",author:'Motivator GO'},
+        {quote:"Momentum is easier to maintain than motivation is to find.",author:'Motivator GO'},
+        {quote:"Finish one thing before negotiating with yourself about the next.",author:'Motivator GO'},
+        {quote:"The job does not have to feel exciting to be worth finishing.",author:'Motivator GO'},
+        {quote:"You are the creative department, production department, and management. Act like management for five minutes.",author:'Motivator GO'},
+        {quote:"A slow start can still become a productive day.",author:'Motivator GO'},
+        {quote:"You don't need a better mood. You need the next twenty minutes.",author:'Motivator GO'},
+        {quote:"The fastest way to make the workload smaller is to finish something.",author:'Motivator GO'},
+        {quote:"Today's version does not need to be your masterpiece. It needs to move the job forward.",author:'Motivator GO'},
+        {quote:"You've solved harder design problems than the one in front of you.",author:'Motivator GO'},
+        {quote:"Stop reopening the decision. You already know what to work on.",author:'Motivator GO'},
+        {quote:"One focused hour can rescue an entire afternoon.",author:'Motivator GO'},
+        {quote:"When you work for yourself, procrastination is an employee you can fire.",author:'Motivator GO'},
+        {quote:"There is no meeting required. Start.",author:'Motivator GO'},
+        {quote:"The client doesn't need to know this was the job you didn't feel like doing.",author:'Motivator GO'},
+        {quote:"Good work done today beats brilliant work started tomorrow.",author:'Motivator GO'},
+        {quote:"Every completed ticket buys back a little mental space.",author:'Motivator GO'},
+        {quote:"The queue looks intimidating because you're looking at all of it. Work the next job.",author:'Motivator GO'},
+        {quote:"You can be tired and still make progress.",author:'Motivator GO'},
+        {quote:"Don't wait for the day to turn around. Turn the next thirty minutes around.",author:'Motivator GO'},
+        {quote:"You are allowed to make the first draft ugly.",author:'Motivator GO'},
+        {quote:"A finished first draft gives you something to improve.",author:'Motivator GO'},
+        {quote:"You don't have to win the whole day right now. Win this block.",author:'Motivator GO'},
+        {quote:"The hardest part of working alone is that nobody tells you to get back to work. So: get back to work.",author:'Motivator GO'},
+        {quote:"If you keep touching the work, eventually it gets finished.",author:'Motivator GO'},
+        {quote:"Your future self would really appreciate one less ticket.",author:'Motivator GO'},
+        {quote:"Avoiding the job is still spending time on the job.",author:'Motivator GO'},
+        {quote:"Make the decision once, then work.",author:'Motivator GO'},
+        {quote:"The next task is probably less painful than thinking about the next task.",author:'Motivator GO'},
+        {quote:"Your business gets stronger every time you finish what you said you would finish.",author:'Motivator GO'},
+        {quote:"You don't need pressure from a boss. You already have a deadline.",author:'Motivator GO'},
+        {quote:"Creative energy follows action more often than action follows creative energy.",author:'Motivator GO'},
+        {quote:"Open the file. That counts as starting.",author:'Motivator GO'},
+        {quote:"Ten focused minutes is better than another ten minutes deciding whether to start.",author:'Motivator GO'},
+        {quote:"Protect your momentum once you have it.",author:'Motivator GO'},
+        {quote:"One clean finish can change the tone of the whole day.",author:'Motivator GO'}
+      ];
+      let motivatorSessionToken='';
+      let motivatorNeedsRefresh=false;
+      function motivatorToken(){return motivatorSessionToken||''}
+      function setMotivatorToken(token){motivatorSessionToken=String(token||'');updateMotivatorLockLabels()}
+      function updateMotivatorLockLabels(){const select=document.getElementById('motivatorLevel');if(!select)return;const r=select.querySelector('option[value="R"]');const x=select.querySelector('option[value="X"]');if(r)r.textContent='R 🔒';if(x)x.textContent='X 🔒'}
       function openMotivatorModal(level){motivatorCurrentLevel=level;motivatorCurrentFileId='';const badge=document.getElementById('motivatorLevelBadge');badge.textContent=level;badge.className='motivator-level-badge'+(level==='X'?' x':'');document.getElementById('motivatorModalTitle').textContent='Motivator';document.getElementById('motivatorModalSubtitle').textContent=level==='GO'?'Motivation GO':('Motivator '+level);document.getElementById('motivatorModalBackdrop').classList.add('open')}
-      function closeMotivatorModal(){const video=document.querySelector('#motivatorModalBody video');if(video){try{video.pause()}catch(e){}}document.getElementById('motivatorModalBackdrop').classList.remove('open');document.getElementById('motivatorModalBody').innerHTML='';document.getElementById('motivatorModalActions').innerHTML=''}
+      function closeMotivatorModal(){const video=document.querySelector('#motivatorModalBody video');if(video){try{video.pause()}catch(e){}}setMotivatorToken('');motivatorNeedsRefresh=false;document.getElementById('motivatorModalBackdrop').classList.remove('open');document.getElementById('motivatorModalBody').innerHTML='';document.getElementById('motivatorModalActions').innerHTML=''}
       function motivatorDoneButton(){return '<button class="secondary" type="button" data-motivator-done>Done</button>'}
       function renderMotivatorGo(){const item=MOTIVATOR_GO_QUOTES[Math.floor(Math.random()*MOTIVATOR_GO_QUOTES.length)];document.getElementById('motivatorModalBody').innerHTML='<div class="motivator-quote">“'+escapeHtml(item.quote)+'”<cite>— '+escapeHtml(item.author)+'</cite></div>';document.getElementById('motivatorModalActions').innerHTML='<button type="button" data-motivator-another>Another One</button>'+motivatorDoneButton()}
       function renderMotivatorUnlock(level,message=''){document.getElementById('motivatorModalBody').innerHTML='<div class="motivator-unlock"><label for="motivatorCodeInput">Unlock Motivator '+escapeHtml(level)+'</label><input id="motivatorCodeInput" type="password" autocomplete="off" placeholder="Access code"><div class="motivator-error'+(message?' show':'')+'" id="motivatorUnlockError">'+escapeHtml(message)+'</div></div>';document.getElementById('motivatorModalActions').innerHTML='<button type="button" id="motivatorUnlockBtn">Unlock</button>'+motivatorDoneButton();setTimeout(()=>{const input=document.getElementById('motivatorCodeInput');if(input)input.focus()},0)}
       function formatMotivatorBytes(bytes){const n=Number(bytes||0);if(n<1024)return n+' B';if(n<1048576)return (n/1024).toFixed(1)+' KB';return (n/1048576).toFixed(1)+' MB'}
       function renderMotivatorLoading(){document.getElementById('motivatorModalBody').innerHTML='<div class="motivator-loading">'+PUNCH_LOADING_ICON+'<span>Loading motivator…</span></div>';document.getElementById('motivatorModalActions').innerHTML=motivatorDoneButton()}
-      async function loadMotivatorMedia(level,excludeFileId=''){const token=motivatorToken();if(!token){renderMotivatorUnlock(level);return}renderMotivatorLoading();try{const data=await apiPost({action:'getMotivatorMedia',level,token,excludeFileId});if(!data.success){if(data.locked){setMotivatorToken('');renderMotivatorUnlock(level,data.error||'Enter the access code again.');return}throw new Error(data.error||'Unable to load motivator media')}motivatorCurrentFileId=data.fileId||'';const mime=String(data.mimeType||'');let media='';if(mime.startsWith('video/'))media='<video controls autoplay playsinline src="'+escapeHtml(data.dataUrl)+'"></video>';else media='<img src="'+escapeHtml(data.dataUrl)+'" alt="Motivator '+escapeHtml(level)+' media">';document.getElementById('motivatorModalBody').innerHTML='<div class="motivator-media-wrap">'+media+'</div><div class="motivator-media-meta">'+escapeHtml(data.name||'Media')+' · '+formatMotivatorBytes(data.size)+'</div>';document.getElementById('motivatorModalActions').innerHTML='<button type="button" data-motivator-another>Another One</button>'+motivatorDoneButton()}catch(err){document.getElementById('motivatorModalBody').innerHTML='<div class="preview"><strong>Unable to load Motivator '+escapeHtml(level)+'</strong><div class="meta">'+escapeHtml(err.message)+'</div></div>';document.getElementById('motivatorModalActions').innerHTML='<button type="button" data-motivator-another>Try Again</button>'+motivatorDoneButton()}}
-      async function unlockMotivator(){const input=document.getElementById('motivatorCodeInput');const btn=document.getElementById('motivatorUnlockBtn');if(!input||!btn)return;const code=input.value;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Unlocking…</span>';try{const data=await apiPost({action:'unlockMotivator',code});if(!data.success){renderMotivatorUnlock(motivatorCurrentLevel,data.error||'Incorrect access code.');return}setMotivatorToken(data.token);await loadMotivatorMedia(motivatorCurrentLevel)}catch(err){renderMotivatorUnlock(motivatorCurrentLevel,err.message)}finally{if(document.body.contains(btn))btn.disabled=false}}
+      async function loadMotivatorMedia(level,excludeFileId='',forceRefresh=false){const token=motivatorToken();if(!token){renderMotivatorUnlock(level);return}renderMotivatorLoading();try{const data=await apiPost({action:'getMotivatorMedia',level,token,excludeFileId,forceRefresh:!!forceRefresh});if(!data.success){if(data.locked){setMotivatorToken('');renderMotivatorUnlock(level,data.error||'Enter the access code again.');return}throw new Error(data.error||'Unable to load motivator media')}motivatorNeedsRefresh=false;motivatorCurrentFileId=data.fileId||'';const mime=String(data.mimeType||'');let media='';if(mime.startsWith('video/'))media='<video controls autoplay playsinline src="'+escapeHtml(data.dataUrl)+'"></video>';else media='<img src="'+escapeHtml(data.dataUrl)+'" alt="Motivator '+escapeHtml(level)+' media">';document.getElementById('motivatorModalBody').innerHTML='<div class="motivator-media-wrap">'+media+'</div><div class="motivator-media-meta">'+escapeHtml(data.name||'Media')+' · '+formatMotivatorBytes(data.size)+'</div>';document.getElementById('motivatorModalActions').innerHTML='<button type="button" data-motivator-another>Another One</button>'+motivatorDoneButton()}catch(err){motivatorNeedsRefresh=true;document.getElementById('motivatorModalBody').innerHTML='<div class="preview"><strong>Unable to load Motivator '+escapeHtml(level)+'</strong><div class="meta">'+escapeHtml(err.message)+'</div></div>';document.getElementById('motivatorModalActions').innerHTML='<button type="button" data-motivator-another>Try Again</button>'+motivatorDoneButton()}}
+      async function unlockMotivator(){const input=document.getElementById('motivatorCodeInput');const btn=document.getElementById('motivatorUnlockBtn');if(!input||!btn)return;const code=input.value;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Unlocking…</span>';try{const data=await apiPost({action:'unlockMotivator',code});if(!data.success){renderMotivatorUnlock(motivatorCurrentLevel,data.error||'Incorrect access code.');return}motivatorNeedsRefresh=false;setMotivatorToken(data.token);await loadMotivatorMedia(motivatorCurrentLevel,'',true)}catch(err){renderMotivatorUnlock(motivatorCurrentLevel,err.message)}finally{if(document.body.contains(btn))btn.disabled=false}}
       async function launchMotivator(){const level=document.getElementById('motivatorLevel').value||'GO';openMotivatorModal(level);if(level==='GO')renderMotivatorGo();else await loadMotivatorMedia(level)}
 
       async function apiGet(){const res=await fetch(API_URL+'?action=bootstrap',{method:'GET'});if(!res.ok)throw new Error('Unable to reach backend');return res.json()}
@@ -2790,7 +2833,7 @@
       document.getElementById('motivatorBtn').addEventListener('click',launchMotivator);
       document.getElementById('motivatorModalBackdrop').addEventListener('click',async e=>{
         const done=e.target.closest('[data-motivator-done]');if(done){closeMotivatorModal();return}
-        const another=e.target.closest('[data-motivator-another]');if(another){if(motivatorCurrentLevel==='GO')renderMotivatorGo();else await loadMotivatorMedia(motivatorCurrentLevel,motivatorCurrentFileId);return}
+        const another=e.target.closest('[data-motivator-another]');if(another){if(motivatorCurrentLevel==='GO')renderMotivatorGo();else await loadMotivatorMedia(motivatorCurrentLevel,motivatorNeedsRefresh?'':motivatorCurrentFileId,motivatorNeedsRefresh);return}
         const unlock=e.target.closest('#motivatorUnlockBtn');if(unlock){await unlockMotivator();return}
       });
       document.getElementById('motivatorModalBackdrop').addEventListener('keydown',async e=>{if(e.key==='Enter'&&document.getElementById('motivatorCodeInput')){e.preventDefault();await unlockMotivator()}else if(e.key==='Escape')closeMotivatorModal()});
