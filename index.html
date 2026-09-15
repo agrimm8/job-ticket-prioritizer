@@ -226,6 +226,13 @@
     #job-priority-app .job-details-head h3{margin:0 0 4px}
     #job-priority-app .job-details-add-co{background:#6495ed;color:#fff;white-space:nowrap}
     #job-priority-app .job-details-add-co:disabled{opacity:.5;cursor:not-allowed}
+    #job-priority-app .job-details-head-actions{display:flex;align-items:flex-start;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+    #job-priority-app .job-details-move-wrap{position:relative}
+    #job-priority-app .job-details-move-btn{background:#2e7d32;color:#fff;white-space:nowrap}
+    #job-priority-app .job-details-move-btn:hover{background:#256628}
+    #job-priority-app .job-details-move-menu{left:auto;right:0;top:34px;min-width:220px}
+    #job-priority-app .job-details-move-menu button[disabled]{opacity:.45;cursor:default}
+
     #job-priority-app .job-details-client{border:1px solid light-dark(#d8d8d4,#444);border-radius:10px;margin-bottom:12px;overflow:hidden;background:light-dark(#fafaf8,#242424)}
     #job-priority-app .job-details-client-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:38px;padding:9px 11px;border-radius:0;background:transparent;color:inherit;text-align:left}
     #job-priority-app .job-details-client-toggle:hover{background:light-dark(#f0f0ec,#2e2e2e)}
@@ -290,7 +297,7 @@
     #job-priority-app .job-details-attachment-link:hover{opacity:1}
     #job-priority-app .job-details-source-actions{display:none}
     #job-priority-app .job-details-orphan{margin:0 12px 10px}
-    @media(max-width:620px){#job-priority-app .job-details-head{flex-direction:column}#job-priority-app .job-details-add-co{width:100%}#job-priority-app .job-details-client-grid{grid-template-columns:1fr}#job-priority-app .job-details-client-grid .full{grid-column:auto}#job-priority-app .job-details-time-row{grid-template-columns:1fr auto}#job-priority-app .job-details-time-actions{grid-column:1/-1;justify-content:flex-end}}
+    @media(max-width:620px){#job-priority-app .job-details-head{flex-direction:column}#job-priority-app .job-details-head-actions{width:100%;justify-content:stretch}#job-priority-app .job-details-add-co,#job-priority-app .job-details-move-wrap,#job-priority-app .job-details-move-btn{width:100%}#job-priority-app .job-details-client-grid{grid-template-columns:1fr}#job-priority-app .job-details-client-grid .full{grid-column:auto}#job-priority-app .job-details-time-row{grid-template-columns:1fr auto}#job-priority-app .job-details-time-actions{grid-column:1/-1;justify-content:flex-end}}
 
     #job-priority-app .client-notes-section{margin-top:14px}
     #job-priority-app .client-notes-section:first-of-type{margin-top:0}
@@ -830,7 +837,13 @@
       <div class="timer-modal job-details-modal">
         <div class="job-details-head">
           <div><h3 id="jobDetailsModalTitle">Job Details</h3><p id="jobDetailsModalJob"></p></div>
-          <button class="job-details-add-co" id="jobDetailsAddChangeOrderBtn" type="button">Add Change Order</button>
+          <div class="job-details-head-actions">
+            <div class="job-details-move-wrap queue-menu-wrap">
+              <button class="job-details-move-btn" id="jobDetailsMoveColumnBtn" type="button">Move to Column ▾</button>
+              <div class="move-menu job-details-move-menu" id="jobDetailsMoveColumnMenu"></div>
+            </div>
+            <button class="job-details-add-co" id="jobDetailsAddChangeOrderBtn" type="button">Add Change Order</button>
+          </div>
         </div>
         <div id="jobDetailsBody"></div>
         <div class="actions"><button class="secondary" id="closeJobDetailsBtn" type="button">Close</button></div>
@@ -2253,9 +2266,20 @@
         const ids=jobDetailsClientIds(job);if(!ids.primaryClientId)return '<div class="job-details-client"><div class="job-details-client-toggle"><strong>Client Notes</strong><span>No client is linked to this ticket.</span></div></div>';
         const key=clientNotesKey(ids.primaryClientId,ids.secondaryClientId);return `<div class="job-details-client${jobDetailsClientOpen?' open':''}" id="jobDetailsClientSection"><button class="job-details-client-toggle" id="jobDetailsClientToggle" type="button"><span><strong>Client Notes</strong> <span class="muted">${escapeHtml(jobDetailsClientLabel(job))}</span></span><span>${jobDetailsClientOpen?'▴':'▾'}</span></button><div class="job-details-client-body"><div class="job-details-client-grid"><div class="full"><label>General Notes</label><textarea class="notes-box" id="jobDetailsClientGeneral" readonly>${escapeHtml(clientNotes[key]||'')}</textarea></div><div><label>Pricing Notes</label><textarea class="notes-box" id="jobDetailsClientPricing" readonly>${escapeHtml(clientPricingNotes[key]||'')}</textarea></div><div><label>Associated Emails</label><textarea class="notes-box" id="jobDetailsClientEmails" readonly>${escapeHtml(clientAssociatedEmails[key]||'')}</textarea></div></div><div class="job-details-client-actions"><button class="secondary" id="jobDetailsEditClientNotesBtn" type="button">Edit Client Notes</button><button class="primary" id="jobDetailsSaveClientNotesBtn" type="button" style="display:none">Save Client Notes</button></div></div></div>`;
       }
+      function renderJobDetailsMoveMenu(job){
+        const menu=document.getElementById('jobDetailsMoveColumnMenu');if(!menu||!job)return;
+        const statuses=['To Do','Client Review','In Production / Awaiting Vendor','To Be Invoiced','Completed'];
+        menu.innerHTML=statuses.map(status=>`<button type="button" data-job-details-move-status="${escapeHtml(status)}"${status===job.status?' disabled':''}>${escapeHtml(status)}${status===job.status?' ✓':''}</button>`).join('');
+        menu.querySelectorAll('[data-job-details-move-status]').forEach(btn=>btn.addEventListener('click',async()=>{
+          const newStatus=btn.getAttribute('data-job-details-move-status');if(!newStatus||newStatus===job.status)return;
+          const proxy=document.createElement('button');proxy.setAttribute('data-move-ticket',String(job.ticketNumber||''));proxy.setAttribute('data-old-status',String(job.status||''));proxy.setAttribute('data-new-status',newStatus);
+          menu.classList.remove('open');await changeJobStatusFromMenu(proxy);
+          if(jobDetailsTicket)renderJobDetailsModal();
+        }));
+      }
       function renderJobDetailsModal(){
         const body=document.getElementById('jobDetailsBody');const job=jobs.find(item=>String(item.ticketNumber||'')===String(jobDetailsTicket));if(!body||!job)return;
-        document.getElementById('jobDetailsModalJob').textContent=job.title||job.displayTitle||'';const add=document.getElementById('jobDetailsAddChangeOrderBtn');const pending=pendingChangeOrderIntakeForJob(job);add.disabled=job.status==='Completed';add.textContent='Add Change Order';add.title=job.status==='Completed'?'Completed jobs cannot start a new Change Order.':(pending?'A pending Change Order already exists; open it below.':'Create the next Change Order');
+        document.getElementById('jobDetailsModalJob').textContent=job.title||job.displayTitle||'';const add=document.getElementById('jobDetailsAddChangeOrderBtn');const pending=pendingChangeOrderIntakeForJob(job);add.disabled=job.status==='Completed';add.textContent='Add Change Order';add.title=job.status==='Completed'?'Completed jobs cannot start a new Change Order.':(pending?'A pending Change Order already exists; open it below.':'Create the next Change Order');renderJobDetailsMoveMenu(job);
         const records=changeOrderIntakesForJob(job);const numbers=new Set(records.map(item=>Number(item.changeOrderNumber||0)).filter(Boolean));workSets.filter(item=>Number(item.ticketNumber)===Number(job.ticketNumber)&&item.workSetType==='Change Order').forEach(item=>numbers.add(Number(item.changeOrderNumber||0)));const changeOrders=[...numbers].filter(Boolean).sort((a,b)=>b-a);
         body.innerHTML=renderJobDetailsClient(job)+jobDetailsActiveJobBarMarkup(job)+`<div class="job-details-history">${changeOrders.map(number=>jobDetailsSectionMarkup(job,'change-order',number)).join('')}${jobDetailsSectionMarkup(job,'initial')}</div>`;
         const holder=body;attachEmailDownloadHandlers(holder);
@@ -2272,6 +2296,7 @@
         holder.querySelectorAll('[data-job-details-edit-punch]').forEach(btn=>btn.addEventListener('click',()=>openEditPunchModal(btn.getAttribute('data-job-details-edit-punch'))));
         holder.querySelectorAll('[data-job-details-delete-punch]').forEach(btn=>btn.addEventListener('click',()=>openDeletePunchModal(btn.getAttribute('data-job-details-delete-punch'))));
         holder.querySelectorAll('[data-job-details-fix-orphan]').forEach(btn=>btn.addEventListener('click',()=>{const session=workSessions.find(item=>String(item.sessionId||'')===String(btn.getAttribute('data-job-details-fix-orphan')||''));if(session){document.getElementById('jobDetailsModalBackdrop').classList.remove('open');showOpenSessionRecovery(session)}}));
+        const moveBtn=document.getElementById('jobDetailsMoveColumnBtn'),moveMenu=document.getElementById('jobDetailsMoveColumnMenu');if(moveBtn&&moveMenu){moveBtn.onclick=e=>{e.stopPropagation();moveMenu.classList.toggle('open')}}
         updateActiveJobBarTimers();
         renderActiveJobBar();
       }
@@ -2567,6 +2592,7 @@
       }
       async function changeJobStatusFromMenu(button){
         const ticket=button.getAttribute('data-move-ticket'); const oldStatus=button.getAttribute('data-old-status'); const newStatus=button.getAttribute('data-new-status'); const job=jobs.find(j=>String(j.ticketNumber||'')===ticket); if(!job)return;
+        if(newStatus===oldStatus)return;
         if(oldStatus==='Client Review'&&newStatus==='To Do'){openClientReviewDueChoice(ticket);return}
         let newDue=job.due||job.dueDate||''; if(newStatus==='To Do'&&oldStatus==='In Production / Awaiting Vendor')newDue=iso(addWorkdays(today(),1));
         const newFollowUp=newStatus==='Client Review'&&oldStatus!=='Client Review'?defaultFollowUpDate():newStatus==='In Production / Awaiting Vendor'&&oldStatus!=='In Production / Awaiting Vendor'?defaultProductionFollowUpDate():(job.followUpDate||'');
@@ -2589,7 +2615,7 @@
             if(activeTimerKey===timerKeyFor(job))activeTimerKey='';
           }
           if(newStatus==='Completed')job.completedAt=(data.job&&data.job.completedAt)||new Date().toISOString();else if(oldStatus==='Completed')job.completedAt='';
-          renderQueue();renderBoard()
+          renderQueue();renderBoard();if(jobDetailsTicket&&String(jobDetailsTicket)===String(ticket))renderJobDetailsModal()
         }catch(err){alert(err.message)}
       }
       function renderBoard(){
