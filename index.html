@@ -450,6 +450,25 @@
     #job-priority-app .notification-row-actions button{min-height:25px;padding:4px 7px;font-size:9px;border-radius:6px}
     #job-priority-app .notification-row-actions button.is-loading{display:inline-flex;align-items:center;gap:5px}
     @media (max-width:600px){#job-priority-app .notification-tray{right:10px;bottom:10px;width:calc(100vw - 20px)}}
+
+    #job-priority-app .motivator-control{display:flex;align-items:center;gap:5px}
+    #job-priority-app .motivator-control select{width:72px;min-width:72px;height:30px;padding:4px 22px 4px 7px;font-size:10px;font-weight:850}
+    #job-priority-app .motivator-launch{white-space:nowrap}
+    #job-priority-app .motivator-backdrop{z-index:13000}
+    #job-priority-app .motivator-modal{width:min(720px,calc(100vw - 32px));max-height:90vh;overflow:auto}
+    #job-priority-app .motivator-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
+    #job-priority-app .motivator-level-badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;padding:4px 8px;border-radius:999px;background:light-dark(#ecece8,#343434);font-size:10px;font-weight:950;letter-spacing:.06em}
+    #job-priority-app .motivator-level-badge.x{background:light-dark(#252525,#111);color:#fff}
+    #job-priority-app .motivator-quote{padding:28px 22px;text-align:center;font-size:22px;line-height:1.42;font-weight:800}
+    #job-priority-app .motivator-quote cite{display:block;margin-top:14px;font-size:12px;font-style:normal;font-weight:650;opacity:.64}
+    #job-priority-app .motivator-media-wrap{display:flex;align-items:center;justify-content:center;min-height:260px;padding:10px;border-radius:10px;background:#111;overflow:hidden}
+    #job-priority-app .motivator-media-wrap img,#job-priority-app .motivator-media-wrap video{display:block;max-width:100%;max-height:66vh;object-fit:contain;border-radius:7px}
+    #job-priority-app .motivator-media-meta{margin-top:6px;font-size:9px;opacity:.56;text-align:center;word-break:break-word}
+    #job-priority-app .motivator-unlock{padding:4px 0}
+    #job-priority-app .motivator-unlock input{font-size:16px;letter-spacing:.08em}
+    #job-priority-app .motivator-error{display:none;margin-top:7px;color:#b42318;font-size:10px;font-weight:750}
+    #job-priority-app .motivator-error.show{display:block}
+    #job-priority-app .motivator-loading{display:flex;align-items:center;justify-content:center;gap:8px;min-height:220px;font-weight:800;opacity:.75}
 </style>
   <div class="wrap">
     <div class="top">
@@ -463,6 +482,10 @@
           <span id="idleAlarmStateLabel">Idle Alarm On</span>
         </div>
         <button class="secondary" id="overheadBtn" type="button">Overhead</button>
+        <div class="motivator-control" aria-label="Motivator controls">
+          <select id="motivatorLevel" aria-label="Motivator level"><option value="GO">GO</option><option value="R">R 🔒</option><option value="X">X 🔒</option></select>
+          <button class="secondary motivator-launch" id="motivatorBtn" type="button">Motivator</button>
+        </div>
         <button class="secondary" id="reloadBtn" type="button">Sync Data</button>
       </div>
     </div>
@@ -576,6 +599,17 @@
       <section class="panel"><h2>In Production / Awaiting Vendor</h2><div id="productionList"></div></section>
       <section class="panel"><h2>Completed</h2><div id="completedList"></div></section>
     </div>
+    <div class="timer-modal-backdrop motivator-backdrop" id="motivatorModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="motivatorModalTitle">
+      <div class="timer-modal motivator-modal">
+        <div class="motivator-modal-head">
+          <div><h3 id="motivatorModalTitle">Motivator</h3><p id="motivatorModalSubtitle" class="muted"></p></div>
+          <span class="motivator-level-badge" id="motivatorLevelBadge">GO</span>
+        </div>
+        <div id="motivatorModalBody"></div>
+        <div class="actions" id="motivatorModalActions"></div>
+      </div>
+    </div>
+
     <div class="timer-modal-backdrop" id="punchInModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="punchInModalTitle">
       <div class="timer-modal">
         <h3 id="punchInModalTitle">Punch In</h3>
@@ -2563,6 +2597,23 @@
         renderCards('completedList',jobs.filter(j=>j.status==='Completed'));
       }
       function setBackendStatus(ok,text){document.getElementById('backendText').textContent=text;document.getElementById('backendDot').style.background=ok?'#1f7a4d':'#b42318'}
+      let motivatorCurrentLevel='GO';
+      let motivatorCurrentFileId='';
+      const MOTIVATOR_GO_QUOTES=[{quote:"If you don't build your dream, someone else will hire you to help them build theirs.",author:'Tony Gaskins'}];
+      function motivatorToken(){try{return sessionStorage.getItem('jtpMotivatorToken')||''}catch(e){return ''}}
+      function setMotivatorToken(token){try{if(token)sessionStorage.setItem('jtpMotivatorToken',token);else sessionStorage.removeItem('jtpMotivatorToken')}catch(e){}updateMotivatorLockLabels()}
+      function updateMotivatorLockLabels(){const unlocked=!!motivatorToken();const select=document.getElementById('motivatorLevel');if(!select)return;const r=select.querySelector('option[value="R"]');const x=select.querySelector('option[value="X"]');if(r)r.textContent=unlocked?'R':'R 🔒';if(x)x.textContent=unlocked?'X':'X 🔒'}
+      function openMotivatorModal(level){motivatorCurrentLevel=level;motivatorCurrentFileId='';const badge=document.getElementById('motivatorLevelBadge');badge.textContent=level;badge.className='motivator-level-badge'+(level==='X'?' x':'');document.getElementById('motivatorModalTitle').textContent='Motivator';document.getElementById('motivatorModalSubtitle').textContent=level==='GO'?'Motivation GO':('Motivator '+level);document.getElementById('motivatorModalBackdrop').classList.add('open')}
+      function closeMotivatorModal(){const video=document.querySelector('#motivatorModalBody video');if(video){try{video.pause()}catch(e){}}document.getElementById('motivatorModalBackdrop').classList.remove('open');document.getElementById('motivatorModalBody').innerHTML='';document.getElementById('motivatorModalActions').innerHTML=''}
+      function motivatorDoneButton(){return '<button class="secondary" type="button" data-motivator-done>Done</button>'}
+      function renderMotivatorGo(){const item=MOTIVATOR_GO_QUOTES[Math.floor(Math.random()*MOTIVATOR_GO_QUOTES.length)];document.getElementById('motivatorModalBody').innerHTML='<div class="motivator-quote">“'+escapeHtml(item.quote)+'”<cite>— '+escapeHtml(item.author)+'</cite></div>';document.getElementById('motivatorModalActions').innerHTML='<button type="button" data-motivator-another>Another One</button>'+motivatorDoneButton()}
+      function renderMotivatorUnlock(level,message=''){document.getElementById('motivatorModalBody').innerHTML='<div class="motivator-unlock"><label for="motivatorCodeInput">Unlock Motivator '+escapeHtml(level)+'</label><input id="motivatorCodeInput" type="password" autocomplete="off" placeholder="Access code"><div class="motivator-error'+(message?' show':'')+'" id="motivatorUnlockError">'+escapeHtml(message)+'</div></div>';document.getElementById('motivatorModalActions').innerHTML='<button type="button" id="motivatorUnlockBtn">Unlock</button>'+motivatorDoneButton();setTimeout(()=>{const input=document.getElementById('motivatorCodeInput');if(input)input.focus()},0)}
+      function formatMotivatorBytes(bytes){const n=Number(bytes||0);if(n<1024)return n+' B';if(n<1048576)return (n/1024).toFixed(1)+' KB';return (n/1048576).toFixed(1)+' MB'}
+      function renderMotivatorLoading(){document.getElementById('motivatorModalBody').innerHTML='<div class="motivator-loading">'+PUNCH_LOADING_ICON+'<span>Loading motivator…</span></div>';document.getElementById('motivatorModalActions').innerHTML=motivatorDoneButton()}
+      async function loadMotivatorMedia(level,excludeFileId=''){const token=motivatorToken();if(!token){renderMotivatorUnlock(level);return}renderMotivatorLoading();try{const data=await apiPost({action:'getMotivatorMedia',level,token,excludeFileId});if(!data.success){if(data.locked){setMotivatorToken('');renderMotivatorUnlock(level,data.error||'Enter the access code again.');return}throw new Error(data.error||'Unable to load motivator media')}motivatorCurrentFileId=data.fileId||'';const mime=String(data.mimeType||'');let media='';if(mime.startsWith('video/'))media='<video controls autoplay playsinline src="'+escapeHtml(data.dataUrl)+'"></video>';else media='<img src="'+escapeHtml(data.dataUrl)+'" alt="Motivator '+escapeHtml(level)+' media">';document.getElementById('motivatorModalBody').innerHTML='<div class="motivator-media-wrap">'+media+'</div><div class="motivator-media-meta">'+escapeHtml(data.name||'Media')+' · '+formatMotivatorBytes(data.size)+'</div>';document.getElementById('motivatorModalActions').innerHTML='<button type="button" data-motivator-another>Another One</button>'+motivatorDoneButton()}catch(err){document.getElementById('motivatorModalBody').innerHTML='<div class="preview"><strong>Unable to load Motivator '+escapeHtml(level)+'</strong><div class="meta">'+escapeHtml(err.message)+'</div></div>';document.getElementById('motivatorModalActions').innerHTML='<button type="button" data-motivator-another>Try Again</button>'+motivatorDoneButton()}}
+      async function unlockMotivator(){const input=document.getElementById('motivatorCodeInput');const btn=document.getElementById('motivatorUnlockBtn');if(!input||!btn)return;const code=input.value;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Unlocking…</span>';try{const data=await apiPost({action:'unlockMotivator',code});if(!data.success){renderMotivatorUnlock(motivatorCurrentLevel,data.error||'Incorrect access code.');return}setMotivatorToken(data.token);await loadMotivatorMedia(motivatorCurrentLevel)}catch(err){renderMotivatorUnlock(motivatorCurrentLevel,err.message)}finally{if(document.body.contains(btn))btn.disabled=false}}
+      async function launchMotivator(){const level=document.getElementById('motivatorLevel').value||'GO';openMotivatorModal(level);if(level==='GO')renderMotivatorGo();else await loadMotivatorMedia(level)}
+
       async function apiGet(){const res=await fetch(API_URL+'?action=bootstrap',{method:'GET'});if(!res.ok)throw new Error('Unable to reach backend');return res.json()}
       async function apiPost(payload){const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});if(!res.ok)throw new Error('Backend request failed');return res.json()}
       async function loadBackend(){
@@ -2736,6 +2787,14 @@
         btn.disabled=true;
         try{await toggleCompletedMetricsExclusion(btn.dataset.toggleCompletedMetrics,btn.dataset.excluded==='true')}catch(err){alert(err.message)}finally{btn.disabled=false}
       });
+      document.getElementById('motivatorBtn').addEventListener('click',launchMotivator);
+      document.getElementById('motivatorModalBackdrop').addEventListener('click',async e=>{
+        const done=e.target.closest('[data-motivator-done]');if(done){closeMotivatorModal();return}
+        const another=e.target.closest('[data-motivator-another]');if(another){if(motivatorCurrentLevel==='GO')renderMotivatorGo();else await loadMotivatorMedia(motivatorCurrentLevel,motivatorCurrentFileId);return}
+        const unlock=e.target.closest('#motivatorUnlockBtn');if(unlock){await unlockMotivator();return}
+      });
+      document.getElementById('motivatorModalBackdrop').addEventListener('keydown',async e=>{if(e.key==='Enter'&&document.getElementById('motivatorCodeInput')){e.preventDefault();await unlockMotivator()}else if(e.key==='Escape')closeMotivatorModal()});
+      updateMotivatorLockLabels();
       document.getElementById('overheadBtn').addEventListener('click',openOverheadModal);
       document.getElementById('cancelOverheadBtn').addEventListener('click',()=>document.getElementById('overheadModalBackdrop').classList.remove('open'));
       document.getElementById('addOverheadRowBtn').addEventListener('click',()=>makeOverheadRow({},'new'));
