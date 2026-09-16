@@ -37,6 +37,37 @@
     #job-priority-app .kpi-comparison{font-size:10px;opacity:.68;margin-top:6px}
     #job-priority-app .kpi-note{font-size:9px;opacity:.55;margin-top:4px;line-height:1.35}
     #job-priority-app .kpi-link{display:inline-block;margin-top:6px;font-size:9px;color:inherit;text-decoration:underline;cursor:pointer;opacity:.72}
+    #job-priority-app .utilization-kpi-card{cursor:pointer;transition:border-color .15s,box-shadow .15s;text-align:left}
+    #job-priority-app .utilization-kpi-card:hover{border-color:light-dark(#aeb9c5,#555);box-shadow:0 4px 16px rgba(0,0,0,.06)}
+    #job-priority-app .utilization-bar{display:flex;height:9px;border-radius:999px;overflow:hidden;background:light-dark(#e9ecef,#3a3a3a);margin-top:8px}
+    #job-priority-app .utilization-segment{height:100%;width:0;transition:width .25s ease}
+    #job-priority-app .utilization-client{background:#2e8b57}
+    #job-priority-app .utilization-admin{background:#3b82c4}
+    #job-priority-app .utilization-summary{font-size:9px;opacity:.72;margin-top:7px;line-height:1.35}
+    #job-priority-app .utilization-current{font-size:9px;font-weight:800;margin-top:4px;opacity:.72}
+    #job-priority-app .utilization-current.unassigned-warning{color:#b26a00;opacity:1}
+    #job-priority-app .workday-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 12px;margin:0 0 12px;border:1px solid light-dark(#d8d8d4,#333);border-radius:12px;background:light-dark(#fff,#202020)}
+    #job-priority-app .workday-main{display:flex;align-items:center;gap:10px;min-width:0}
+    #job-priority-app .workday-dot{width:9px;height:9px;border-radius:999px;background:#8b8b85;flex:0 0 auto}
+    #job-priority-app .workday-bar.working .workday-dot{background:#2e8b57}
+    #job-priority-app .workday-bar.lunch .workday-dot{background:#c58b22}
+    #job-priority-app .workday-kicker{font-size:9px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;opacity:.58}
+    #job-priority-app .workday-status{font-size:12px;font-weight:850;margin-top:1px}
+    #job-priority-app .workday-meta{font-size:9px;opacity:.62;margin-top:2px}
+    #job-priority-app .workday-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+    #job-priority-app .workday-actions button{min-height:30px;padding:5px 9px;font-size:10px}
+    #job-priority-app .admin-active-btn{background:#3b82c4!important;color:#fff!important;border-color:#3b82c4!important}
+    #job-priority-app .timer-modal.productivity-modal{width:min(720px,calc(100vw - 32px));max-height:86vh;overflow:auto}
+    #job-priority-app .productivity-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+    #job-priority-app .productivity-summary-card{padding:10px;border:1px solid light-dark(#e1e5ea,#414141);border-radius:9px;background:light-dark(#fafbfc,#252525)}
+    #job-priority-app .productivity-summary-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;opacity:.62}
+    #job-priority-app .productivity-summary-value{font-size:17px;font-weight:900;margin-top:3px}
+    #job-priority-app .productivity-log{margin-top:14px;border:1px solid light-dark(#e1e5ea,#414141);border-radius:10px;overflow:hidden}
+    #job-priority-app .productivity-log-row{display:grid;grid-template-columns:120px minmax(0,1fr);gap:10px;padding:8px 10px;border-top:1px solid light-dark(#edf0f3,#373737);font-size:10px}
+    #job-priority-app .productivity-log-row:first-child{border-top:0}
+    #job-priority-app .productivity-log-time{font-weight:800;white-space:nowrap}
+    #job-priority-app .productivity-log-label{min-width:0;overflow-wrap:anywhere}
+    @media(max-width:700px){#job-priority-app .workday-bar{align-items:flex-start;flex-direction:column}#job-priority-app .workday-actions{justify-content:flex-start}#job-priority-app .productivity-summary-grid{grid-template-columns:1fr 1fr}#job-priority-app .productivity-log-row{grid-template-columns:95px minmax(0,1fr)}}
     #job-priority-app .timer-modal.completed-metrics-modal{width:min(820px,calc(100vw - 32px));max-height:86vh;overflow:auto}
     #job-priority-app .completed-metrics-table{border:1px solid light-dark(#dfe5ec,#454545);border-radius:10px;overflow:hidden;margin-top:12px}
     #job-priority-app .completed-metrics-head,#job-priority-app .completed-metrics-row{display:grid;grid-template-columns:115px minmax(260px,1fr) 100px 100px;gap:12px;align-items:center;padding:9px 11px}
@@ -517,6 +548,20 @@
       </div>
     </div>
 
+    <div class="workday-bar" id="workdayBar" role="status" aria-live="polite">
+      <div class="workday-main">
+        <span class="workday-dot" aria-hidden="true"></span>
+        <div><div class="workday-kicker">Workday</div><div class="workday-status" id="workdayStatusText">Not Punched In</div><div class="workday-meta" id="workdayMetaText">Punch in when your workday begins.</div></div>
+      </div>
+      <div class="workday-actions">
+        <button class="primary" id="workdayPunchInBtn" type="button">Punch In</button>
+        <button class="secondary" id="adminWorkBtn" type="button" style="display:none">Admin Work</button>
+        <button class="secondary" id="lunchOutBtn" type="button" style="display:none">Lunch Out</button>
+        <button class="primary" id="lunchInBtn" type="button" style="display:none">Lunch In</button>
+        <button class="secondary" id="workdayPunchOutBtn" type="button" style="display:none">Punch Out</button>
+      </div>
+    </div>
+
     <div class="orphan-punch-banner" id="orphanPunchBanner" role="alert">
       <span id="orphanPunchBannerText">⚠ Unresolved punch found.</span>
       <button type="button" id="fixOrphanPunchBtn">Fix Punch</button>
@@ -551,10 +596,6 @@
           <button class="secondary" id="notificationReprioritizeBtn" type="button">Re-Prioritize</button>
         </div>
       </div>
-      <div class="notification-row no-job" id="noJobNotification" role="status">
-        <div class="notification-row-head"><span class="notification-row-icon" aria-hidden="true">⚠</span><span class="notification-row-title">No Job Selected</span></div>
-        <p class="notification-row-message" id="noJobNotificationMessage">No billable job selected.</p>
-      </div>
       <div class="notification-row orphan" id="orphanPunchNotification" role="alert">
         <div class="notification-row-head"><span class="notification-row-icon" aria-hidden="true">⚠</span><span class="notification-row-title">Unresolved Punch</span></div>
         <p class="notification-row-message" id="orphanPunchNotificationMessage">An unresolved open punch was found.</p>
@@ -573,11 +614,12 @@
           <div class="kpi-comparison" id="completedKpiPrevious">Last month: —</div>
           <a class="kpi-link" id="viewCompletedJobsBtn">View Completed Jobs</a>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Avg. Active Queue Time</div>
-          <div><span class="kpi-value" id="queueTimeKpiCurrent">—</span><span class="kpi-unit">hrs / job</span></div>
-          <div class="kpi-comparison" id="queueTimeKpiPrevious">Last month: —</div>
-          <div class="kpi-note">To Do / WSIWON only · max 10 hrs per calendar day · To Be Invoiced excluded</div>
+        <div class="kpi-card utilization-kpi-card" id="workUtilizationKpiBtn" role="button" tabindex="0" aria-label="Open today's productivity details">
+          <div class="kpi-label">Work Utilization</div>
+          <div><span class="kpi-value" id="workUtilizationCurrent">—</span><span class="kpi-unit">productive</span></div>
+          <div class="utilization-bar" aria-hidden="true"><span class="utilization-segment utilization-client" id="utilizationClientSegment"></span><span class="utilization-segment utilization-admin" id="utilizationAdminSegment"></span></div>
+          <div class="utilization-summary" id="workUtilizationSummary">Punch in to begin tracking today's productivity.</div>
+          <div class="utilization-current" id="workUtilizationCurrentState"></div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Overdue Job-Days</div>
@@ -688,6 +730,41 @@
         <div class="actions"><button class="primary" id="continueTimerBtn" type="button">Continue Working</button><button class="secondary" id="reprioritizeBtn" type="button">Re-Prioritize and Move to Next Job</button></div>
       </div>
     </div>
+    <div class="timer-modal-backdrop" id="adminWorkModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="adminWorkModalTitle">
+      <div class="timer-modal">
+        <h3 id="adminWorkModalTitle">Start Admin Work</h3>
+        <label for="adminWorkCategory">Admin Category</label>
+        <select id="adminWorkCategory">
+          <option value="">Select Category</option>
+          <option>Invoicing</option>
+          <option>Bookkeeping / Banking</option>
+          <option>Email / Client Communication</option>
+          <option>Business Development</option>
+          <option>JTP / Internal Development</option>
+          <option>File / Office Management</option>
+          <option>Other Admin</option>
+        </select>
+        <label for="adminWorkDescription" style="margin-top:12px">Notes <span class="muted">(optional)</span></label>
+        <textarea id="adminWorkDescription" class="notes-box" style="min-height:90px" placeholder="Optional note about what you're working on..."></textarea>
+        <div class="actions"><button class="primary" id="startAdminWorkBtn" type="button">Start Admin Work</button><button class="secondary" id="cancelAdminWorkBtn" type="button">Cancel</button></div>
+      </div>
+    </div>
+    <div class="timer-modal-backdrop" id="productivityModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="productivityModalTitle">
+      <div class="timer-modal productivity-modal">
+        <h3 id="productivityModalTitle">Today's Productivity</h3>
+        <p class="muted" id="productivityModalDate"></p>
+        <div class="productivity-summary-grid">
+          <div class="productivity-summary-card"><div class="productivity-summary-label">Clocked Time</div><div class="productivity-summary-value" id="productivityClockedValue">0m</div></div>
+          <div class="productivity-summary-card"><div class="productivity-summary-label">Client Work</div><div class="productivity-summary-value" id="productivityClientValue">0m</div></div>
+          <div class="productivity-summary-card"><div class="productivity-summary-label">Admin Work</div><div class="productivity-summary-value" id="productivityAdminValue">0m</div></div>
+          <div class="productivity-summary-card"><div class="productivity-summary-label">Utilization</div><div class="productivity-summary-value" id="productivityUtilizationValue">—</div></div>
+        </div>
+        <div class="utilization-bar" style="height:12px;margin-top:12px"><span class="utilization-segment utilization-client" id="productivityClientSegment"></span><span class="utilization-segment utilization-admin" id="productivityAdminSegment"></span></div>
+        <div class="kpi-comparison" id="productivityUnassignedValue" style="margin-top:7px">Unassigned: 0m</div>
+        <div class="productivity-log" id="productivityActivityLog"></div>
+        <div class="actions"><button class="secondary" id="closeProductivityModalBtn" type="button">Close</button></div>
+      </div>
+    </div>
     <div class="timer-modal-backdrop" id="blockGapRecoveryBackdrop" role="dialog" aria-modal="true" aria-labelledby="blockGapRecoveryTitle">
       <div class="timer-modal">
         <h3 id="blockGapRecoveryTitle">Include Missed Time?</h3>
@@ -708,13 +785,6 @@
         <div class="actions">
           <button class="primary" id="acknowledgeIdleBtn" type="button">Continue Timer</button>
         </div>
-      </div>
-    </div>
-    <div class="timer-modal-backdrop" id="noJobModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="noJobModalTitle">
-      <div class="timer-modal idle-warning-modal">
-        <h3 id="noJobModalTitle" class="idle-warning-heading"><span class="idle-warning-icon" aria-hidden="true">⚠</span><span>No Job Selected</span></h3>
-        <p>No job activity has been recorded in 5 minutes. Activate the current job in progress.</p>
-        <div class="actions"><button class="idle-resume" id="noJobOkBtn" type="button">OK</button></div>
       </div>
     </div>
     <div class="timer-modal-backdrop" id="dueDateModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="dueDateModalTitle">
@@ -1005,6 +1075,7 @@
     (()=>{
       const root=document.getElementById('job-priority-app'); if(!root||root.dataset.ready) return; root.dataset.ready='1';
       const API_URL='https://script.google.com/macros/s/AKfycbzYSX6Lhyd2mwmYA1Qv1ozEM8_hd0vGndpVwv4lvzy-OUKNkFyElLVmKkfq9sGfMB5PeQ/exec';
+      const PREVIEW_MODE=(()=>{try{const h=String(location.hostname||'').toLowerCase();const deployed=/andrew-grimm85\.workers\.dev$/.test(h);const embedded=window.self!==window.top;const previewHost=/preview|sandbox|usercontent|chatgpt|openai/.test(h);return !deployed&&(embedded||previewHost||location.protocol==='file:')}catch(e){return false}})();
       let clients=[];
       let subclients=[];
       let nextId=1564;
@@ -1013,6 +1084,9 @@
       let overdueHistory=[];
       let workSessions=[];
       let workSets=[];
+      let workdayPunches=[];
+      let adminSessions=[];
+      let activeAdminSession=null;
       let jobFinancials=[];
       let jobFinancialsTicket='';
       let jobFinancialsOriginTicket='';
@@ -1057,10 +1131,6 @@
       let systemIdleDetector=null;
       let systemIdleDetectionState='uninitialized';
       let systemIdlePermissionRequested=false;
-      let noJobElapsedSeconds=0;
-      let noJobAlertOpen=false;
-      let noJobLastRenderedMilestone=-1;
-      let noJobWorkdayKey='';
       let idleAlarmMuted=false;
       let idleAlarmRepeatInterval=null;
       let timeEditTicket='';
@@ -1260,6 +1330,45 @@
 
         return total;
       }
+      function productivityDateKey(value){const d=value instanceof Date?value:new Date(value);if(Number.isNaN(d.getTime()))return '';return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+      function todayWorkdayPunches(){const key=workdayKey();return (workdayPunches||[]).filter(p=>productivityDateKey(p.timestamp)===key).slice().sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp))}
+      function currentWorkdayState(){let state='OFF';todayWorkdayPunches().forEach(p=>{if(p.eventType==='PUNCH_IN'&&state==='OFF')state='WORKING';else if(p.eventType==='LUNCH_OUT'&&state==='WORKING')state='LUNCH';else if(p.eventType==='LUNCH_IN'&&state==='LUNCH')state='WORKING';else if(p.eventType==='PUNCH_OUT'&&state==='WORKING')state='OFF'});return state}
+      function todayClockedIntervals(now=new Date()){
+        const result=[];let state='OFF';let start=null;
+        todayWorkdayPunches().forEach(p=>{const t=new Date(p.timestamp);if(Number.isNaN(t.getTime()))return;if(p.eventType==='PUNCH_IN'&&state==='OFF'){state='WORKING';start=t}else if(p.eventType==='LUNCH_OUT'&&state==='WORKING'){if(start&&t>start)result.push([start,t]);state='LUNCH';start=null}else if(p.eventType==='LUNCH_IN'&&state==='LUNCH'){state='WORKING';start=t}else if(p.eventType==='PUNCH_OUT'&&state==='WORKING'){if(start&&t>start)result.push([start,t]);state='OFF';start=null}});
+        if(state==='WORKING'&&start&&now>start)result.push([start,now]);return result
+      }
+      function intervalSeconds(intervals){return intervals.reduce((sum,[a,b])=>sum+Math.max(0,(b-a)/1000),0)}
+      function overlapSeconds(start,end,intervals){if(!start||!end)return 0;const a=new Date(start),b=end==='NOW'?new Date():new Date(end);if(Number.isNaN(a.getTime())||Number.isNaN(b.getTime())||b<=a)return 0;return intervals.reduce((sum,[x,y])=>sum+Math.max(0,(Math.min(b,y)-Math.max(a,x))/1000),0)}
+      function productivitySnapshot(now=new Date()){
+        const clockIntervals=todayClockedIntervals(now);const clocked=intervalSeconds(clockIntervals);const key=workdayKey(now);
+        let client=0;let admin=0;
+        (workSessions||[]).forEach(s=>{if(!s.punchIn||productivityDateKey(s.punchIn)!==key)return;client+=overlapSeconds(s.punchIn,s.punchOut||'NOW',clockIntervals)});
+        (adminSessions||[]).forEach(s=>{if(!s.punchIn||productivityDateKey(s.punchIn)!==key)return;admin+=overlapSeconds(s.punchIn,s.punchOut||'NOW',clockIntervals)});
+        client=Math.min(client,clocked);admin=Math.min(admin,Math.max(0,clocked-client));const productive=Math.min(clocked,client+admin);const unassigned=Math.max(0,clocked-productive);const utilization=clocked>0?(productive/clocked)*100:null;
+        let currentUnassigned=0;const state=currentWorkdayState();if(state==='WORKING'&&!activeWorkSession&&!activeAdminSession&&clockIntervals.length){const currentStart=clockIntervals[clockIntervals.length-1][0];let lastProductiveEnd=currentStart;const consider=(s)=>{if(!s.punchIn)return;const a=new Date(s.punchIn);const b=s.punchOut?new Date(s.punchOut):now;if(Number.isNaN(a.getTime())||Number.isNaN(b.getTime()))return;if(b>lastProductiveEnd&&b<=now&&b>=currentStart)lastProductiveEnd=b};(workSessions||[]).filter(s=>productivityDateKey(s.punchIn)===key).forEach(consider);(adminSessions||[]).filter(s=>productivityDateKey(s.punchIn)===key).forEach(consider);currentUnassigned=Math.max(0,(now-lastProductiveEnd)/1000)}
+        return {clocked,client,admin,productive,unassigned,utilization,currentUnassigned,state,clockIntervals}
+      }
+      function formatProductivityDuration(seconds){const mins=Math.max(0,Math.round(Number(seconds||0)/60));const h=Math.floor(mins/60);const m=mins%60;if(!h)return `${m}m`;return `${h}h ${m}m`}
+      function formatProductivityPercent(value){return value===null||!Number.isFinite(value)?'—':`${Math.round(value)}%`}
+      function renderWorkdayBar(){const bar=document.getElementById('workdayBar');if(!bar)return;const snap=productivitySnapshot();const state=snap.state;bar.classList.toggle('working',state==='WORKING');bar.classList.toggle('lunch',state==='LUNCH');const status=document.getElementById('workdayStatusText');const meta=document.getElementById('workdayMetaText');const inBtn=document.getElementById('workdayPunchInBtn');const adminBtn=document.getElementById('adminWorkBtn');const lunchOut=document.getElementById('lunchOutBtn');const lunchIn=document.getElementById('lunchInBtn');const outBtn=document.getElementById('workdayPunchOutBtn');
+        inBtn.style.display=state==='OFF'?'inline-flex':'none';lunchIn.style.display=state==='LUNCH'?'inline-flex':'none';adminBtn.style.display=state==='WORKING'?'inline-flex':'none';lunchOut.style.display=state==='WORKING'?'inline-flex':'none';outBtn.style.display=state==='WORKING'?'inline-flex':'none';
+        if(state==='OFF'){status.textContent=todayWorkdayPunches().length?'Punched Out':'Not Punched In';meta.textContent=todayWorkdayPunches().length?`Today's clocked time: ${formatProductivityDuration(snap.clocked)}`:'Punch in when your workday begins.'}
+        else if(state==='LUNCH'){status.textContent='On Lunch';meta.textContent=`Today's clocked time: ${formatProductivityDuration(snap.clocked)} · lunch is excluded from utilization.`}
+        else if(activeAdminSession){status.textContent=`Admin: ${activeAdminSession.category||'Admin Work'}`;meta.textContent=`Clocked ${formatProductivityDuration(snap.clocked)} today · admin session ${formatProductivityDuration((Date.now()-new Date(activeAdminSession.punchIn))/1000)}`}
+        else if(activeWorkSession){status.textContent='Working on Client Job';meta.textContent=`Clocked ${formatProductivityDuration(snap.clocked)} today · client work is counting toward utilization.`}
+        else{status.textContent='Clocked In';meta.textContent=`Clocked ${formatProductivityDuration(snap.clocked)} today · currently unassigned.`}
+        adminBtn.classList.toggle('admin-active-btn',!!activeAdminSession);adminBtn.textContent=activeAdminSession?`Stop Admin · ${formatProductivityDuration((Date.now()-new Date(activeAdminSession.punchIn))/1000)}`:'Admin Work'
+      }
+      function renderWorkUtilization(){const snap=productivitySnapshot();const value=document.getElementById('workUtilizationCurrent');if(!value)return;value.textContent=formatProductivityPercent(snap.utilization);const clientPct=snap.clocked?Math.min(100,(snap.client/snap.clocked)*100):0;const adminPct=snap.clocked?Math.min(100-clientPct,(snap.admin/snap.clocked)*100):0;document.getElementById('utilizationClientSegment').style.width=`${clientPct}%`;document.getElementById('utilizationAdminSegment').style.width=`${adminPct}%`;document.getElementById('workUtilizationSummary').textContent=snap.clocked?`${formatProductivityDuration(snap.client)} Client · ${formatProductivityDuration(snap.admin)} Admin · ${formatProductivityDuration(snap.unassigned)} Unassigned`:'Punch in to begin tracking today\'s productivity.';const current=document.getElementById('workUtilizationCurrentState');current.classList.toggle('unassigned-warning',snap.currentUnassigned>=900);current.textContent=snap.state==='LUNCH'?'Currently on lunch':snap.state==='WORKING'&&!activeWorkSession&&!activeAdminSession?`Currently unassigned · ${formatProductivityDuration(snap.currentUnassigned)}`:activeAdminSession?`Currently Admin · ${activeAdminSession.category}`:activeWorkSession?'Currently on a client job':'';renderWorkdayBar()}
+      function productivityTimeLabel(start,end){const fmt=d=>new Date(d).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});return end?`${fmt(start)}–${fmt(end)}`:`${fmt(start)}–Now`}
+      function renderProductivityModal(){const snap=productivitySnapshot();document.getElementById('productivityModalDate').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});document.getElementById('productivityClockedValue').textContent=formatProductivityDuration(snap.clocked);document.getElementById('productivityClientValue').textContent=formatProductivityDuration(snap.client);document.getElementById('productivityAdminValue').textContent=formatProductivityDuration(snap.admin);document.getElementById('productivityUtilizationValue').textContent=formatProductivityPercent(snap.utilization);document.getElementById('productivityUnassignedValue').textContent=`Unassigned: ${formatProductivityDuration(snap.unassigned)}`;const clientPct=snap.clocked?Math.min(100,(snap.client/snap.clocked)*100):0;const adminPct=snap.clocked?Math.min(100-clientPct,(snap.admin/snap.clocked)*100):0;document.getElementById('productivityClientSegment').style.width=`${clientPct}%`;document.getElementById('productivityAdminSegment').style.width=`${adminPct}%`;const key=workdayKey();const rows=[];todayWorkdayPunches().forEach(p=>{const labels={PUNCH_IN:'Punch In',LUNCH_OUT:'Lunch Out',LUNCH_IN:'Lunch In',PUNCH_OUT:'Punch Out'};rows.push({at:new Date(p.timestamp).getTime(),time:new Date(p.timestamp).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}),label:labels[p.eventType]||p.eventType})});(workSessions||[]).filter(s=>s.punchIn&&productivityDateKey(s.punchIn)===key).forEach(s=>{const job=jobs.find(j=>Number(j.ticketNumber)===Number(s.ticketNumber));const title=job?(job.title||job.displayTitle||`Ticket ${s.ticketNumber}`):`Ticket ${s.ticketNumber}`;rows.push({at:new Date(s.punchIn).getTime()+1,time:productivityTimeLabel(s.punchIn,s.punchOut),label:`Client · ${title}`})});(adminSessions||[]).filter(s=>s.punchIn&&productivityDateKey(s.punchIn)===key).forEach(s=>rows.push({at:new Date(s.punchIn).getTime()+2,time:productivityTimeLabel(s.punchIn,s.punchOut),label:`Admin · ${s.category}${s.description?` — ${s.description}`:''}`}));rows.sort((a,b)=>a.at-b.at);const log=document.getElementById('productivityActivityLog');log.innerHTML=rows.length?rows.map(r=>`<div class="productivity-log-row"><div class="productivity-log-time">${escapeHtml(r.time)}</div><div class="productivity-log-label">${escapeHtml(r.label)}</div></div>`).join(''):'<div class="completed-metrics-empty">No workday activity recorded yet.</div>'}
+      function openProductivityModal(){renderProductivityModal();document.getElementById('productivityModalBackdrop').classList.add('open')}
+      async function endActiveAdminSession(){if(!activeAdminSession||!activeAdminSession.adminSessionId)return true;try{const data=await apiPost({action:'endAdminSession',adminSessionId:activeAdminSession.adminSessionId});if(!data.success)throw new Error(data.error||'Unable to stop Admin Work');const idx=adminSessions.findIndex(s=>s.adminSessionId===activeAdminSession.adminSessionId);if(idx>=0)adminSessions[idx]=data.session;activeAdminSession=null;renderWorkUtilization();return true}catch(err){alert('Admin Work could not be stopped: '+err.message);return false}}
+      async function stopActiveProductivityForClockChange(){if(activeWorkSession&&activeWorkSession.sessionId){if(!confirm('A client job is currently running. Stop that job timer before changing your workday clock?'))return false;const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');if(!await pauseTimer(key))return false}if(activeAdminSession){if(!confirm('Admin Work is currently running. Stop the admin session before changing your workday clock?'))return false;if(!await endActiveAdminSession())return false}return true}
+      async function addWorkdayPunch(eventType,button){if((eventType==='LUNCH_OUT'||eventType==='PUNCH_OUT')&&!await stopActiveProductivityForClockChange())return;const old=button.innerHTML;button.disabled=true;button.innerHTML=PUNCH_LOADING_ICON+'<span>Saving…</span>';try{const data=await apiPost({action:'addWorkdayPunch',eventType});if(!data.success)throw new Error(data.error||'Unable to save workday punch');workdayPunches.push(data.punch);renderWorkUtilization()}catch(err){alert('Workday punch could not be saved: '+err.message)}finally{button.disabled=false;button.innerHTML=old}}
+      async function openAdminWork(){if(currentWorkdayState()!=='WORKING'){alert('Punch in to your workday before starting Admin Work.');return}if(activeAdminSession){await endActiveAdminSession();return}if(activeWorkSession&&activeWorkSession.sessionId){if(!confirm('A client job is currently running. Stop that job timer and switch to Admin Work?'))return;const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');if(!await pauseTimer(key))return}document.getElementById('adminWorkCategory').value='';document.getElementById('adminWorkDescription').value='';document.getElementById('adminWorkModalBackdrop').classList.add('open')}
+      async function startAdminWork(){const category=document.getElementById('adminWorkCategory').value;const description=document.getElementById('adminWorkDescription').value.trim();if(!category){alert('Choose an Admin Work category.');return}const btn=document.getElementById('startAdminWorkBtn');const old=btn.innerHTML;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Starting…</span>';try{const data=await apiPost({action:'beginAdminSession',category,description});if(!data.success)throw new Error(data.error||'Unable to start Admin Work');activeAdminSession=data.session;adminSessions.push(data.session);document.getElementById('adminWorkModalBackdrop').classList.remove('open');renderWorkUtilization()}catch(err){alert('Admin Work could not be started: '+err.message)}finally{btn.disabled=false;btn.innerHTML=old}}
       function renderKpis(){
         const currentKey=currentMonthKey();
         const previousKey=previousMonthKey();
@@ -1269,24 +1378,7 @@
         document.getElementById('completedKpiCurrent').textContent=String(currentCompleted);
         document.getElementById('completedKpiPrevious').textContent='Last month: '+previousCompleted;
 
-        const currentQueue=averageTrackedQueueHours(currentKey);
-        const previousQueue=averageTrackedQueueHours(previousKey);
-        const todayKey=todayISO();
-        const queueTrackingStarted=todayKey>=ACTIVE_QUEUE_KPI_START_DATE;
-        document.getElementById('queueTimeKpiCurrent').textContent=!queueTrackingStarted||currentQueue.average===null?'—':currentQueue.average.toFixed(1);
-        document.getElementById('queueTimeKpiPrevious').textContent=previousQueue.average===null
-          ? 'Last month: No tracked history'
-          : 'Last month: '+previousQueue.average.toFixed(1)+' hrs / job ('+previousQueue.count+' jobs)';
-
-        const notes=document.querySelectorAll('#kpiStrip .kpi-note');
-        const queueNote=notes[1];
-        if(queueNote){
-          queueNote.textContent=!queueTrackingStarted
-            ? 'Tracking begins September 1, 2026.'
-            : currentQueue.average===null
-              ? 'Queue-time tracking begins with completed tickets on or after September 1, 2026 that have complete Status History. To Be Invoiced time is excluded.'
-              : 'Based on '+currentQueue.count+' completed tracked job'+(currentQueue.count===1?'':'s')+' this month · max 10 hrs per weekday · weekends/holidays excluded except actual punched work · To Be Invoiced excluded';
-        }
+        renderWorkUtilization();
 
         const currentOverdue=overdueJobDaysForMonth(currentKey);
         const previousOverdue=overdueJobDaysForMonth(previousKey);
@@ -1603,11 +1695,11 @@
       function updatePunchInSubmitState(){const type=document.getElementById('punchInWorkType').value;const description=document.getElementById('punchInWorkDescription').value.trim();const workSetId=document.getElementById('punchInWorkSet').value;let valid=!!type;if(type==='Initial Draft'||type==='New Change Order'||type==='Continuing Initial Draft')valid=valid&&!!description;if(type==='Continuing Change Order')valid=valid&&!!workSetId&&!!description;document.getElementById('punchInStartBtn').disabled=!valid}
       async function closeActiveWorkSession(punchOutAt){
         clearIdleWarning(true);if(!activeWorkSession||!activeWorkSession.sessionId)return true;
-        try{const payload={action:'endWorkSession',sessionId:activeWorkSession.sessionId};if(punchOutAt)payload.punchOutAt=punchOutAt;const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch out');const localSession=activeWorkSession;const found=workSessions.find(s=>s.sessionId===localSession.sessionId);if(found){found.punchOut=data.punchOut||'';found.durationMinutes=Number(data.durationMinutes||0)}saveActiveWorkSession(null);clearTimerSnapshot();renderActiveJobBar();return true}catch(err){alert('Punch Out could not be saved: '+err.message);return false}
+        try{const payload={action:'endWorkSession',sessionId:activeWorkSession.sessionId};if(punchOutAt)payload.punchOutAt=punchOutAt;const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch out');const localSession=activeWorkSession;const found=workSessions.find(s=>s.sessionId===localSession.sessionId);if(found){found.punchOut=data.punchOut||'';found.durationMinutes=Number(data.durationMinutes||0)}saveActiveWorkSession(null);clearTimerSnapshot();renderActiveJobBar();renderWorkUtilization();return true}catch(err){alert('Punch Out could not be saved: '+err.message);return false}
       }
       async function beginWorkSessionForKey(key,workType,workDescription,workSetId='',punchInAt=''){
-        const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return false;
-        try{const payload={action:'beginWorkSession',ticketNumber:job.ticketNumber,workType,workDescription,workSetId};if(punchInAt)payload.punchInAt=punchInAt;const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch in');const session=data.session;if(data.workSet&&!workSets.some(set=>set.workSetId===data.workSet.workSetId))workSets.push(data.workSet);if(data.pendingChangeOrderNotes!==undefined)job.pendingChangeOrderNotes=String(data.pendingChangeOrderNotes||'');if(data.changeOrderIntake){const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===data.changeOrderIntake.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=data.changeOrderIntake;else changeOrderIntakes.push(data.changeOrderIntake)}workSessions.push(session);applyWorkSessionContext(session,key);saveActiveWorkSession({...session,timerKey:key});renderActiveJobBar();return true}catch(err){alert('Punch In could not be saved: '+err.message);return false}
+        const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return false;if(currentWorkdayState()!=='WORKING'){alert(currentWorkdayState()==='LUNCH'?'Lunch is active. Punch back in from lunch before starting a job.':'Punch in to your workday before starting a job.');return false}if(activeAdminSession&&!await endActiveAdminSession())return false;
+        try{const payload={action:'beginWorkSession',ticketNumber:job.ticketNumber,workType,workDescription,workSetId};if(punchInAt)payload.punchInAt=punchInAt;const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch in');const session=data.session;if(data.workSet&&!workSets.some(set=>set.workSetId===data.workSet.workSetId))workSets.push(data.workSet);if(data.pendingChangeOrderNotes!==undefined)job.pendingChangeOrderNotes=String(data.pendingChangeOrderNotes||'');if(data.changeOrderIntake){const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===data.changeOrderIntake.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=data.changeOrderIntake;else changeOrderIntakes.push(data.changeOrderIntake)}workSessions.push(session);applyWorkSessionContext(session,key);saveActiveWorkSession({...session,timerKey:key});renderActiveJobBar();renderWorkUtilization();return true}catch(err){alert('Punch In could not be saved: '+err.message);return false}
       }
       async function resumeWorkSessionForKey(key,punchInAt=''){const context=workContextByKey[key];if(!context||!context.workSetId)return false;return beginWorkSessionForKey(key,context.workType,context.workDescription,context.workSetId,punchInAt)}
       async function requestStartTimer(key){
@@ -1703,7 +1795,6 @@
       function renderNotificationTray(){
         const tray=document.getElementById('notificationTray');if(!tray)return;
         const block=document.getElementById('blockCompleteNotification');
-        const noJob=document.getElementById('noJobNotification');
         const orphan=document.getElementById('orphanPunchNotification');
         const hasBlock=Boolean(completedTimerKey);
         if(block)block.classList.toggle('show',hasBlock);
@@ -1716,21 +1807,6 @@
           const recoveryText=elapsedMs<=15*60*1000?' If you kept working, that gap can still be included.':' The 15-minute recovery window has passed, so Continue Working will start from now.';
           const msg=document.getElementById('blockCompleteNotificationMessage');
           if(msg)msg.textContent=`Allotted time for ${label} is complete. Block ended ${timeText} ago.${recoveryText}`;
-        }
-        if(noJob){
-          noJob.classList.toggle('show',Boolean(noJobAlertOpen));
-          const msg=document.getElementById('noJobNotificationMessage');
-          if(msg){
-            if(noJobElapsedSeconds>=900){
-              const milestone=Math.floor(noJobElapsedSeconds/900)*15;
-              const hours=Math.floor(milestone/60);
-              const minutes=milestone%60;
-              const duration=hours?`${hours} hr${hours===1?'':'s'}${minutes?` ${minutes} min`:''}`:`${minutes} minutes`;
-              msg.textContent=`You've been without a billable job for ${duration}.`;
-            }else{
-              msg.textContent='No billable job selected for at least 5 minutes.';
-            }
-          }
         }
         const orphanSessions=orphanOpenSessions();
         if(orphan){
@@ -1745,7 +1821,7 @@
           }else orphan.removeAttribute('data-orphan-session');
         }
         const hasOrphan=orphanSessions.length>0;
-        const alertCount=(hasBlock?1:0)+(noJobAlertOpen?1:0)+(hasOrphan?1:0);
+        const alertCount=(hasBlock?1:0)+(hasOrphan?1:0);
         const urgentNew=(hasBlock&&!notificationTrayHadBlock)||(hasOrphan&&!notificationTrayHadOrphan);
         if(urgentNew)notificationTrayMinimized=false;
         notificationTrayHadBlock=hasBlock;notificationTrayHadOrphan=hasOrphan;
@@ -1756,8 +1832,7 @@
         if(collapsedText)collapsedText.textContent=`${alertCount} Alert${alertCount===1?'':'s'}`;
       }
       function workdayKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-      function isBillableWorkWindow(d=new Date()){const day=d.getDay();const hour=d.getHours();return day>=1&&day<=5&&hour>=8&&hour<22}
-      function resetNoJobTimer(){noJobElapsedSeconds=0;noJobAlertOpen=false;noJobLastRenderedMilestone=-1;noJobWorkdayKey=workdayKey();renderNotificationTray()}
+      function resetNoJobTimer(){renderWorkUtilization()}
       function updateActiveTimerReadout(key){const state=timerState[key];if(!state)return;const selector='[data-timer-readout=\"'+CSS.escape(String(key))+'\"]';document.querySelectorAll(selector).forEach(el=>{el.textContent=formatBlockTime(state)})}
       function formatActiveSessionElapsed(){if(!activeWorkSession||!activeWorkSession.punchIn)return '00:00:00';const start=new Date(activeWorkSession.punchIn).getTime();if(!Number.isFinite(start))return '00:00:00';const seconds=Math.max(0,Math.floor((Date.now()-start)/1000));const h=Math.floor(seconds/3600);const m=Math.floor((seconds%3600)/60);const s=seconds%60;return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
       function activeWorkSectionLabel(session){if(!session)return '';if(session.workSetType==='Change Order')return `Change Order ${Number(session.changeOrderNumber||0)||''}`.trim();return 'Initial Request'}
@@ -2775,8 +2850,8 @@
       async function stopMotivatorSelect(){const btn=document.getElementById('motivatorSelectStopBtn');const original=btn.innerHTML;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Stopping…</span>';try{document.getElementById('motivatorSelectModalBackdrop').classList.remove('open');clearMotivatorSelectInterval();if(motivatorSelectKey)await pauseTimer(motivatorSelectKey);motivatorSelectKey='';motivatorSelectTicket='';motivatorSelectSeconds=0;if(jobDetailsTicket)renderJobDetailsModal()}finally{btn.disabled=false;btn.innerHTML=original}}
       async function launchMotivator(level){level=String(level||'GO').toUpperCase();openMotivatorModal(level);if(level==='GO'){renderMotivatorGo();return}const info=motivatorGateInfo(level);if(!info.eligible){renderMotivatorGateLocked(level);return}renderMotivatorUnlock(level)}
 
-      async function apiGet(){const res=await fetch(API_URL+'?action=bootstrap',{method:'GET'});if(!res.ok)throw new Error('Unable to reach backend');return res.json()}
-      async function apiPost(payload){const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});if(!res.ok)throw new Error('Backend request failed');return res.json()}
+      async function apiGet(){if(PREVIEW_MODE)throw new Error('Live backend access is disabled in Preview Mode.');const res=await fetch(API_URL+'?action=bootstrap',{method:'GET'});if(!res.ok)throw new Error('Unable to reach backend');return res.json()}
+      async function apiPost(payload){if(PREVIEW_MODE)throw new Error('Live backend access is disabled in Preview Mode.');const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});if(!res.ok)throw new Error('Backend request failed');return res.json()}
       function changeOrderRefreshSignatureForTicket(ticket){
         const ticketText=String(ticket||'');
         const intakes=changeOrderIntakes.filter(item=>String(item.ticketNumber||'')===ticketText).map(item=>({id:String(item.changeOrderIntakeId||''),number:Number(item.changeOrderNumber||0),status:String(item.status||''),notes:String(item.manualNotes||''),email:String(item.emailAddress||'')}));
@@ -2841,7 +2916,7 @@
         setBackendStatus(false,'Connecting to Google Sheets…');
         try{
           const data=await apiGet(); if(!data.success)throw new Error(data.error||'Backend error');
-          clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[]; statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; workSets=data.workSets||[]; holidayCalendar=data.holidayCalendar||[]; jobFinancials=data.jobFinancials||[]; overheadTemplates=data.overheadTemplates||[]; currentMonthlyOverhead=data.currentMonthlyOverhead||{month:currentMonthKey(),entries:[],total:0}; emailQueue=data.emailQueue||[];recentEmailSources=data.recentEmailSources||[];changeOrderIntakes=data.changeOrderIntakes||[];changeOrderEmailSources=data.changeOrderEmailSources||[];emailIntakeConfigured=data.emailIntakeConfigured===true; await reconcileOpenWorkSession(data.openWorkSession||null);
+          clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[]; statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; workSets=data.workSets||[]; workdayPunches=data.workdayPunches||[]; adminSessions=data.adminSessions||[]; activeAdminSession=data.openAdminSession||null; holidayCalendar=data.holidayCalendar||[]; jobFinancials=data.jobFinancials||[]; overheadTemplates=data.overheadTemplates||[]; currentMonthlyOverhead=data.currentMonthlyOverhead||{month:currentMonthKey(),entries:[],total:0}; emailQueue=data.emailQueue||[];recentEmailSources=data.recentEmailSources||[];changeOrderIntakes=data.changeOrderIntakes||[];changeOrderEmailSources=data.changeOrderEmailSources||[];emailIntakeConfigured=data.emailIntakeConfigured===true; await reconcileOpenWorkSession(data.openWorkSession||null);
           Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);
           Object.keys(clientPricingNotes).forEach(k=>delete clientPricingNotes[k]);
           Object.keys(clientAssociatedEmails).forEach(k=>delete clientAssociatedEmails[k]);
@@ -2849,7 +2924,7 @@
           subclients.forEach(s=>{const key=clientNotesKey(s.parentClientId,s.id);clientNotes[key]=String(s.notes||s.clientNotes||'');clientPricingNotes[key]=String(s.pricingNotes||'');clientAssociatedEmails[key]=String(s.associatedEmails||'')});
           renderEmailQueue();
           nextId=getNextSequentialId();
-          populateClients(); syncNextId(); renderQueue(); renderBoard(); setBackendStatus(true,'Live Google Sheets connection');
+          populateClients(); syncNextId(); renderQueue(); renderBoard(); renderWorkUtilization(); setBackendStatus(true,'Live Google Sheets connection');
         }catch(err){setBackendStatus(false,'Connection failed');alert('Could not load Google Sheets data: '+err.message)}
       }
       function formatBytes(bytes){const value=Math.max(0,Number(bytes)||0);if(value<1024)return value+' B';if(value<1048576)return (value/1024).toFixed(value<10240?1:0)+' KB';return (value/1048576).toFixed(value<10485760?1:0)+' MB'}
@@ -3262,6 +3337,16 @@
       });
       document.getElementById('activeJobDetailsBtn').addEventListener('click',openActiveJobDetails);
       document.getElementById('activeJobStopBtn').addEventListener('click',stopActiveJobFromBar);
+      document.getElementById('workdayPunchInBtn').addEventListener('click',e=>addWorkdayPunch('PUNCH_IN',e.currentTarget));
+      document.getElementById('lunchOutBtn').addEventListener('click',e=>addWorkdayPunch('LUNCH_OUT',e.currentTarget));
+      document.getElementById('lunchInBtn').addEventListener('click',e=>addWorkdayPunch('LUNCH_IN',e.currentTarget));
+      document.getElementById('workdayPunchOutBtn').addEventListener('click',e=>addWorkdayPunch('PUNCH_OUT',e.currentTarget));
+      document.getElementById('adminWorkBtn').addEventListener('click',openAdminWork);
+      document.getElementById('startAdminWorkBtn').addEventListener('click',startAdminWork);
+      document.getElementById('cancelAdminWorkBtn').addEventListener('click',()=>document.getElementById('adminWorkModalBackdrop').classList.remove('open'));
+      document.getElementById('workUtilizationKpiBtn').addEventListener('click',openProductivityModal);
+      document.getElementById('workUtilizationKpiBtn').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openProductivityModal()}});
+      document.getElementById('closeProductivityModalBtn').addEventListener('click',()=>document.getElementById('productivityModalBackdrop').classList.remove('open'));
       document.getElementById('punchInWorkType').addEventListener('change',updatePunchInFields);
       document.getElementById('punchInWorkSet').addEventListener('change',updatePunchInFields);
       document.getElementById('punchInWorkDescription').addEventListener('input',updatePunchInSubmitState);
@@ -3432,26 +3517,18 @@
       // System-level IdleDetector is the sole source for idle warnings.
       // If unavailable or permission is denied, no idle warning is triggered.
       setInterval(()=>{if(completedTimerKey)renderNotificationTray()},30000);
-      setInterval(()=>{
-        const activeRunning=activeTimerKey&&timerState[activeTimerKey]&&timerState[activeTimerKey].running;
-        if(activeRunning){resetNoJobTimer();return}
-        const now=new Date();
-        const key=workdayKey(now);
-        if(!isBillableWorkWindow(now)){
-          if(noJobElapsedSeconds||noJobAlertOpen||noJobWorkdayKey!==key){noJobElapsedSeconds=0;noJobAlertOpen=false;noJobLastRenderedMilestone=-1;noJobWorkdayKey=key;renderNotificationTray()}
-          return;
-        }
-        if(noJobWorkdayKey!==key){noJobElapsedSeconds=0;noJobAlertOpen=false;noJobLastRenderedMilestone=-1;noJobWorkdayKey=key}
-        noJobElapsedSeconds+=1;
-        if(noJobElapsedSeconds===300){noJobAlertOpen=true;noJobLastRenderedMilestone=5;playNotificationTone();renderNotificationTray();return}
-        if(noJobElapsedSeconds>=900){
-          const milestone=Math.floor(noJobElapsedSeconds/900)*15;
-          if(milestone!==noJobLastRenderedMilestone){noJobAlertOpen=true;noJobLastRenderedMilestone=milestone;renderNotificationTray()}
-        }
-      },1000);
+      setInterval(()=>{renderWorkUtilization();if(document.getElementById('productivityModalBackdrop').classList.contains('open'))renderProductivityModal()},60000);
       document.addEventListener('click',()=>document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open')));
       window.addEventListener('beforeunload',event=>{if(!activeWorkSession||!activeWorkSession.sessionId)return;if(activeTimerKey)saveTimerSnapshot(activeTimerKey);saveActiveWorkSession(activeWorkSession);event.preventDefault();event.returnValue=''});
-      loadIdleAlarmPreference();populateClients();renderQueue();renderBoard();renderActiveJobBar();renderNotificationTray();renderEmailQueue();loadBackend();setInterval(checkForOrphanPunch,60000);setInterval(refreshChangeOrderDetails,30000);setInterval(refreshEmailQueue,60000);
+      loadIdleAlarmPreference();populateClients();renderQueue();renderBoard();renderActiveJobBar();renderNotificationTray();renderEmailQueue();renderWorkUtilization();
+      if(PREVIEW_MODE){
+        setBackendStatus(false,'Preview Mode — live sync paused');
+      }else{
+        loadBackend();
+        setInterval(checkForOrphanPunch,60000);
+        setInterval(refreshChangeOrderDetails,30000);
+        setInterval(refreshEmailQueue,60000);
+      }
     })();
   </script>
 </div>
