@@ -224,6 +224,8 @@
     #job-priority-app .job-details-modal{width:min(860px,calc(100vw - 32px));max-height:90vh;overflow:auto}
     #job-priority-app .job-details-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
     #job-priority-app .job-details-head h3{margin:0 0 4px}
+    #job-priority-app .job-details-head .title-copy-row{align-items:center}
+    #job-priority-app .job-details-head .title-copy-row p{margin:0}
     #job-priority-app .job-details-add-co{background:#6495ed;color:#fff;white-space:nowrap}
     #job-priority-app .job-details-add-co:disabled{opacity:.5;cursor:not-allowed}
     #job-priority-app .job-details-head-actions{display:flex;align-items:flex-start;gap:7px;flex-wrap:wrap;justify-content:flex-end}
@@ -858,7 +860,7 @@
     <div class="timer-modal-backdrop" id="jobDetailsModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="jobDetailsModalTitle">
       <div class="timer-modal job-details-modal">
         <div class="job-details-head">
-          <div><h3 id="jobDetailsModalTitle">Job Details</h3><p id="jobDetailsModalJob"></p></div>
+          <div><h3 id="jobDetailsModalTitle">Job Details</h3><div class="title-copy-row"><p id="jobDetailsModalJob"></p><button class="copy-title-btn" id="jobDetailsCopyTitleBtn" type="button" aria-label="Copy job ticket title" title="Copy job ticket title"></button></div></div>
           <div class="job-details-head-actions">
             <div class="job-details-move-wrap queue-menu-wrap">
               <button class="job-details-move-btn" id="jobDetailsMoveColumnBtn" type="button">Move to Column ▾</button>
@@ -2303,7 +2305,7 @@
       }
       function renderJobDetailsModal(){
         const body=document.getElementById('jobDetailsBody');const job=jobs.find(item=>String(item.ticketNumber||'')===String(jobDetailsTicket));if(!body||!job)return;
-        document.getElementById('jobDetailsModalJob').textContent=job.title||job.displayTitle||'';const add=document.getElementById('jobDetailsAddChangeOrderBtn');const pending=pendingChangeOrderIntakeForJob(job);add.disabled=job.status==='Completed';add.textContent='Add Change Order';add.title=job.status==='Completed'?'Completed jobs cannot start a new Change Order.':(pending?'A pending Change Order already exists; open it below.':'Create the next Change Order');renderJobDetailsMoveMenu(job);
+        const jobDetailsTitle=job.title||job.displayTitle||'';document.getElementById('jobDetailsModalJob').textContent=jobDetailsTitle;const jobDetailsCopyBtn=document.getElementById('jobDetailsCopyTitleBtn');if(jobDetailsCopyBtn){jobDetailsCopyBtn.innerHTML=COPY_ICON;jobDetailsCopyBtn.setAttribute('data-copy-title',jobDetailsTitle)}const add=document.getElementById('jobDetailsAddChangeOrderBtn');const pending=pendingChangeOrderIntakeForJob(job);add.disabled=job.status==='Completed';add.textContent='Add Change Order';add.title=job.status==='Completed'?'Completed jobs cannot start a new Change Order.':(pending?'A pending Change Order already exists; open it below.':'Create the next Change Order');renderJobDetailsMoveMenu(job);
         const records=changeOrderIntakesForJob(job);const numbers=new Set(records.map(item=>Number(item.changeOrderNumber||0)).filter(Boolean));workSets.filter(item=>Number(item.ticketNumber)===Number(job.ticketNumber)&&item.workSetType==='Change Order').forEach(item=>numbers.add(Number(item.changeOrderNumber||0)));const changeOrders=[...numbers].filter(Boolean).sort((a,b)=>b-a);
         body.innerHTML=renderJobDetailsClient(job)+jobDetailsActiveJobBarMarkup(job)+`<div class="job-details-history">${changeOrders.map(number=>jobDetailsSectionMarkup(job,'change-order',number)).join('')}${jobDetailsSectionMarkup(job,'initial')}</div>`;
         const holder=body;attachEmailDownloadHandlers(holder);
@@ -2952,24 +2954,31 @@
       document.getElementById('cancelClientBtn').addEventListener('click',()=>{document.getElementById('clientModal').classList.remove('open');document.getElementById('primaryClient').value='';document.getElementById('newClientName').value='';document.getElementById('newClientId').value='';document.getElementById('clientIdAlert').style.display='none';document.getElementById('clientIdAlert').textContent='';updatePreview()});
       document.getElementById('newClientId').addEventListener('input',e=>{const id=e.currentTarget.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);e.currentTarget.value=id;const alert=document.getElementById('clientIdAlert');if(id.length===3&&clients.some(c=>c.id===id)){alert.textContent='That 3-letter Client ID is already in use.';alert.style.display='block'}else{alert.textContent='';alert.style.display='none'}});
       document.getElementById('newSubclientId').addEventListener('input',e=>{const id=e.currentTarget.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);e.currentTarget.value=id;const parent=document.getElementById('primaryClient').value;const alert=document.getElementById('subclientIdAlert');if(id.length===3&&subclients.some(s=>s.parentClientId===parent&&s.id===id)){alert.textContent='That 3-letter Secondary Client ID is already in use for this client.';alert.style.display='block'}else{alert.textContent='';alert.style.display='none'}});
+      document.getElementById('jobDetailsCopyTitleBtn').addEventListener('click',e=>{e.stopPropagation();const btn=e.currentTarget;copyJobTitle(btn.getAttribute('data-copy-title')||'')});
       document.getElementById('saveClientBtn').addEventListener('click',async()=>{
+        const btn=document.getElementById('saveClientBtn');
+        if(btn.disabled)return;
         const name=document.getElementById('newClientName').value.trim(); const id=document.getElementById('newClientId').value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);
         if(!name||id.length!==3){alert('Enter a client name and a unique 3-letter client ID.');return}
         if(clients.some(c=>c.id===id)){alert('That client ID is already in use.');return}
+        const originalHtml=btn.innerHTML;btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Saving…</span>';
         try{
           const data=await apiPost({action:'addClient',clientId:id,clientName:name,clientType:document.getElementById('newClientType').value,defaultDueRule:''}); if(!data.success)throw new Error(data.error||'Unable to save client');
           clients.push(data.client); document.getElementById('clientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; document.getElementById('clientIdAlert').style.display='none'; document.getElementById('clientIdAlert').textContent=''; populateClients(); document.getElementById('primaryClient').value=id; updateSecondaryVisibility(); updateSubs(); syncNextId(); updatePreview();
-        }catch(err){alert(err.message)}
+        }catch(err){alert(err.message)}finally{btn.disabled=false;btn.classList.remove('is-loading');btn.innerHTML=originalHtml}
       });
       document.getElementById('saveSubclientBtn').addEventListener('click',async()=>{
+        const btn=document.getElementById('saveSubclientBtn');
+        if(btn.disabled)return;
         const parent=document.getElementById('primaryClient').value; const name=document.getElementById('newSubclientName').value.trim(); const id=document.getElementById('newSubclientId').value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);
         if(!parent){alert('Select the primary client first.');return}
         if(!name||id.length!==3){alert('Enter a secondary client name and a unique 3-letter ID.');return}
         if(subclients.some(s=>s.parentClientId===parent&&s.id===id)){alert('That secondary client ID is already in use for this client.');return}
+        const originalHtml=btn.innerHTML;btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Saving…</span>';
         try{
           const data=await apiPost({action:'addSubclient',parentClientId:parent,subclientId:id,subclientName:name}); if(!data.success)throw new Error(data.error||'Unable to save secondary client');
           subclients.push(data.subclient); document.getElementById('newSubclientName').value=''; document.getElementById('newSubclientId').value=''; document.getElementById('subclientIdAlert').style.display='none'; document.getElementById('subclientIdAlert').textContent=''; document.getElementById('subclientModal').classList.remove('open'); updateSubs(); document.getElementById('secondaryClient').value=id; updatePreview();
-        }catch(err){alert(err.message)}
+        }catch(err){alert(err.message)}finally{btn.disabled=false;btn.classList.remove('is-loading');btn.innerHTML=originalHtml}
       });
       document.getElementById('editClientNameBtn').addEventListener('click',openClientNameEditModal);
       document.getElementById('cancelClientNameBtn').addEventListener('click',()=>{
