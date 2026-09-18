@@ -159,10 +159,14 @@
     #job-priority-app .card-title{font-size:11px;font-weight:750;line-height:1.3}
     #job-priority-app .title-copy-row{display:flex;align-items:flex-start;gap:5px;min-width:0}
     #job-priority-app .title-copy-row .card-title,#job-priority-app .title-copy-row .qtitle{min-width:0;flex:1}
-    #job-priority-app .copy-title-btn{width:20px;min-width:20px;min-height:20px;padding:0;border-radius:5px;background:transparent;color:inherit;opacity:.6;font-size:12px;line-height:1}
-    #job-priority-app .copy-title-btn:hover{opacity:1;background:light-dark(#ecece8,#303030)}
-    #job-priority-app .copy-title-btn{display:inline-flex;align-items:center;justify-content:center}
-    #job-priority-app .copy-title-btn svg{display:block;width:12px;height:12px}
+    #job-priority-app .copy-title-btn,#job-priority-app .create-folder-btn{width:20px;min-width:20px;min-height:20px;padding:0;border-radius:5px;background:transparent;color:inherit;opacity:.6;font-size:12px;line-height:1}
+    #job-priority-app .copy-title-btn:hover,#job-priority-app .create-folder-btn:hover{opacity:1;background:light-dark(#ecece8,#303030)}
+    #job-priority-app .copy-title-btn,#job-priority-app .create-folder-btn{display:inline-flex;align-items:center;justify-content:center}
+    #job-priority-app .copy-title-btn svg,#job-priority-app .create-folder-btn svg{display:block;width:13px;height:13px}
+    #job-priority-app .job-folder-parent-box{margin:12px 0;padding:10px 11px;border:1px solid light-dark(#d8d8d4,#3b3b3b);border-radius:8px;background:light-dark(#f7f7f4,#242424)}
+    #job-priority-app .job-folder-parent-label{font-size:9px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;opacity:.55;margin-bottom:4px}
+    #job-priority-app .job-folder-parent-name{font-size:12px;font-weight:800;word-break:break-word}
+    #job-priority-app .job-folder-message{font-size:10px;line-height:1.45;opacity:.7;margin:8px 0 0}
     #job-priority-app .copy-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(8px);z-index:10000;padding:8px 12px;border:1px solid #74b98f;border-radius:999px;background:light-dark(#e9f8ef,#173a29);color:light-dark(#17653d,#b9f3cf);font-size:11px;font-weight:800;opacity:0;pointer-events:none;transition:opacity .22s ease,transform .22s ease}
     #job-priority-app .copy-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
     #job-priority-app .client-notes-link{display:inline-block;margin-top:3px;font-size:9px;color:inherit;text-decoration:underline;cursor:pointer;opacity:.75}
@@ -930,7 +934,7 @@
     <div class="timer-modal-backdrop" id="jobDetailsModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="jobDetailsModalTitle">
       <div class="timer-modal job-details-modal">
         <div class="job-details-head">
-          <div><h3 id="jobDetailsModalTitle">Job Details</h3><div class="title-copy-row"><p id="jobDetailsModalJob"></p><button class="copy-title-btn" id="jobDetailsCopyTitleBtn" type="button" aria-label="Copy job ticket title" title="Copy job ticket title"></button></div></div>
+          <div><h3 id="jobDetailsModalTitle">Job Details</h3><div class="title-copy-row"><p id="jobDetailsModalJob"></p><button class="create-folder-btn" id="jobDetailsCreateFolderBtn" type="button" aria-label="Create job folder" title="Create job folder"></button><button class="copy-title-btn" id="jobDetailsCopyTitleBtn" type="button" aria-label="Copy job ticket title" title="Copy job ticket title"></button></div></div>
           <div class="job-details-head-actions">
             <div class="job-details-move-wrap queue-menu-wrap">
               <button class="job-details-move-btn" id="jobDetailsMoveColumnBtn" type="button">Move to Column ▾</button>
@@ -1068,6 +1072,23 @@
         <div class="actions"><button class="primary" id="saveCloseOpenAtTimeBtn" type="button">Close Punch</button><button class="secondary" id="cancelCloseOpenAtTimeBtn" type="button">Cancel</button></div>
       </div>
     </div>
+    <div class="timer-modal-backdrop" id="jobFolderModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="jobFolderModalTitle">
+      <div class="timer-modal">
+        <h3 id="jobFolderModalTitle">Create Job Folder</h3>
+        <p id="jobFolderModalJob" style="margin-bottom:10px"></p>
+        <div class="job-folder-parent-box" id="jobFolderLastParentBox" style="display:none">
+          <div class="job-folder-parent-label">Last Parent Folder</div>
+          <div class="job-folder-parent-name" id="jobFolderLastParentName">—</div>
+          <p class="job-folder-message">JTP will create a new folder with the job ticket name inside this folder.</p>
+        </div>
+        <p class="job-folder-message" id="jobFolderNoParentMessage">Choose the parent location where this job folder should be created.</p>
+        <div class="actions">
+          <button class="primary" id="createJobFolderLastBtn" type="button" style="display:none">Create in Last Folder</button>
+          <button class="secondary" id="chooseJobFolderBtn" type="button">Choose Location</button>
+          <button class="secondary" id="cancelJobFolderBtn" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
     <div class="copy-toast" id="copyToast" role="status" aria-live="polite">Job Ticket Title Copied!</div>
   </div>
 
@@ -1145,8 +1166,15 @@
       let deletePunchSessionId='';
       let repairOpenSessionId='';
       let orphanPunchCheckInFlight=false;
+      let backendReady=false;
+      let midnightRolloverInFlight=false;
+      let midnightObservedKey='';
       let jobNotesTicket='';
       let copyToastTimer=null;
+      let lastJobFolderParentHandle=null;
+      let lastJobFolderHandleLoaded=false;
+      let pendingJobFolderTitle='';
+      let pendingJobFolderTicket='';
       const timerState={};
       const clientNotes={};
       const clientPricingNotes={};
@@ -1521,6 +1549,7 @@
       }
       const MENU_ICON='<svg id="Gradient" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><linearGradient id="New_Gradient_Swatch" gradientUnits="userSpaceOnUse" x1="2.698" x2="13.303" y1="2.698" y2="13.303"><stop offset="0" stop-color="#87f1fc"/><stop offset=".2557" stop-color="#7fd4fb"/><stop offset=".5295" stop-color="#78bcfb"/><stop offset=".7844" stop-color="#74aefa"/><stop offset="1" stop-color="#73a9fa"/></linearGradient><path d="m8 15.5a7.5 7.5 0 1 0 -7.5-7.5 7.5027 7.5027 0 0 0 7.5 7.5zm-2.5-11h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1zm0 3h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1zm0 3h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1z" fill="url(#New_Gradient_Swatch)"/></svg>';
       const COPY_ICON='<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="Layer_2" data-name="Layer 2"><path d="m14 22.75h-9a2.752 2.752 0 0 1 -2.75-2.75v-10.86a2.752 2.752 0 0 1 2.75-2.75h3a.75.75 0 0 1 0 1.5h-3a1.251 1.251 0 0 0 -1.25 1.25v10.86a1.252 1.252 0 0 0 1.25 1.25h9a1.252 1.252 0 0 0 1.25-1.25v-3a.75.75 0 0 1 1.5 0v3a2.752 2.752 0 0 1 -2.75 2.75z" fill="#7fbde7"/><path d="m19 17.75h-9a2.752 2.752 0 0 1 -2.75-2.75v-11a2.752 2.752 0 0 1 2.75-2.75h9a2.752 2.752 0 0 1 2.75 2.75v11a2.752 2.752 0 0 1 -2.75 2.75zm-9-15a1.252 1.252 0 0 0 -1.25 1.25v11a1.252 1.252 0 0 0 1.25 1.25h9a1.252 1.252 0 0 0 1.25-1.25v-11a1.252 1.252 0 0 0 -1.25-1.25z" fill="#232323"/></g></svg>';
+      const FOLDER_ICON='<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.75 6.75A2.75 2.75 0 0 1 5.5 4h4.1c.77 0 1.5.32 2.02.88l1.13 1.22c.24.26.58.4.93.4h4.82a2.75 2.75 0 0 1 2.75 2.75v7A2.75 2.75 0 0 1 18.5 19h-13a2.75 2.75 0 0 1-2.75-2.75z" fill="none" stroke="#d59b26" stroke-width="1.7" stroke-linejoin="round"/><path d="M3.3 9h17.4" fill="none" stroke="#d59b26" stroke-width="1.7" stroke-linecap="round"/></svg>';
       const JOB_DETAILS_ICON='<svg id="Layer_3" height="512" viewBox="0 0 24 24" width="512" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-name="Layer 3"><linearGradient id="linear-gradient" gradientUnits="userSpaceOnUse" x1="1" x2="23" y1="12" y2="12"><stop offset="0" stop-color="#87f1fc"/><stop offset=".2557" stop-color="#7fd4fb"/><stop offset=".5295" stop-color="#78bcfb"/><stop offset=".7844" stop-color="#74aefa"/><stop offset="1" stop-color="#73a9fa"/></linearGradient><path d="m12 1a11 11 0 1 0 11 11 11 11 0 0 0 -11-11zm6 15a2.5026 2.5026 0 0 1 -2.5 2.5h-5a4.505 4.505 0 0 1 -4.5-4.5v-6a2.5026 2.5026 0 0 1 2.5-2.5h7a2.5026 2.5026 0 0 1 2.5 2.5zm-2.5-9.5h-7a1.5017 1.5017 0 0 0 -1.5 1.5v6a3.5042 3.5042 0 0 0 3.5 3.5h5a1.5017 1.5017 0 0 0 1.5-1.5v-8a1.5017 1.5017 0 0 0 -1.5-1.5zm-6.5 2h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1zm6 6h-6a.5.5 0 0 1 0-1h6a.5.5 0 0 1 0 1zm0-2.5h-6a.5.5 0 0 1 0-1h6a.5.5 0 0 1 0 1z" fill="url(#linear-gradient)"/></svg>';
       const TIME_RECORD_ICON='<svg id="Layer_4" height="512" viewBox="0 0 24 24" width="512" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-name="Layer 4"><linearGradient id="Time_Record_Gradient" gradientUnits="userSpaceOnUse" x2="24" y1="12" y2="12"><stop offset="0" stop-color="#87f1fc"/><stop offset=".2557" stop-color="#7fd4fb"/><stop offset=".5295" stop-color="#78bcfb"/><stop offset=".7844" stop-color="#74aefa"/><stop offset="1" stop-color="#73a9fa"/></linearGradient><path d="m12 5.5a6.5 6.5 0 1 0 6.5 6.5 6.5075 6.5075 0 0 0 -6.5-6.5zm2.2773 9.916a.5.5 0 0 1 -.6933-.1387l-2-3a.5.5 0 0 1 -.084-.2773v-4a.5.5 0 0 1 1 0v3.8486l1.916 2.8741a.5.5 0 0 1 -.1387.6933zm5.7927-14.8799a61.0012 61.0012 0 0 0 -16.1018-.005 3.9793 3.9793 0 0 0 -3.4321 3.3989 61.0009 61.0009 0 0 0 -.0053 16.1 3.9949 3.9949 0 0 0 3.439 3.44 60.9878 60.9878 0 0 0 7.9714.53 60.9971 60.9971 0 0 0 8.09-.5309 3.98 3.98 0 0 0 3.433-3.3993 61.0038 61.0038 0 0 0 .5358-8.0698 60.9876 60.9876 0 0 0 -.5311-8.0318 3.9792 3.9792 0 0 0 -3.3989-3.4321zm-8.07 18.9639a7.5 7.5 0 1 1 7.5-7.5 7.5083 7.5083 0 0 1 -7.5 7.5z" fill="url(#Time_Record_Gradient)"/></svg>';
       const PUNCH_IN_ICON='<svg id="Capa_1" enable-background="new 0 0 512 512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><g><path d="m481.095 511.774h-450.19c-17.068 0-30.905-13.837-30.905-30.906v-449.736c0-17.069 13.837-30.906 30.905-30.906h450.189c17.069 0 30.906 13.837 30.906 30.906v449.736c0 17.069-13.837 30.906-30.905 30.906z" fill="#9be69d"/><path d="m481.095.226h-41.207c17.069 0 30.905 13.837 30.905 30.905v449.736c0 17.069-13.837 30.905-30.905 30.905h41.207c17.069 0 30.905-13.837 30.905-30.905v-449.735c0-17.069-13.837-30.906-30.905-30.906z" fill="#6fd7a3"/><path d="m383.823 242.578c10.332 5.965 10.332 20.878 0 26.843l-120.074 69.325-120.074 69.325c-10.332 5.965-23.247-1.491-23.247-13.422v-138.649-138.649c0-11.93 12.915-19.387 23.247-13.422l120.074 69.325z" fill="#fff"/></g></svg>';
@@ -2165,12 +2194,13 @@
             : `<div class="wsiwon-stat"><div class="wsiwon-stat-label">Today's Minimum</div><div class="wsiwon-stat-value">${formatHours(pace.todayMinimumRemaining)} left</div><div class="wsiwon-stat-sub">${formatHours(pace.todaysMinimum)} total</div></div>`;
           const row=document.createElement('div');
           row.className='queue-item'+((jobTimer.running||isActivelyPunched)?' timer-active':'');
-          row.innerHTML=`<div class="rank-stack"><div class="rank">${i+1}</div><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}"><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-job-financials-ticket="${ticket}">Job Income &amp; Expense</button><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button><button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div>${jobDetailsButton(ticket)}</div><div><div class="title-copy-row"><div class="qtitle">${escapeHtml(title)}</div><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<div class="wsiwon-stats"><div class="wsiwon-stat"><div class="wsiwon-stat-label">Due Date</div><div class="wsiwon-stat-value">${formatDate(dueValue)}</div></div><div class="wsiwon-stat"><div class="wsiwon-stat-label">Time Accrued</div><div class="wsiwon-stat-value">${formatHours(accrued)}</div></div><div class="wsiwon-stat"><div class="wsiwon-stat-label">Est. Remaining</div><div class="wsiwon-stat-value">${formatHours(hours)}</div></div>${paceTile}<div class="wsiwon-stat"><div class="wsiwon-stat-label">Rec. Block</div><div class="wsiwon-stat-value">${formatCountdown(recommendedSeconds)}</div></div><div class="wsiwon-stat is-block"><div class="wsiwon-stat-label">Block Remaining</div><div class="wsiwon-stat-value"><span class="timer-readout" data-timer-readout="${escapeHtml(key)}">${formatBlockTime(jobTimer)}</span></div><a class="reset-block-link" data-reset-block="${escapeHtml(key)}">Reset Block</a></div></div></div>`;
+          row.innerHTML=`<div class="rank-stack"><div class="rank">${i+1}</div><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}"><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-job-financials-ticket="${ticket}">Job Income &amp; Expense</button><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button><button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div>${jobDetailsButton(ticket)}</div><div><div class="title-copy-row"><div class="qtitle">${escapeHtml(title)}</div><button class="create-folder-btn" type="button" data-create-job-folder="${ticket}" data-folder-title="${escapeHtml(title)}" aria-label="Create job folder" title="Create job folder">${FOLDER_ICON}</button><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<div class="wsiwon-stats"><div class="wsiwon-stat"><div class="wsiwon-stat-label">Due Date</div><div class="wsiwon-stat-value">${formatDate(dueValue)}</div></div><div class="wsiwon-stat"><div class="wsiwon-stat-label">Time Accrued</div><div class="wsiwon-stat-value">${formatHours(accrued)}</div></div><div class="wsiwon-stat"><div class="wsiwon-stat-label">Est. Remaining</div><div class="wsiwon-stat-value">${formatHours(hours)}</div></div>${paceTile}<div class="wsiwon-stat"><div class="wsiwon-stat-label">Rec. Block</div><div class="wsiwon-stat-value">${formatCountdown(recommendedSeconds)}</div></div><div class="wsiwon-stat is-block"><div class="wsiwon-stat-label">Block Remaining</div><div class="wsiwon-stat-value"><span class="timer-readout" data-timer-readout="${escapeHtml(key)}">${formatBlockTime(jobTimer)}</span></div><a class="reset-block-link" data-reset-block="${escapeHtml(key)}">Reset Block</a></div></div></div>`;
           q.appendChild(row);
         };
         dueToday.forEach((j,i)=>addQueueItem(j,i)); const divider=document.createElement('div');divider.className='eod-divider';divider.textContent='End of Day · 10:00 PM';q.appendChild(divider); later.forEach((j,i)=>addQueueItem(j,dueToday.length+i));
         q.querySelectorAll('[data-reset-block]').forEach(link=>link.addEventListener('click',e=>{e.stopPropagation();resetBlock(link.getAttribute('data-reset-block')||'')}));
         q.querySelectorAll('[data-copy-title]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();copyJobTitle(btn.getAttribute('data-copy-title')||'')}));
+        q.querySelectorAll('[data-create-job-folder]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();openJobFolderCreator(btn.getAttribute('data-folder-title')||'',btn.getAttribute('data-create-job-folder')||'')}));
         q.querySelectorAll('[data-menu-ticket]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const ticket=btn.getAttribute('data-menu-ticket');const menu=q.querySelector(`[data-move-menu="${ticket}"]`);document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>{if(m!==menu)m.classList.remove('open')});menu.classList.toggle('open')}));
         q.querySelectorAll('[data-move-ticket]').forEach(btn=>btn.addEventListener('click',()=>changeJobStatusFromMenu(btn)));
         q.querySelectorAll('[data-change-order-ticket]').forEach(btn=>btn.addEventListener('click',()=>openChangeOrderModal(btn.getAttribute('data-change-order-ticket'))));
@@ -2184,7 +2214,7 @@
       }
       function renderCards(targetId,list){
         const target=document.getElementById(targetId); target.innerHTML=''; if(!list.length){target.innerHTML='<div class="muted">No jobs.</div>';return}
-        list.forEach(j=>{const c=document.createElement('div');const key=timerKeyFor(j);const jobTimer=ensureTimerState(j);c.className='card'+(targetId==='todoList'&&jobTimer.running?' timer-active':'');const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const accrued=getRecordedTimeAccruedHours(j);const storedDueValue=j.due||j.dueDate;const overdue=targetId==='todoList'&&isOverdueJob(j);const dueValue=targetId==='todoList'?effectiveDueDate(j):storedDueValue;const followUpValue=j.followUpDate||'';const followUpDue=followUpValue&&followUpValue<=todayISO();const ticket=escapeHtml(String(j.ticketNumber||''));const current=escapeHtml(j.status);const clientId=escapeHtml(String(j.primaryClientId||j.primaryClientID||j.clientId||''));const secondaryClientId=escapeHtml(String(j.secondaryClientId||''));const dueDays=dueValue?Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000):999;const invoiceTag=j.status==='To Be Invoiced'?'<span class="card-tag invoice">To Be Invoiced</span>':'';const completedTag=j.status==='Completed'?`<span class="card-tag">Completed: ${formatDate((j.completedAt||todayISO()).slice(0,10))}</span>`:'';const urgencyTag=targetId==='todoList'?(overdue?'<span class="card-tag overdue">Overdue</span>':dueDays<=0?'<span class="card-tag urgent">Due Today</span>':dueDays<=1?'<span class="card-tag soon">Due Soon</span>':''):'';const tags=completedTag+invoiceTag+urgencyTag+profitTag(j.ticketNumber);const usesFollowUpDate=j.status==='Client Review'||j.status==='In Production / Awaiting Vendor';const quickReturnPunchMenu=j.status==='Client Review'?`<button type="button" data-client-review-punch-ticket="${ticket}">Move to To Do &amp; Punch In</button><div class="menu-separator"></div>`:'';const followUpMenu=usesFollowUpDate?`<button type="button" data-change-follow-up-ticket="${ticket}">Change Follow Up Date</button>`:'';const dueMeta=usesFollowUpDate?'':`<div class="card-meta">Due Date: ${formatDate(dueValue)}</div>`;const followUpMeta=usesFollowUpDate?`<div class="card-meta${followUpDue?' follow-up-due':''}">Follow Up Date: ${followUpValue?formatDate(followUpValue):'—'}</div>`:'';c.innerHTML=`<div class="card-head"><div class="card-control-stack"><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}">${quickReturnPunchMenu}<button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-job-financials-ticket="${ticket}">Job Income &amp; Expense</button><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button>${followUpMenu}<button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div>${jobDetailsButton(ticket)}</div><div><div class="title-copy-row"><div class="card-title">${escapeHtml(title)}</div><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}${dueMeta}${followUpMeta}<div class="card-meta">Time Accrued: ${formatHours(accrued)}</div><div class="card-meta">Estimated Time Remaining: ${formatHours(j.status==='To Be Invoiced'?.1667:hours)}</div><div class="card-meta">Block Remaining: ${formatBlockTime(jobTimer)}</div></div></div>`;target.appendChild(c)});
+        list.forEach(j=>{const c=document.createElement('div');const key=timerKeyFor(j);const jobTimer=ensureTimerState(j);c.className='card'+(targetId==='todoList'&&jobTimer.running?' timer-active':'');const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const accrued=getRecordedTimeAccruedHours(j);const storedDueValue=j.due||j.dueDate;const overdue=targetId==='todoList'&&isOverdueJob(j);const dueValue=targetId==='todoList'?effectiveDueDate(j):storedDueValue;const followUpValue=j.followUpDate||'';const followUpDue=followUpValue&&followUpValue<=todayISO();const ticket=escapeHtml(String(j.ticketNumber||''));const current=escapeHtml(j.status);const clientId=escapeHtml(String(j.primaryClientId||j.primaryClientID||j.clientId||''));const secondaryClientId=escapeHtml(String(j.secondaryClientId||''));const dueDays=dueValue?Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000):999;const invoiceTag=j.status==='To Be Invoiced'?'<span class="card-tag invoice">To Be Invoiced</span>':'';const completedTag=j.status==='Completed'?`<span class="card-tag">Completed: ${formatDate((j.completedAt||todayISO()).slice(0,10))}</span>`:'';const urgencyTag=targetId==='todoList'?(overdue?'<span class="card-tag overdue">Overdue</span>':dueDays<=0?'<span class="card-tag urgent">Due Today</span>':dueDays<=1?'<span class="card-tag soon">Due Soon</span>':''):'';const tags=completedTag+invoiceTag+urgencyTag+profitTag(j.ticketNumber);const usesFollowUpDate=j.status==='Client Review'||j.status==='In Production / Awaiting Vendor';const quickReturnPunchMenu=j.status==='Client Review'?`<button type="button" data-client-review-punch-ticket="${ticket}">Move to To Do &amp; Punch In</button><div class="menu-separator"></div>`:'';const followUpMenu=usesFollowUpDate?`<button type="button" data-change-follow-up-ticket="${ticket}">Change Follow Up Date</button>`:'';const dueMeta=usesFollowUpDate?'':`<div class="card-meta">Due Date: ${formatDate(dueValue)}</div>`;const followUpMeta=usesFollowUpDate?`<div class="card-meta${followUpDue?' follow-up-due':''}">Follow Up Date: ${followUpValue?formatDate(followUpValue):'—'}</div>`:'';c.innerHTML=`<div class="card-head"><div class="card-control-stack"><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}">${quickReturnPunchMenu}<button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-job-financials-ticket="${ticket}">Job Income &amp; Expense</button><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button>${followUpMenu}<button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div>${jobDetailsButton(ticket)}</div><div><div class="title-copy-row"><div class="card-title">${escapeHtml(title)}</div><button class="create-folder-btn" type="button" data-create-job-folder="${ticket}" data-folder-title="${escapeHtml(title)}" aria-label="Create job folder" title="Create job folder">${FOLDER_ICON}</button><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}${dueMeta}${followUpMeta}<div class="card-meta">Time Accrued: ${formatHours(accrued)}</div><div class="card-meta">Estimated Time Remaining: ${formatHours(j.status==='To Be Invoiced'?.1667:hours)}</div><div class="card-meta">Block Remaining: ${formatBlockTime(jobTimer)}</div></div></div>`;target.appendChild(c)});
         target.querySelectorAll('[data-menu-ticket]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const ticket=btn.getAttribute('data-menu-ticket');const menu=target.querySelector(`[data-move-menu="${ticket}"]`);document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>{if(m!==menu)m.classList.remove('open')});menu.classList.toggle('open')}));
         target.querySelectorAll('[data-move-ticket]').forEach(btn=>btn.addEventListener('click',()=>changeJobStatusFromMenu(btn)));
         target.querySelectorAll('[data-client-review-punch-ticket]').forEach(btn=>btn.addEventListener('click',()=>quickClientReviewReturnAndPunch(btn.getAttribute('data-client-review-punch-ticket'))));
@@ -2198,6 +2228,7 @@
         target.querySelectorAll('[data-job-notes-ticket]').forEach(link=>link.addEventListener('click',()=>openJobNotesModal(link.getAttribute('data-job-notes-ticket'))));
         target.querySelectorAll('[data-job-details-ticket]').forEach(btn=>btn.addEventListener('click',()=>openJobDetailsModal(btn.getAttribute('data-job-details-ticket'))));
         target.querySelectorAll('[data-copy-title]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();copyJobTitle(btn.getAttribute('data-copy-title')||'')}));
+        target.querySelectorAll('[data-create-job-folder]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();openJobFolderCreator(btn.getAttribute('data-folder-title')||'',btn.getAttribute('data-create-job-folder')||'')}));
       }
       function openTimeEditModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;timeEditTicket=String(ticket);document.getElementById('timeEditModalJob').textContent=job.title||job.displayTitle||'';document.getElementById('estimatedRemainingInput').value=Number(job.hours??job.estimatedHoursRemaining??0).toFixed(2);document.getElementById('timeEditModalBackdrop').classList.add('open');document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'))}
       function clientNotesKey(primaryClientId,secondaryClientId=''){return secondaryClientId?`secondary:${primaryClientId}:${secondaryClientId}`:`primary:${primaryClientId}`}
@@ -2380,7 +2411,7 @@
       }
       function renderJobDetailsModal(){
         const body=document.getElementById('jobDetailsBody');const job=jobs.find(item=>String(item.ticketNumber||'')===String(jobDetailsTicket));if(!body||!job)return;
-        const jobDetailsTitle=job.title||job.displayTitle||'';document.getElementById('jobDetailsModalJob').textContent=jobDetailsTitle;const jobDetailsCopyBtn=document.getElementById('jobDetailsCopyTitleBtn');if(jobDetailsCopyBtn){jobDetailsCopyBtn.innerHTML=COPY_ICON;jobDetailsCopyBtn.setAttribute('data-copy-title',jobDetailsTitle)}const add=document.getElementById('jobDetailsAddChangeOrderBtn');const pending=pendingChangeOrderIntakeForJob(job);add.disabled=job.status==='Completed';add.textContent='Add Change Order';add.title=job.status==='Completed'?'Completed jobs cannot start a new Change Order.':(pending?'A pending Change Order already exists; open it below.':'Create the next Change Order');renderJobDetailsMoveMenu(job);
+        const jobDetailsTitle=job.title||job.displayTitle||'';document.getElementById('jobDetailsModalJob').textContent=jobDetailsTitle;const jobDetailsFolderBtn=document.getElementById('jobDetailsCreateFolderBtn');if(jobDetailsFolderBtn){jobDetailsFolderBtn.innerHTML=FOLDER_ICON;jobDetailsFolderBtn.setAttribute('data-folder-title',jobDetailsTitle);jobDetailsFolderBtn.setAttribute('data-create-job-folder',String(job.ticketNumber||''))}const jobDetailsCopyBtn=document.getElementById('jobDetailsCopyTitleBtn');if(jobDetailsCopyBtn){jobDetailsCopyBtn.innerHTML=COPY_ICON;jobDetailsCopyBtn.setAttribute('data-copy-title',jobDetailsTitle)}const add=document.getElementById('jobDetailsAddChangeOrderBtn');const pending=pendingChangeOrderIntakeForJob(job);add.disabled=job.status==='Completed';add.textContent='Add Change Order';add.title=job.status==='Completed'?'Completed jobs cannot start a new Change Order.':(pending?'A pending Change Order already exists; open it below.':'Create the next Change Order');renderJobDetailsMoveMenu(job);
         const records=changeOrderIntakesForJob(job);const numbers=new Set(records.map(item=>Number(item.changeOrderNumber||0)).filter(Boolean));workSets.filter(item=>Number(item.ticketNumber)===Number(job.ticketNumber)&&item.workSetType==='Change Order').forEach(item=>numbers.add(Number(item.changeOrderNumber||0)));const changeOrders=[...numbers].filter(Boolean).sort((a,b)=>b-a);
         body.innerHTML=renderJobDetailsClient(job)+jobDetailsActiveJobBarMarkup(job)+`<div class="job-details-history">${changeOrders.map(number=>jobDetailsSectionMarkup(job,'change-order',number)).join('')}${jobDetailsSectionMarkup(job,'initial')}</div>`;
         const holder=body;attachEmailDownloadHandlers(holder);
@@ -2897,6 +2928,60 @@
       async function stopActiveProductivityForMotivator(){if(activeWorkSession&&activeWorkSession.sessionId){if(!confirm('A client job is currently running. Stop that job timer and use your Motivator Time?'))return false;const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');if(!await pauseTimer(key))return false}if(activeAdminSession){if(!confirm('Admin Work is currently running. Stop the admin session and use your Motivator Time?'))return false;if(!await endActiveAdminSession())return false}return true}
       async function launchMotivator(level){level=String(level||'GO').toUpperCase();if(level==='GO'){openMotivatorModal(level);renderMotivatorGo();return}try{await ensureMotivatorBankReady()}catch(err){openMotivatorModal(level);renderMotivatorUnlock(level,'Unable to sync Motivator Time. Try again.');return}let info=motivatorGateInfo(level);if(info.eligible&&(activeWorkSession&&activeWorkSession.sessionId||activeAdminSession)){if(!await stopActiveProductivityForMotivator())return;info=motivatorGateInfo(level)}openMotivatorModal(level);if(!info.eligible){renderMotivatorGateLocked(level);return}renderMotivatorUnlock(level)}
 
+      function midnightRolloverLinks(rollover){return (rollover&&Array.isArray(rollover.segments)?rollover.segments:[])}
+      function midnightWorkSessionWasContinued(oldSession,newSession,rollover){
+        if(!oldSession||!newSession)return false;
+        let sessionId=String(oldSession.sessionId||'');const target=String(newSession.sessionId||'');if(sessionId===target)return true;
+        midnightRolloverLinks(rollover).forEach(segment=>{if(segment&&segment.closedWorkSession&&segment.newWorkSession&&String(segment.closedWorkSession.sessionId||'')===sessionId)sessionId=String(segment.newWorkSession.sessionId||'')});
+        return !!sessionId&&sessionId===target;
+      }
+      function midnightAdminSessionWasContinued(oldSession,newSession,rollover){
+        if(!oldSession||!newSession)return false;
+        let sessionId=String(oldSession.adminSessionId||'');const target=String(newSession.adminSessionId||'');if(sessionId===target)return true;
+        midnightRolloverLinks(rollover).forEach(segment=>{if(segment&&segment.closedAdminSession&&segment.newAdminSession&&String(segment.closedAdminSession.adminSessionId||'')===sessionId)sessionId=String(segment.newAdminSession.adminSessionId||'')});
+        return !!sessionId&&sessionId===target;
+      }
+      function resetMotivatorForNewWorkday(){
+        if(typeof clearMotivatorPrefetch==='function')clearMotivatorPrefetch();
+        if(motivatorRewardTimer){clearInterval(motivatorRewardTimer);motivatorRewardTimer=null}
+        motivatorRewardStarted=false;motivatorRewardSessionId='';motivatorRewardStartedAt=0;motivatorRewardStartAvailable=0;motivatorRewardEnding=false;motivatorBankReady=false;motivatorBankServer={active:false,shiftStart:'',shiftStartMs:0,clientWorkSeconds:0,earnedSeconds:0,spentSeconds:0,availableSeconds:0};refreshMotivatorMenuGateLabels();
+        const backdrop=document.getElementById('motivatorModalBackdrop');
+        if(backdrop&&backdrop.classList.contains('open')&&motivatorCurrentLevel!=='GO')renderMotivatorGateLocked(motivatorCurrentLevel);
+        refreshMotivatorSpent().catch(()=>{});
+      }
+      function applyMidnightRolloverResponse(data,oldWorkSession,oldAdminSession){
+        if(!data||!data.success)return false;
+        if(data.rollover&&data.rollover.busy)return false;
+        workdayPunches=data.workdayPunches||workdayPunches;
+        workSessions=data.workSessions||workSessions;
+        adminSessions=data.adminSessions||adminSessions;
+        const nextOpenWork=data.openWorkSession||null;
+        const nextOpenAdmin=data.openAdminSession||null;
+        if(oldWorkSession&&nextOpenWork&&midnightWorkSessionWasContinued(oldWorkSession,nextOpenWork,data.rollover)){
+          const key=oldWorkSession.timerKey||activeTimerKey||String(oldWorkSession.ticketNumber||'');
+          applyWorkSessionContext(nextOpenWork,key);saveActiveWorkSession({...nextOpenWork,timerKey:key});
+          if(activeTimerKey===key&&timerState[key])saveTimerSnapshot(key);
+        }else if(oldWorkSession&&!nextOpenWork){saveActiveWorkSession(null);clearTimerSnapshot();activeTimerKey='';stopTimerInterval()}
+        activeAdminSession=nextOpenAdmin;
+        if(data.rollover&&data.rollover.didRollover)resetMotivatorForNewWorkday();
+        renderQueue();renderBoard();renderActiveJobBar();renderWorkUtilization();renderNotificationTray();
+        if(document.getElementById('productivityModalBackdrop').classList.contains('open'))renderProductivityModal();
+        return true;
+      }
+      async function checkMidnightRollover(force=false){
+        if(!backendReady||midnightRolloverInFlight||PREVIEW_MODE)return;
+        const currentKey=workdayKey();
+        if(!midnightObservedKey)midnightObservedKey=currentKey;
+        if(!force&&currentKey===midnightObservedKey)return;
+        midnightRolloverInFlight=true;
+        const oldWorkSession=activeWorkSession?{...activeWorkSession}:null;
+        const oldAdminSession=activeAdminSession?{...activeAdminSession}:null;
+        try{
+          const data=await apiPost({action:'rolloverMidnight'});
+          if(!data.success)throw new Error(data.error||'Unable to roll the workday forward');
+          if(applyMidnightRolloverResponse(data,oldWorkSession,oldAdminSession))midnightObservedKey=currentKey;
+        }catch(err){console.warn('Midnight rollover will retry:',err)}finally{midnightRolloverInFlight=false}
+      }
       async function apiGet(){if(PREVIEW_MODE)throw new Error('Live backend access is disabled in Preview Mode.');const res=await fetch(API_URL+'?action=bootstrap',{method:'GET'});if(!res.ok)throw new Error('Unable to reach backend');return res.json()}
       async function apiPost(payload){if(PREVIEW_MODE)throw new Error('Live backend access is disabled in Preview Mode.');const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});if(!res.ok)throw new Error('Backend request failed');return res.json()}
       function changeOrderRefreshSignatureForTicket(ticket){
@@ -2972,8 +3057,10 @@
           renderEmailQueue();
           nextId=getNextSequentialId();
           populateClients(); syncNextId(); renderQueue(); renderBoard(); renderWorkUtilization(); refreshMotivatorMenuGateLabels(); setBackendStatus(true,'Live Google Sheets connection');
+          backendReady=true;midnightObservedKey=workdayKey();
+          if(data.midnightRollover&&data.midnightRollover.busy)checkMidnightRollover(true);
           refreshMotivatorSpent().catch(()=>{});
-        }catch(err){setBackendStatus(false,'Connection failed');alert('Could not load Google Sheets data: '+err.message)}
+        }catch(err){backendReady=false;setBackendStatus(false,'Connection failed');alert('Could not load Google Sheets data: '+err.message)}
       }
       function formatBytes(bytes){const value=Math.max(0,Number(bytes)||0);if(value<1024)return value+' B';if(value<1048576)return (value/1024).toFixed(value<10240?1:0)+' KB';return (value/1048576).toFixed(value<10485760?1:0)+' MB'}
       function emailQueueItem(queueId){return emailQueue.find(item=>String(item.queueId||'')===String(queueId||''))||null}
@@ -3060,10 +3147,71 @@
       function formatHours(h){const mins=Math.round(Number(h)*60);if(mins<60)return mins+' min';const hrs=Math.floor(mins/60),rem=mins%60;return rem?hrs+' hr '+rem+' min':hrs+' hr'}
       function formatDate(v){const d=new Date(v+'T00:00:00Z');return d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',timeZone:'UTC'})}
       function escapeHtml(s){return String(s).replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[m]))}
+      function showJobFolderToast(message){
+        const toast=document.getElementById('copyToast');if(!toast)return;toast.textContent=message;toast.classList.add('show');if(copyToastTimer)clearTimeout(copyToastTimer);copyToastTimer=setTimeout(()=>{toast.classList.remove('show');toast.textContent='Job Ticket Title Copied!'},2200)
+      }
+      function validateJobFolderName(title){
+        const name=String(title||'').trim();
+        if(!name)return 'This job does not have a folder name.';
+        if(name==='.'||name==='..')return 'That Job Ticket Title cannot be used as a folder name.';
+        if(/[<>:"/\\|?*\x00-\x1F]/.test(name))return 'This Job Ticket Title contains a character that cannot safely be used in a folder name: < > : " / \\ | ? *';
+        if(/[. ]$/.test(name))return 'A folder name cannot safely end with a period or space.';
+        const base=name.split('.')[0].toUpperCase();
+        if(/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/.test(base))return 'That Job Ticket Title is a reserved folder name.';
+        if(name.length>240)return 'This Job Ticket Title is too long to use safely as a folder name.';
+        return '';
+      }
+      function jobFolderApiSupported(){return window.isSecureContext&&typeof window.showDirectoryPicker==='function'&&typeof indexedDB!=='undefined'}
+      function openJobFolderDb(){
+        return new Promise((resolve,reject)=>{const request=indexedDB.open('JTPFileSystem',1);request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains('handles'))db.createObjectStore('handles')};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||new Error('Unable to open local folder memory.'))})
+      }
+      async function loadLastJobFolderParent(){
+        if(lastJobFolderHandleLoaded)return lastJobFolderParentHandle;
+        lastJobFolderHandleLoaded=true;
+        try{const db=await openJobFolderDb();lastJobFolderParentHandle=await new Promise((resolve,reject)=>{const tx=db.transaction('handles','readonly');const req=tx.objectStore('handles').get('lastParent');req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error)});db.close()}catch(err){lastJobFolderParentHandle=null}
+        return lastJobFolderParentHandle
+      }
+      async function rememberJobFolderParent(handle){
+        lastJobFolderParentHandle=handle||null;lastJobFolderHandleLoaded=true;if(!handle)return;
+        try{const db=await openJobFolderDb();await new Promise((resolve,reject)=>{const tx=db.transaction('handles','readwrite');tx.objectStore('handles').put(handle,'lastParent');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)});db.close()}catch(err){}
+      }
+      async function ensureJobFolderPermission(handle,requestIfNeeded=false){
+        if(!handle)return false;const opts={mode:'readwrite'};
+        try{if(typeof handle.queryPermission==='function'&&(await handle.queryPermission(opts))==='granted')return true;if(requestIfNeeded&&typeof handle.requestPermission==='function'&&(await handle.requestPermission(opts))==='granted')return true}catch(err){}
+        return false
+      }
+      async function chooseJobFolderParent(){
+        if(!jobFolderApiSupported())throw new Error('Creating local folders from JTP requires a supported Chromium browser such as Chrome or Edge over HTTPS.');
+        let handle;
+        const options={mode:'readwrite'};
+        if(lastJobFolderParentHandle)options.startIn=lastJobFolderParentHandle;
+        try{handle=await window.showDirectoryPicker(options)}catch(err){
+          if(err&&err.name==='AbortError')return null;
+          if(lastJobFolderParentHandle&&err&&err.name==='TypeError'){try{handle=await window.showDirectoryPicker({mode:'readwrite'})}catch(retryErr){if(retryErr&&retryErr.name==='AbortError')return null;throw retryErr}}
+          else throw err
+        }
+        if(handle)await rememberJobFolderParent(handle);return handle||null
+      }
+      async function createJobFolderInParent(parentHandle){
+        const title=String(pendingJobFolderTitle||'').trim();const validation=validateJobFolderName(title);if(validation){alert(validation);return false}
+        if(!parentHandle)throw new Error('Choose a parent folder first.');
+        const allowed=await ensureJobFolderPermission(parentHandle,true);if(!allowed)throw new Error('JTP does not have permission to create a folder in that location.');
+        try{await parentHandle.getDirectoryHandle(title,{create:false});alert(`A folder named “${title}” already exists inside “${parentHandle.name}”.`);return false}catch(err){if(!err||err.name!=='NotFoundError')throw err}
+        await parentHandle.getDirectoryHandle(title,{create:true});await rememberJobFolderParent(parentHandle);document.getElementById('jobFolderModalBackdrop').classList.remove('open');showJobFolderToast(`Folder Created · ${title}`);return true
+      }
+      async function refreshJobFolderModal(){
+        const handle=await loadLastJobFolderParent();const has=!!handle;const box=document.getElementById('jobFolderLastParentBox');const name=document.getElementById('jobFolderLastParentName');const create=document.getElementById('createJobFolderLastBtn');const choose=document.getElementById('chooseJobFolderBtn');const noParent=document.getElementById('jobFolderNoParentMessage');
+        box.style.display=has?'block':'none';create.style.display=has?'inline-flex':'none';name.textContent=has?handle.name:'—';choose.textContent=has?'Choose Different Location':'Choose Location';noParent.style.display=has?'none':'block'
+      }
+      async function openJobFolderCreator(title,ticket=''){
+        const validation=validateJobFolderName(title);if(validation){alert(validation);return}
+        if(!jobFolderApiSupported()){alert('Creating folders directly from JTP requires Google Chrome or Microsoft Edge over HTTPS. This browser does not currently expose the required folder-access feature.');return}
+        pendingJobFolderTitle=String(title||'').trim();pendingJobFolderTicket=String(ticket||'');document.getElementById('jobFolderModalJob').textContent=pendingJobFolderTitle;document.getElementById('jobFolderModalBackdrop').classList.add('open');await refreshJobFolderModal()
+      }
       async function copyJobTitle(title){
         try{
           if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(title)}else{const textarea=document.createElement('textarea');textarea.value=title;textarea.setAttribute('readonly','');textarea.style.position='fixed';textarea.style.opacity='0';document.body.appendChild(textarea);textarea.select();document.execCommand('copy');textarea.remove()}
-          const toast=document.getElementById('copyToast');toast.classList.add('show');if(copyToastTimer)clearTimeout(copyToastTimer);copyToastTimer=setTimeout(()=>toast.classList.remove('show'),1600);
+          const toast=document.getElementById('copyToast');toast.textContent='Job Ticket Title Copied!';toast.classList.add('show');if(copyToastTimer)clearTimeout(copyToastTimer);copyToastTimer=setTimeout(()=>toast.classList.remove('show'),1600);
         }catch(err){alert('Unable to copy the Job Ticket Title.')}
       }
       document.getElementById('primaryClient').addEventListener('change',()=>{const value=document.getElementById('primaryClient').value;document.getElementById('clientModal').classList.toggle('open',value==='__ADD_CLIENT__');document.getElementById('jobNumberWrap').style.display=value&&value!=='__ADD_CLIENT__'?'block':'none';if(value&&value!=='__ADD_CLIENT__')syncNextId();updateSecondaryVisibility();updateSubs();document.getElementById('dueDate').dataset.manual='';updatePreview()});
@@ -3077,7 +3225,11 @@
       document.getElementById('cancelClientBtn').addEventListener('click',()=>{document.getElementById('clientModal').classList.remove('open');document.getElementById('primaryClient').value='';document.getElementById('newClientName').value='';document.getElementById('newClientId').value='';document.getElementById('clientIdAlert').style.display='none';document.getElementById('clientIdAlert').textContent='';updatePreview()});
       document.getElementById('newClientId').addEventListener('input',e=>{const id=e.currentTarget.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);e.currentTarget.value=id;const alert=document.getElementById('clientIdAlert');if(id.length===3&&clients.some(c=>c.id===id)){alert.textContent='That 3-letter Client ID is already in use.';alert.style.display='block'}else{alert.textContent='';alert.style.display='none'}});
       document.getElementById('newSubclientId').addEventListener('input',e=>{const id=e.currentTarget.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);e.currentTarget.value=id;const parent=document.getElementById('primaryClient').value;const alert=document.getElementById('subclientIdAlert');if(id.length===3&&subclients.some(s=>s.parentClientId===parent&&s.id===id)){alert.textContent='That 3-letter Secondary Client ID is already in use for this client.';alert.style.display='block'}else{alert.textContent='';alert.style.display='none'}});
+      document.getElementById('jobDetailsCreateFolderBtn').addEventListener('click',e=>{e.stopPropagation();const btn=e.currentTarget;openJobFolderCreator(btn.getAttribute('data-folder-title')||'',btn.getAttribute('data-create-job-folder')||'')});
       document.getElementById('jobDetailsCopyTitleBtn').addEventListener('click',e=>{e.stopPropagation();const btn=e.currentTarget;copyJobTitle(btn.getAttribute('data-copy-title')||'')});
+      document.getElementById('createJobFolderLastBtn').addEventListener('click',async e=>{const btn=e.currentTarget;const original=btn.innerHTML;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Creating…</span>';try{const handle=await loadLastJobFolderParent();if(!handle){await refreshJobFolderModal();return}await createJobFolderInParent(handle)}catch(err){alert('Unable to create the job folder: '+(err&&err.message?err.message:'Unknown error'))}finally{btn.disabled=false;btn.innerHTML=original}});
+      document.getElementById('chooseJobFolderBtn').addEventListener('click',async e=>{const btn=e.currentTarget;const original=btn.innerHTML;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Opening…</span>';try{const handle=await chooseJobFolderParent();if(handle)await createJobFolderInParent(handle)}catch(err){alert('Unable to create the job folder: '+(err&&err.message?err.message:'Unknown error'))}finally{btn.disabled=false;btn.innerHTML=original}});
+      document.getElementById('cancelJobFolderBtn').addEventListener('click',()=>{document.getElementById('jobFolderModalBackdrop').classList.remove('open');pendingJobFolderTitle='';pendingJobFolderTicket=''});
       document.getElementById('saveClientBtn').addEventListener('click',async()=>{
         const btn=document.getElementById('saveClientBtn');
         if(btn.disabled)return;
@@ -3566,6 +3718,9 @@
       // If unavailable or permission is denied, no idle warning is triggered.
       setInterval(()=>{if(completedTimerKey)renderNotificationTray()},30000);
       setInterval(()=>{renderWorkUtilization();if(document.getElementById('productivityModalBackdrop').classList.contains('open'))renderProductivityModal()},60000);
+      setInterval(checkMidnightRollover,5000);
+      document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkMidnightRollover()});
+      window.addEventListener('focus',checkMidnightRollover);
       document.addEventListener('click',()=>document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open')));
       window.addEventListener('beforeunload',event=>{if(!activeWorkSession||!activeWorkSession.sessionId)return;if(activeTimerKey)saveTimerSnapshot(activeTimerKey);saveActiveWorkSession(activeWorkSession);event.preventDefault();event.returnValue=''});
       loadIdleAlarmPreference();populateClients();renderQueue();renderBoard();renderActiveJobBar();renderNotificationTray();renderEmailQueue();renderWorkUtilization();
