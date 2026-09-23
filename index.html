@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -167,6 +168,7 @@
     #job-priority-app .job-folder-parent-label{font-size:9px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;opacity:.55;margin-bottom:4px}
     #job-priority-app .job-folder-parent-name{font-size:12px;font-weight:800;word-break:break-word}
     #job-priority-app .job-folder-message{font-size:10px;line-height:1.45;opacity:.7;margin:8px 0 0}
+    #job-priority-app #jobFolderModalBackdrop .actions button{display:inline-flex;align-items:center;justify-content:center;line-height:1.2}
     #job-priority-app .copy-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(8px);z-index:10000;padding:8px 12px;border:1px solid #74b98f;border-radius:999px;background:light-dark(#e9f8ef,#173a29);color:light-dark(#17653d,#b9f3cf);font-size:11px;font-weight:800;opacity:0;pointer-events:none;transition:opacity .22s ease,transform .22s ease}
     #job-priority-app .copy-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
     #job-priority-app .client-notes-link{display:inline-block;margin-top:3px;font-size:9px;color:inherit;text-decoration:underline;cursor:pointer;opacity:.75}
@@ -1083,8 +1085,8 @@
         </div>
         <p class="job-folder-message" id="jobFolderNoParentMessage">Choose the parent location where this job folder should be created.</p>
         <div class="actions">
-          <button class="primary" id="createJobFolderLastBtn" type="button" style="display:none">Create in Last Folder</button>
-          <button class="secondary" id="chooseJobFolderBtn" type="button">Choose Location</button>
+          <button class="primary" id="chooseJobFolderBtn" type="button">Choose Location</button>
+          <button class="secondary" id="createJobFolderLastBtn" type="button" style="display:none">Create in Last Folder</button>
           <button class="secondary" id="cancelJobFolderBtn" type="button">Cancel</button>
         </div>
       </div>
