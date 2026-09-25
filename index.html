@@ -266,7 +266,14 @@
     #job-priority-app .job-details-btn:hover{background:light-dark(#dfdfda,#3a3a3a)}
     #job-priority-app .job-details-btn svg{display:block;width:16px;height:16px}
     #job-priority-app .job-details-warning{position:absolute;top:-4px;right:-4px;display:flex;align-items:center;justify-content:center;width:11px;height:11px;border-radius:999px;background:#b42318;color:#fff;font-size:8px;font-weight:900;line-height:1;box-shadow:0 0 0 1px light-dark(#fff,#252525)}
-    #job-priority-app .job-details-modal{width:min(860px,calc(100vw - 32px));max-height:90vh;overflow:auto}
+    #job-priority-app .job-details-modal{width:min(1180px,calc(100vw - 28px));height:min(90vh,900px);max-height:90vh;overflow:hidden;display:flex;flex-direction:column}
+    #job-priority-app .job-details-modal>.job-details-head{flex:0 0 auto}
+    #job-priority-app .job-details-modal>#jobDetailsBody{flex:1 1 auto;min-height:0;overflow:hidden}
+    #job-priority-app .job-details-modal>.actions{flex:0 0 auto;margin-top:10px}
+    #job-priority-app .job-details-layout{display:grid;grid-template-columns:minmax(300px,38%) minmax(0,62%);gap:12px;height:100%;min-height:0}
+    #job-priority-app .job-details-pane{min-height:0;overflow:auto;overscroll-behavior:contain;padding-right:3px}
+    #job-priority-app .job-details-pane-left{padding-right:9px;border-right:1px solid light-dark(#deded9,#3d3d3d)}
+    #job-priority-app .job-details-pane-right{padding-left:1px}
     #job-priority-app .job-details-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
     #job-priority-app .job-details-head h3{margin:0 0 4px}
     #job-priority-app .job-details-head .title-copy-row{align-items:center}
@@ -281,14 +288,24 @@
     #job-priority-app .job-details-move-menu button[disabled]{opacity:.45;cursor:default}
 
     #job-priority-app .job-details-client{border:1px solid light-dark(#d8d8d4,#444);border-radius:10px;margin-bottom:12px;overflow:hidden;background:light-dark(#fafaf8,#242424)}
-    #job-priority-app .job-details-client-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:38px;padding:9px 11px;border-radius:0;background:transparent;color:inherit;text-align:left}
-    #job-priority-app .job-details-client-toggle:hover{background:light-dark(#f0f0ec,#2e2e2e)}
-    #job-priority-app .job-details-client-body{display:none;padding:0 11px 11px}
-    #job-priority-app .job-details-client.open .job-details-client-body{display:block}
-    #job-priority-app .job-details-client-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    #job-priority-app .job-details-client-grid .full{grid-column:1/-1}
-    #job-priority-app .job-details-client textarea{min-height:92px}
+    #job-priority-app .job-details-client-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:10px 11px 8px;border-bottom:1px solid light-dark(#e3e3df,#393939)}
+    #job-priority-app .job-details-client-heading strong{font-size:11px}
+    #job-priority-app .job-details-client-body{display:block;padding:10px 11px 11px}
+    #job-priority-app .job-details-client-grid{display:grid;grid-template-columns:1fr;gap:10px}
+    #job-priority-app .job-details-client-grid .full{grid-column:auto}
+    #job-priority-app .job-details-client textarea{min-height:118px}
     #job-priority-app .job-details-client-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:8px}
+    #job-priority-app .job-details-financials{border:1px solid light-dark(#d8d8d4,#444);border-radius:10px;overflow:hidden;background:light-dark(#fafaf8,#242424);margin-bottom:12px}
+    #job-priority-app .job-details-financials-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 11px 8px;border-bottom:1px solid light-dark(#e3e3df,#393939)}
+    #job-priority-app .job-details-financials-title{font-size:11px;font-weight:850}
+    #job-priority-app .job-details-financials-open{min-height:25px;padding:4px 7px;font-size:9px}
+    #job-priority-app .job-details-financials-body{padding:8px 11px 10px}
+    #job-priority-app .job-details-financial-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:4px 0;font-size:9px;border-bottom:1px solid light-dark(#ecece8,#373737)}
+    #job-priority-app .job-details-financial-row:last-child{border-bottom:0}
+    #job-priority-app .job-details-financial-kind{font-weight:800;opacity:.62;margin-top:6px;font-size:8px;text-transform:uppercase;letter-spacing:.04em}
+    #job-priority-app .job-details-financial-empty{font-size:9px;opacity:.55;padding:4px 0}
+    #job-priority-app .job-details-financial-totals{margin-top:8px;padding-top:8px;border-top:1px solid light-dark(#deded9,#414141);display:grid;grid-template-columns:1fr auto;gap:4px 8px;font-size:9px}
+    #job-priority-app .job-details-financial-totals strong{font-size:10px}
     #job-priority-app .job-details-history{display:flex;flex-direction:column;gap:12px}
     #job-priority-app .job-details-section{border:1px solid light-dark(#d8d8d4,#444);border-radius:10px;overflow:hidden;background:light-dark(#fff,#252525)}
     #job-priority-app .job-details-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:11px 12px 8px}
@@ -316,7 +333,7 @@
     #job-priority-app .job-details-notes-label{font-size:10px;font-weight:800}
     #job-priority-app .job-details-notes-actions{display:flex;gap:5px}
     #job-priority-app .job-details-notes-actions button{min-height:26px;padding:4px 7px;font-size:9px}
-    #job-priority-app .job-details-notes{min-height:115px;font-size:10px}
+    #job-priority-app .job-details-notes{min-height:235px;font-size:10px;line-height:1.45}
     #job-priority-app .job-details-co-email{display:flex;align-items:center;gap:5px;margin-top:2px;min-width:0;font-size:10px;font-weight:700;line-height:1.25;color:light-dark(#4e6f95,#9fc8ef)}
     #job-priority-app .job-details-co-email-address{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     #job-priority-app .job-details-co-email-copy{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;min-width:18px;min-height:18px;padding:0;border:0;background:transparent;color:inherit;opacity:.82}
@@ -325,7 +342,7 @@
     #job-priority-app .job-details-source-list{margin-top:8px;display:flex;flex-direction:column;gap:7px}
     #job-priority-app .job-details-source{padding:8px 9px;border:1px solid light-dark(#e0e0dc,#414141);border-radius:8px;background:light-dark(#fafaf8,#202020)}
     #job-priority-app .job-details-source-meta{font-size:9px;opacity:.65;line-height:1.35}
-    #job-priority-app .job-details-source-body{font-size:9px;line-height:1.4;white-space:pre-wrap;margin-top:5px;max-height:92px;overflow:auto;opacity:.82}
+    #job-priority-app .job-details-source-body{font-size:9px;line-height:1.45;white-space:pre-wrap;margin-top:5px;max-height:220px;overflow:auto;opacity:.82}
     #job-priority-app .job-details-attachments{margin-top:6px}
     #job-priority-app .job-details-attachments-head{display:flex;align-items:center;gap:4px;min-height:20px}
     #job-priority-app .job-details-attachments-toggle{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;min-width:14px;min-height:14px;padding:0;border-radius:3px;background:transparent;color:inherit;font-size:8px;line-height:1;opacity:.62}
@@ -344,7 +361,8 @@
     #job-priority-app .job-details-attachment-link:hover{opacity:1}
     #job-priority-app .job-details-source-actions{display:none}
     #job-priority-app .job-details-orphan{margin:0 12px 10px}
-    @media(max-width:620px){#job-priority-app .job-details-head{flex-direction:column}#job-priority-app .job-details-head-actions{width:100%;justify-content:stretch}#job-priority-app .job-details-add-co,#job-priority-app .job-details-move-wrap,#job-priority-app .job-details-move-btn{width:100%}#job-priority-app .job-details-client-grid{grid-template-columns:1fr}#job-priority-app .job-details-client-grid .full{grid-column:auto}#job-priority-app .job-details-time-row{grid-template-columns:1fr auto}#job-priority-app .job-details-time-actions{grid-column:1/-1;justify-content:flex-end}}
+    @media(max-width:900px){#job-priority-app .job-details-modal{height:auto;max-height:90vh;overflow:auto}#job-priority-app .job-details-modal>#jobDetailsBody{overflow:visible}#job-priority-app .job-details-layout{grid-template-columns:1fr;height:auto}#job-priority-app .job-details-pane{overflow:visible;padding:0}#job-priority-app .job-details-pane-left{border-right:0;border-bottom:1px solid light-dark(#deded9,#3d3d3d);padding-bottom:12px}#job-priority-app .job-details-pane-right{padding-top:0}}
+    @media(max-width:620px){#job-priority-app .job-details-head{flex-direction:column}#job-priority-app .job-details-head-actions{width:100%;justify-content:stretch}#job-priority-app .job-details-add-co,#job-priority-app .job-details-move-wrap,#job-priority-app .job-details-move-btn{width:100%}#job-priority-app .job-details-time-row{grid-template-columns:1fr auto}#job-priority-app .job-details-time-actions{grid-column:1/-1;justify-content:flex-end}}
 
     #job-priority-app .client-notes-section{margin-top:14px}
     #job-priority-app .client-notes-section:first-of-type{margin-top:0}
@@ -2517,9 +2535,14 @@
         if(sources.length)html+=`<div class="job-details-source-list">${sources.map((source,index)=>jobDetailsSourceMarkup(source,index,sources.length)).join('')}</div>`;
         html+='</div></section>';return html;
       }
+      function renderJobDetailsFinancials(job){
+        const entries=financialEntriesForTicket(job.ticketNumber);const incomes=entries.filter(item=>item.type==='Income');const expenses=entries.filter(item=>item.type==='Expense');const summary=financialSummary(job.ticketNumber);
+        const rows=list=>list.length?list.map(item=>`<div class="job-details-financial-row"><span>${escapeHtml(item.description||'—')}</span><span>${escapeHtml(formatCurrency(item.amount))}</span></div>`).join(''):'<div class="job-details-financial-empty">No entries recorded.</div>';
+        return `<div class="job-details-financials"><div class="job-details-financials-head"><div class="job-details-financials-title">Job Income &amp; Expenses</div><button class="secondary job-details-financials-open" type="button" data-job-details-financials="${escapeHtml(String(job.ticketNumber||''))}">Open / Edit</button></div><div class="job-details-financials-body"><div class="job-details-financial-kind">Income</div>${rows(incomes)}<div class="job-details-financial-kind">Expenses</div>${rows(expenses)}<div class="job-details-financial-totals"><span>Income</span><span>${escapeHtml(formatCurrency(summary.income))}</span><span>Expenses</span><span>${escapeHtml(formatCurrency(summary.expenses))}</span><strong>Net Profit</strong><strong>${escapeHtml(formatCurrency(summary.net))}</strong></div></div></div>`;
+      }
       function renderJobDetailsClient(job){
-        const ids=jobDetailsClientIds(job);if(!ids.primaryClientId)return '<div class="job-details-client"><div class="job-details-client-toggle"><strong>Client Notes</strong><span>No client is linked to this ticket.</span></div></div>';
-        const key=clientNotesKey(ids.primaryClientId,ids.secondaryClientId);return `<div class="job-details-client${jobDetailsClientOpen?' open':''}" id="jobDetailsClientSection"><button class="job-details-client-toggle" id="jobDetailsClientToggle" type="button"><span><strong>Client Notes</strong> <span class="muted">${escapeHtml(jobDetailsClientLabel(job))}</span></span><span>${jobDetailsClientOpen?'▴':'▾'}</span></button><div class="job-details-client-body"><div class="job-details-client-grid"><div class="full"><label>General Notes</label><textarea class="notes-box" id="jobDetailsClientGeneral" readonly>${escapeHtml(clientNotes[key]||'')}</textarea></div><div><label>Pricing Notes</label><textarea class="notes-box" id="jobDetailsClientPricing" readonly>${escapeHtml(clientPricingNotes[key]||'')}</textarea></div><div><label>Associated Emails</label><textarea class="notes-box" id="jobDetailsClientEmails" readonly>${escapeHtml(clientAssociatedEmails[key]||'')}</textarea></div></div><div class="job-details-client-actions"><button class="secondary" id="jobDetailsEditClientNotesBtn" type="button">Edit Client Notes</button><button class="primary" id="jobDetailsSaveClientNotesBtn" type="button" style="display:none">Save Client Notes</button></div></div></div>`;
+        const ids=jobDetailsClientIds(job);if(!ids.primaryClientId)return '<div class="job-details-client"><div class="job-details-client-heading"><strong>Client Notes</strong><span class="muted">No client is linked to this ticket.</span></div></div>';
+        const key=clientNotesKey(ids.primaryClientId,ids.secondaryClientId);return `<div class="job-details-client open" id="jobDetailsClientSection"><div class="job-details-client-heading"><strong>Client Notes</strong><span class="muted">${escapeHtml(jobDetailsClientLabel(job))}</span></div><div class="job-details-client-body"><div class="job-details-client-grid"><div><label>General Notes</label><textarea class="notes-box" id="jobDetailsClientGeneral" readonly>${escapeHtml(clientNotes[key]||'')}</textarea></div><div><label>Pricing Notes</label><textarea class="notes-box" id="jobDetailsClientPricing" readonly>${escapeHtml(clientPricingNotes[key]||'')}</textarea></div><div><label>Associated Emails</label><textarea class="notes-box" id="jobDetailsClientEmails" readonly>${escapeHtml(clientAssociatedEmails[key]||'')}</textarea></div></div><div class="job-details-client-actions"><button class="secondary" id="jobDetailsEditClientNotesBtn" type="button">Edit Client Notes</button><button class="primary" id="jobDetailsSaveClientNotesBtn" type="button" style="display:none">Save Client Notes</button></div></div></div>`;
       }
       function renderJobDetailsMoveMenu(job){
         const menu=document.getElementById('jobDetailsMoveColumnMenu');if(!menu||!job)return;
@@ -2536,15 +2559,15 @@
         const body=document.getElementById('jobDetailsBody');const job=jobs.find(item=>String(item.ticketNumber||'')===String(jobDetailsTicket));if(!body||!job)return;
         const jobDetailsTitle=job.title||job.displayTitle||'';document.getElementById('jobDetailsModalJob').textContent=jobDetailsTitle;const jobDetailsFolderBtn=document.getElementById('jobDetailsCreateFolderBtn');if(jobDetailsFolderBtn){jobDetailsFolderBtn.innerHTML=FOLDER_ICON;jobDetailsFolderBtn.setAttribute('data-folder-title',jobDetailsTitle);jobDetailsFolderBtn.setAttribute('data-create-job-folder',String(job.ticketNumber||''))}const jobDetailsCopyBtn=document.getElementById('jobDetailsCopyTitleBtn');if(jobDetailsCopyBtn){jobDetailsCopyBtn.innerHTML=COPY_ICON;jobDetailsCopyBtn.setAttribute('data-copy-title',jobDetailsTitle)}const add=document.getElementById('jobDetailsAddChangeOrderBtn');const pending=pendingChangeOrderIntakeForJob(job);add.disabled=job.status==='Completed';add.textContent='Add Change Order';add.title=job.status==='Completed'?'Completed jobs cannot start a new Change Order.':(pending?'A pending Change Order already exists; open it below.':'Create the next Change Order');renderJobDetailsMoveMenu(job);
         const records=changeOrderIntakesForJob(job);const numbers=new Set(records.map(item=>Number(item.changeOrderNumber||0)).filter(Boolean));workSets.filter(item=>Number(item.ticketNumber)===Number(job.ticketNumber)&&item.workSetType==='Change Order').forEach(item=>numbers.add(Number(item.changeOrderNumber||0)));const changeOrders=[...numbers].filter(Boolean).sort((a,b)=>b-a);
-        body.innerHTML=renderJobDetailsClient(job)+jobDetailsActiveJobBarMarkup(job)+`<div class="job-details-history">${changeOrders.map(number=>jobDetailsSectionMarkup(job,'change-order',number)).join('')}${jobDetailsSectionMarkup(job,'initial')}</div>`;
+        body.innerHTML=`<div class="job-details-layout"><div class="job-details-pane job-details-pane-left">${renderJobDetailsClient(job)}${renderJobDetailsFinancials(job)}</div><div class="job-details-pane job-details-pane-right">${jobDetailsActiveJobBarMarkup(job)}<div class="job-details-history">${changeOrders.map(number=>jobDetailsSectionMarkup(job,'change-order',number)).join('')}${jobDetailsSectionMarkup(job,'initial')}</div></div></div>`;
         const holder=body;attachEmailDownloadHandlers(holder);
         holder.querySelectorAll('[data-job-details-attachments-toggle]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.getAttribute('data-job-details-attachments-toggle')||'';const list=holder.querySelector(`[data-job-details-attachments-list="${id}"]`);if(!list)return;const open=list.classList.toggle('open');btn.textContent=open?'▼':'▶';btn.setAttribute('aria-expanded',open?'true':'false');btn.setAttribute('aria-label',open?'Hide attachment list':'Show attachment list')}));
         holder.querySelectorAll('[data-job-details-cancel-co]').forEach(btn=>btn.addEventListener('click',()=>cancelJobDetailsChangeOrder(btn)));
         holder.querySelectorAll('[data-job-details-play-kind]').forEach(btn=>btn.addEventListener('click',()=>handleJobDetailsPlay(btn)));
         const activeStop=holder.querySelector('#jobDetailsActiveJobStopBtn');if(activeStop)activeStop.addEventListener('click',()=>stopActiveJobFromDetails());
-        const toggle=holder.querySelector('#jobDetailsClientToggle');if(toggle)toggle.addEventListener('click',()=>{jobDetailsClientOpen=!jobDetailsClientOpen;jobDetailsClientEditing=false;renderJobDetailsModal()});
         const editClient=holder.querySelector('#jobDetailsEditClientNotesBtn');if(editClient)editClient.addEventListener('click',()=>{jobDetailsClientEditing=true;['jobDetailsClientGeneral','jobDetailsClientPricing','jobDetailsClientEmails'].forEach(id=>{const el=document.getElementById(id);if(el)el.readOnly=false});editClient.style.display='none';const save=holder.querySelector('#jobDetailsSaveClientNotesBtn');if(save)save.style.display='inline-block';const general=document.getElementById('jobDetailsClientGeneral');if(general)general.focus()});
         const saveClient=holder.querySelector('#jobDetailsSaveClientNotesBtn');if(saveClient)saveClient.addEventListener('click',()=>saveJobDetailsClientNotes(job));
+        holder.querySelectorAll('[data-job-details-financials]').forEach(btn=>btn.addEventListener('click',()=>{document.getElementById('jobDetailsModalBackdrop').classList.remove('open');openJobFinancialsModal(btn.getAttribute('data-job-details-financials'))}));
         holder.querySelectorAll('[data-job-details-edit-notes]').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.getAttribute('data-job-details-edit-notes');const area=holder.querySelector(`[data-job-details-notes="${key}"]`);const save=holder.querySelector(`[data-job-details-save-notes="${key}"]`);if(area){area.readOnly=false;area.focus()}btn.style.display='none';if(save)save.style.display='inline-block'}));
         holder.querySelectorAll('[data-job-details-save-notes]').forEach(btn=>btn.addEventListener('click',()=>saveJobDetailsSectionNotes(job,btn.getAttribute('data-job-details-save-notes'))));
         holder.querySelectorAll('[data-job-details-copy-co-email]').forEach(btn=>btn.addEventListener('click',()=>copyJobDetailsChangeOrderEmail(btn)));
@@ -2555,7 +2578,7 @@
         updateActiveJobBarTimers();
         renderActiveJobBar();
       }
-      function openJobDetailsModal(ticket){const job=jobs.find(item=>String(item.ticketNumber||'')===String(ticket));if(!job)return;jobDetailsTicket=String(ticket);jobDetailsClientOpen=false;jobDetailsClientEditing=false;renderJobDetailsModal();document.getElementById('jobDetailsModalBackdrop').classList.add('open');renderActiveJobBar();document.querySelectorAll('#job-priority-app .move-menu.open').forEach(menu=>menu.classList.remove('open'))}
+      function openJobDetailsModal(ticket){const job=jobs.find(item=>String(item.ticketNumber||'')===String(ticket));if(!job)return;jobDetailsTicket=String(ticket);jobDetailsClientOpen=true;jobDetailsClientEditing=false;renderJobDetailsModal();document.getElementById('jobDetailsModalBackdrop').classList.add('open');renderActiveJobBar();document.querySelectorAll('#job-priority-app .move-menu.open').forEach(menu=>menu.classList.remove('open'))}
       async function saveJobDetailsClientNotes(job){const ids=jobDetailsClientIds(job);if(!ids.primaryClientId)return;const key=clientNotesKey(ids.primaryClientId,ids.secondaryClientId);const notes=document.getElementById('jobDetailsClientGeneral').value;const pricingNotes=document.getElementById('jobDetailsClientPricing').value;const associatedEmails=document.getElementById('jobDetailsClientEmails').value;const btn=document.getElementById('jobDetailsSaveClientNotesBtn');btn.disabled=true;btn.textContent='Saving…';try{const payload=ids.secondaryClientId?{action:'updateSubclientNotes',parentClientId:ids.primaryClientId,subclientId:ids.secondaryClientId,notes,pricingNotes,associatedEmails}:{action:'updateClientNotes',clientId:ids.primaryClientId,notes,pricingNotes,associatedEmails};const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to save client notes');clientNotes[key]=notes;clientPricingNotes[key]=pricingNotes;clientAssociatedEmails[key]=associatedEmails;const record=ids.secondaryClientId?subclients.find(item=>item.parentClientId===ids.primaryClientId&&item.id===ids.secondaryClientId):clients.find(item=>item.id===ids.primaryClientId);if(record){record.notes=notes;record.pricingNotes=pricingNotes;record.associatedEmails=associatedEmails}jobDetailsClientEditing=false;renderJobDetailsModal();renderQueue();renderBoard()}catch(err){alert(err.message)}finally{if(btn){btn.disabled=false;btn.textContent='Save Client Notes'}}}
       async function saveJobDetailsSectionNotes(job,key){const area=document.querySelector(`#jobDetailsBody [data-job-details-notes="${key}"]`);const btn=document.querySelector(`#jobDetailsBody [data-job-details-save-notes="${key}"]`);if(!area||!btn)return;btn.disabled=true;btn.textContent='Saving…';try{if(key==='initial'){const notes=area.value;const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,dueDate:job.due||job.dueDate,estimatedHoursRemaining:Number(job.hours??job.estimatedHoursRemaining??0),timeAccruedHours:getTimeAccruedHours(job),notes});if(!data.success)throw new Error(data.error||'Unable to save Initial Request notes');job.notes=notes}else{const number=Number(String(key).replace('co-',''));const record=changeOrderIntakesForJob(job).find(item=>Number(item.changeOrderNumber||0)===number);if(!record)throw new Error('This legacy Change Order does not have an editable Change Order record.');const data=await apiPost({action:'updateChangeOrderIntake',changeOrderIntakeId:record.changeOrderIntakeId,notes:area.value});if(!data.success)throw new Error(data.error||'Unable to save Change Order notes');const updated=data.changeOrderIntake||record;const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===record.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=updated;job.pendingChangeOrderNotes=updated.status==='Pending'?String(updated.manualNotes||''):String(job.pendingChangeOrderNotes||'')}renderJobDetailsModal();renderQueue();renderBoard()}catch(err){alert(err.message)}finally{btn.disabled=false;btn.textContent='Save'}}
       async function cancelJobDetailsChangeOrder(btn){
@@ -3154,11 +3177,11 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           changeOrderEmailSources=data.changeOrderEmailSources||changeOrderEmailSources;
           const after=changeOrderRefreshSignatureForTicket(ticket);
           if(before!==after&&!jobDetailsIsActivelyEditing()){
-            const modal=document.querySelector('#jobDetailsModalBackdrop .job-details-modal');
-            const scrollTop=modal?modal.scrollTop:0;
+            const leftPane=document.querySelector('#jobDetailsBody .job-details-pane-left');const rightPane=document.querySelector('#jobDetailsBody .job-details-pane-right');
+            const leftScroll=leftPane?leftPane.scrollTop:0;const rightScroll=rightPane?rightPane.scrollTop:0;
             renderJobDetailsModal();
-            const refreshed=document.querySelector('#jobDetailsModalBackdrop .job-details-modal');
-            if(refreshed)refreshed.scrollTop=scrollTop;
+            const refreshedLeft=document.querySelector('#jobDetailsBody .job-details-pane-left');const refreshedRight=document.querySelector('#jobDetailsBody .job-details-pane-right');
+            if(refreshedLeft)refreshedLeft.scrollTop=leftScroll;if(refreshedRight)refreshedRight.scrollTop=rightScroll;
           }
         }catch(ignore){}finally{changeOrderRefreshBusy=false}
       }
