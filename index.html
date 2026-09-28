@@ -1817,7 +1817,23 @@
       function updatePunchInSubmitState(){const type=document.getElementById('punchInWorkType').value;const description=document.getElementById('punchInWorkDescription').value.trim();const workSetId=document.getElementById('punchInWorkSet').value;let valid=!!type;if(type==='Initial Draft'||type==='New Change Order'||type==='Continuing Initial Draft')valid=valid&&!!description;if(type==='Continuing Change Order')valid=valid&&!!workSetId&&!!description;document.getElementById('punchInStartBtn').disabled=!valid}
       async function closeActiveWorkSession(punchOutAt){
         clearIdleWarning(true);if(!activeWorkSession||!activeWorkSession.sessionId)return true;
-        try{const payload={action:'endWorkSession',sessionId:activeWorkSession.sessionId};if(punchOutAt)payload.punchOutAt=punchOutAt;const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch out');const localSession=activeWorkSession;const found=workSessions.find(s=>s.sessionId===localSession.sessionId);if(found){found.punchOut=data.punchOut||'';found.durationMinutes=Number(data.durationMinutes||0)}saveActiveWorkSession(null);clearTimerSnapshot();renderActiveJobBar();renderWorkUtilization();return true}catch(err){alert('Punch Out could not be saved: '+err.message);return false}
+        try{
+          const localSession={...activeWorkSession};
+          const payload={action:'endWorkSession',sessionId:localSession.sessionId};if(punchOutAt)payload.punchOutAt=punchOutAt;
+          const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch out');
+          const closedAt=String(data.punchOut||punchOutAt||new Date().toISOString());
+          const closedMinutes=Number(data.durationMinutes||0);
+          let matched=false;
+          workSessions.forEach(session=>{
+            if(String(session.sessionId||'')===String(localSession.sessionId||'')){session.punchOut=closedAt;session.durationMinutes=closedMinutes;matched=true}
+          });
+          if(!matched)workSessions.push({...localSession,punchOut:closedAt,durationMinutes:closedMinutes});
+          saveActiveWorkSession(null);clearTimerSnapshot();
+          renderActiveJobBar();renderWorkUtilization();renderNotificationTray();
+          await checkForOrphanPunch();
+          renderNotificationTray();
+          return true
+        }catch(err){alert('Punch Out could not be saved: '+err.message);return false}
       }
       async function beginWorkSessionForKey(key,workType,workDescription,workSetId='',punchInAt=''){
         const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return false;if(currentWorkdayState()!=='WORKING'){alert(currentWorkdayState()==='LUNCH'?'Lunch is active. Punch back in from lunch before starting a job.':'Punch in to your workday before starting a job.');return false}if(activeAdminSession&&!await endActiveAdminSession())return false;
