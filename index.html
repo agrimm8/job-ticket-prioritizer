@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -1890,10 +1891,25 @@
         if(orphanPunchCheckInFlight)return;orphanPunchCheckInFlight=true;
         try{
           const res=await fetch(API_URL+'?action=openWorkSession',{method:'GET'});if(!res.ok)return;const data=await res.json();if(!data.success)return;
-          const open=data.openWorkSession||null;if(!open)return;
+          const open=data.openWorkSession||null;
           const activeId=activeWorkSession&&activeWorkSession.sessionId?String(activeWorkSession.sessionId):'';
-          if(activeId&&activeId===String(open.sessionId||''))return;
-          const existing=workSessions.find(session=>String(session.sessionId||'')===String(open.sessionId||''));
+          const backendOpenId=open&&open.sessionId?String(open.sessionId):'';
+          const beforeCount=workSessions.length;
+          workSessions=workSessions.filter(session=>{
+            if(session.punchOut)return true;
+            const sessionId=String(session.sessionId||'');
+            if(activeId&&sessionId===activeId)return true;
+            return !!backendOpenId&&sessionId===backendOpenId;
+          });
+          if(!open){
+            if(workSessions.length!==beforeCount){renderQueue();renderBoard();renderNotificationTray()}
+            return;
+          }
+          if(activeId&&activeId===backendOpenId){
+            if(workSessions.length!==beforeCount){renderQueue();renderBoard();renderNotificationTray()}
+            return;
+          }
+          const existing=workSessions.find(session=>String(session.sessionId||'')===backendOpenId);
           if(existing)Object.assign(existing,open);else workSessions.push(open);
           renderQueue();renderBoard();renderNotificationTray();
         }catch(e){}finally{orphanPunchCheckInFlight=false}
@@ -3386,12 +3402,65 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         }
         if(handle)await rememberJobFolderParent(handle);return handle||null
       }
+      function jobFolderSourceAvailable(source){
+        if(!source||source.sourceDeletedAt||source.available===false)return false;
+        if(source.deleteAfter){const expires=new Date(source.deleteAfter).getTime();if(Number.isFinite(expires)&&expires<=Date.now())return false}
+        return !!String(source.queueId||'').trim();
+      }
+      function jobFolderSourcesForTicket(ticket){
+        const job=jobs.find(item=>String(item.ticketNumber||'')===String(ticket||''));if(!job)return [];
+        const sources=[];const initial=emailSourceForJob(job);if(initial)sources.push(initial);
+        changeOrderIntakesForJob(job).forEach(intake=>changeOrderEmailSourcesForIntake(intake).forEach(source=>sources.push(source)));
+        const seen=new Set();return sources.filter(source=>{const key=String(source.queueId||'')||`${source.changeOrderIntakeId||''}:${source.receivedAt||''}`;if(!key||seen.has(key))return false;seen.add(key);return true});
+      }
+      function jobFolderAttachmentBytes(base64){
+        const binary=atob(String(base64||''));const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return bytes
+      }
+      function sanitizeJobFolderAttachmentName(name,fallbackIndex=1){
+        let value=String(name||'').trim()||`attachment-${fallbackIndex}`;
+        value=value.replace(/[<>:"/\|?*\x00-\x1F]/g,'_').replace(/[. ]+$/g,'').trim();
+        if(!value)value=`attachment-${fallbackIndex}`;
+        const first=value.split('.')[0].toUpperCase();if(/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/.test(first))value='_'+value;
+        if(value.length>180){const dot=value.lastIndexOf('.');const ext=dot>0&&value.length-dot<=16?value.slice(dot):'';value=value.slice(0,180-ext.length)+ext}
+        return value
+      }
+      async function uniqueJobFolderAttachmentName(directory,desired,usedNames){
+        const dot=desired.lastIndexOf('.');const hasExt=dot>0;const stem=hasExt?desired.slice(0,dot):desired;const ext=hasExt?desired.slice(dot):'';let candidate=desired;let n=2;
+        while(true){
+          const key=candidate.toLowerCase();let exists=usedNames.has(key);
+          if(!exists){try{await directory.getFileHandle(candidate,{create:false});exists=true}catch(err){if(!err||err.name!=='NotFoundError')throw err}}
+          if(!exists){usedNames.add(key);return candidate}
+          candidate=`${stem} (${n++})${ext}`;
+        }
+      }
+      async function saveJobAttachmentsToLinks(jobDirectory,ticket){
+        const links=await jobDirectory.getDirectoryHandle('_Links',{create:true});const sources=jobFolderSourcesForTicket(ticket);const usedNames=new Set();const stats={saved:0,unavailable:0,failed:0,total:0};let fallbackIndex=1;
+        for(const source of sources){
+          const attachments=Array.isArray(source&&source.attachments)?source.attachments:[];stats.total+=attachments.length;
+          if(!jobFolderSourceAvailable(source)){stats.unavailable+=attachments.length;continue}
+          for(let index=0;index<attachments.length;index++){
+            const attachment=attachments[index]||{};
+            try{
+              const data=await apiPost({action:'getEmailAttachment',queueId:String(source.queueId||''),attachmentIndex:index});
+              if(!data.success||!data.base64)throw new Error(data.error||'Attachment data unavailable');
+              const desired=sanitizeJobFolderAttachmentName(data.fileName||attachment.name||((attachment.kind==='inline'?'inline-image-':'attachment-')+(fallbackIndex++)),fallbackIndex);
+              const fileName=await uniqueJobFolderAttachmentName(links,desired,usedNames);const fileHandle=await links.getFileHandle(fileName,{create:true});const writable=await fileHandle.createWritable();
+              try{await writable.write(jobFolderAttachmentBytes(data.base64));await writable.close()}catch(err){try{await writable.abort()}catch(ignore){}throw err}
+              stats.saved++;
+            }catch(err){stats.failed++}
+          }
+        }
+        return stats
+      }
       async function createJobFolderInParent(parentHandle){
         const title=String(pendingJobFolderTitle||'').trim();const validation=validateJobFolderName(title);if(validation){alert(validation);return false}
         if(!parentHandle)throw new Error('Choose a parent folder first.');
         const allowed=await ensureJobFolderPermission(parentHandle,true);if(!allowed)throw new Error('JTP does not have permission to create a folder in that location.');
         try{await parentHandle.getDirectoryHandle(title,{create:false});alert(`A folder named “${title}” already exists inside “${parentHandle.name}”.`);return false}catch(err){if(!err||err.name!=='NotFoundError')throw err}
-        await parentHandle.getDirectoryHandle(title,{create:true});await rememberJobFolderParent(parentHandle);document.getElementById('jobFolderModalBackdrop').classList.remove('open');showJobFolderToast(`Folder Created · ${title}`);return true
+        const jobDirectory=await parentHandle.getDirectoryHandle(title,{create:true});
+        const stats=await saveJobAttachmentsToLinks(jobDirectory,pendingJobFolderTicket);
+        await rememberJobFolderParent(parentHandle);document.getElementById('jobFolderModalBackdrop').classList.remove('open');
+        const pieces=[`Job Folder Created · _Links: ${stats.saved} file${stats.saved===1?'':'s'} saved`];if(stats.unavailable)pieces.push(`${stats.unavailable} unavailable`);if(stats.failed)pieces.push(`${stats.failed} failed`);showJobFolderToast(pieces.join(' · '));pendingJobFolderTitle='';pendingJobFolderTicket='';return true
       }
       async function refreshJobFolderModal(){
         const handle=await loadLastJobFolderParent();const has=!!handle;const box=document.getElementById('jobFolderLastParentBox');const name=document.getElementById('jobFolderLastParentName');const create=document.getElementById('createJobFolderLastBtn');const choose=document.getElementById('chooseJobFolderBtn');const noParent=document.getElementById('jobFolderNoParentMessage');
