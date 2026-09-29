@@ -2480,8 +2480,8 @@
       }
       function bindJobSearchResultActions(){
         const target=document.getElementById('jobSearchResults');
-        target.querySelectorAll('[data-search-details]').forEach(btn=>btn.addEventListener('click',()=>openJobDetailsModal(btn.getAttribute('data-search-details'))));
-        target.querySelectorAll('[data-job-details-ticket]').forEach(btn=>btn.addEventListener('click',()=>openJobDetailsModal(btn.getAttribute('data-job-details-ticket'))));
+        target.querySelectorAll('[data-search-details]').forEach(btn=>btn.addEventListener('click',()=>{const ticket=btn.getAttribute('data-search-details');closeJobSearch();openJobDetailsModal(ticket)}));
+        target.querySelectorAll('[data-job-details-ticket]').forEach(btn=>btn.addEventListener('click',()=>{const ticket=btn.getAttribute('data-job-details-ticket');closeJobSearch();openJobDetailsModal(ticket)}));
         target.querySelectorAll('[data-copy-title]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();copyJobTitle(btn.getAttribute('data-copy-title')||'')}));
         target.querySelectorAll('[data-create-job-folder]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();openJobFolderCreator(btn.getAttribute('data-folder-title')||'',btn.getAttribute('data-create-job-folder')||'')}));
         target.querySelectorAll('[data-search-locate]').forEach(btn=>btn.addEventListener('click',()=>locateJobOnBoard(btn.getAttribute('data-search-locate'))));
