@@ -558,15 +558,15 @@
     #job-priority-app .motivator-level-badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;padding:4px 8px;border-radius:999px;background:light-dark(#ecece8,#343434);font-size:10px;font-weight:950;letter-spacing:.06em}
     #job-priority-app .motivator-level-badge.x{background:light-dark(#252525,#111);color:#fff}
     #job-priority-app .motivator-vault-mode-select{width:auto;min-width:116px;min-height:32px;height:32px;padding:4px 28px 4px 9px;border-radius:9px;font-size:11px;font-weight:850}
-    #job-priority-app .motivator-multiplier{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(220px,1fr));gap:10px;min-height:470px}
+    #job-priority-app .motivator-multiplier{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:10px;width:100%;aspect-ratio:16/9;min-height:0;max-height:calc(90vh - 190px)}
     #job-priority-app .motivator-multiplier-image,#job-priority-app .motivator-multiplier-video{display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;border-radius:9px;overflow:hidden;background:#111}
     #job-priority-app .motivator-multiplier-image img,#job-priority-app .motivator-multiplier-video video{display:block;width:100%;height:100%;object-fit:contain}
     #job-priority-app .motivator-multiplier-video{position:relative}
     #job-priority-app .motivator-multiplier-video-ended{display:grid;place-items:center;width:100%;height:100%;min-height:0;padding:24px;text-align:center;color:#fff;background:#111;font-size:13px;font-weight:850}
     #job-priority-app .motivator-multiplier-empty{display:grid;place-items:center;min-height:180px;padding:20px;text-align:center;border-radius:9px;background:light-dark(#f5f5f2,#202020);font-size:11px}
-    @media (max-width:600px){#job-priority-app .motivator-multiplier{grid-template-rows:repeat(2,minmax(155px,1fr));min-height:330px;gap:6px}}
+    @media (max-width:600px){#job-priority-app .motivator-multiplier{grid-template-rows:repeat(2,minmax(0,1fr));aspect-ratio:4/3;min-height:0;max-height:calc(100dvh - 190px);gap:6px}}
     #job-priority-app .motivator-modal:fullscreen #motivatorModalBody.motivator-multiplier-body,#job-priority-app .motivator-modal.motivator-mobile-fullscreen #motivatorModalBody.motivator-multiplier-body{padding:70px 12px 64px;background:#111;overflow:auto}
-    #job-priority-app .motivator-modal:fullscreen .motivator-multiplier,#job-priority-app .motivator-modal.motivator-mobile-fullscreen .motivator-multiplier{height:100%;min-height:0;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
+    #job-priority-app .motivator-modal:fullscreen .motivator-multiplier,#job-priority-app .motivator-modal.motivator-mobile-fullscreen .motivator-multiplier{height:100%;width:100%;aspect-ratio:auto;max-height:none;min-height:0;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
     #job-priority-app .motivator-modal:fullscreen .motivator-multiplier-image,#job-priority-app .motivator-modal.motivator-mobile-fullscreen .motivator-multiplier-image,#job-priority-app .motivator-modal:fullscreen .motivator-multiplier-video,#job-priority-app .motivator-modal.motivator-mobile-fullscreen .motivator-multiplier-video{height:100%;min-height:0}
     #job-priority-app .motivator-quote{padding:28px 22px;text-align:center;font-size:22px;line-height:1.42;font-weight:800}
     #job-priority-app .motivator-quote cite{display:block;margin-top:14px;font-size:12px;font-style:normal;font-weight:650;opacity:.64}
