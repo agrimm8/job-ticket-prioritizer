@@ -1274,7 +1274,7 @@
     <div class="timer-modal-backdrop" id="archivedJobsModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="archivedJobsModalTitle">
       <div class="timer-modal archived-jobs-modal">
         <div class="archived-jobs-head">
-          <div><h3 id="archivedJobsModalTitle">Archived Jobs</h3><p class="meta">Archived completed tickets grouped by the first letter of the primary customer ID.</p></div>
+          <div><h3 id="archivedJobsModalTitle">Archived Jobs</h3><p class="meta">Archived completed tickets grouped by the first letter of the secondary customer ID when present, otherwise the primary customer ID.</p></div>
           <button class="job-search-close" id="closeArchivedJobsBtn" type="button" aria-label="Close Archived Jobs" title="Close">×</button>
         </div>
         <div class="archived-jobs-list" id="archivedJobsList"></div>
@@ -2537,7 +2537,7 @@
         setTimeout(()=>{found.scrollIntoView({behavior:'smooth',block:'center'});found.classList.remove('search-locate-highlight');void found.offsetWidth;found.classList.add('search-locate-highlight');setTimeout(()=>found.classList.remove('search-locate-highlight'),2500)},120);
       }
       function archivedJobLetter(job){
-        const id=String(job&&job.primaryClientId||'').trim().toUpperCase();
+        const id=String(job&&(job.secondaryClientId||job.primaryClientId)||'').trim().toUpperCase();
         const first=id.charAt(0);return /^[A-Z]$/.test(first)?first:'#';
       }
       function archivedJobGroups(){
@@ -2546,7 +2546,7 @@
         return groups;
       }
       function archivedJobRowMarkup(job){
-        const ticket=escapeHtml(String(job.ticketNumber||''));const title=escapeHtml(job.title||job.displayTitle||('Ticket '+ticket));const client=escapeHtml(String(job.primaryClientId||'').trim()||'—');const completed=job.completedAt?formatDate(String(job.completedAt).slice(0,10)):'—';
+        const ticket=escapeHtml(String(job.ticketNumber||''));const title=escapeHtml(job.title||job.displayTitle||('Ticket '+ticket));const client=escapeHtml(String(job.secondaryClientId||job.primaryClientId||'').trim()||'—');const completed=job.completedAt?formatDate(String(job.completedAt).slice(0,10)):'—';
         return `<div class="archived-job-row"><div><div class="archived-job-title">${title}</div><div class="archived-job-meta">${client} · Completed ${completed} · Ticket ${ticket}</div></div><div class="archived-job-actions"><button class="secondary" type="button" data-archived-details="${ticket}">Job Details</button><button class="job-search-locate" type="button" data-archived-unarchive="${ticket}">Unarchive</button></div></div>`;
       }
       function bindArchivedJobsActions(){
