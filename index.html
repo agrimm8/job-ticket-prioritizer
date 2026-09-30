@@ -1994,12 +1994,12 @@
       function openJobDetailsPunchIn(job,kind,number=0){
         if(!job)return;const key=timerKeyFor(job);const ticket=Number(job.ticketNumber||0);let set=null;let workType='';let workSetId='';let description='';let label='Initial Request';
         if(kind==='change-order'){
-          label=`Change Order ${Number(number)}`;set=workSets.find(item=>Number(item.ticketNumber)===ticket&&item.workSetType==='Change Order'&&Number(item.changeOrderNumber||0)===Number(number))||null;
+          label=`Change Order ${Number(number)}`;set=(Array.isArray(workSets)?workSets:[]).find(item=>Number(item.ticketNumber)===ticket&&item.workSetType==='Change Order'&&Number(item.changeOrderNumber||0)===Number(number))||null;
           const record=changeOrderIntakesForJob(job).find(item=>Number(item.changeOrderNumber||0)===Number(number))||null;
           if(set){workType='Continuing Change Order';workSetId=set.workSetId||'';description=String(set.workDescription||'').trim()}
           else{workType='New Change Order';description=record?(combinedChangeOrderNotes(record)||String(record.manualNotes||'').trim()):''}
         }else{
-          set=workSets.find(item=>Number(item.ticketNumber)===ticket&&item.workSetType==='Initial Draft')||null;
+          set=(Array.isArray(workSets)?workSets:[]).find(item=>Number(item.ticketNumber)===ticket&&item.workSetType==='Initial Draft')||null;
           if(set){workType='Continuing Initial Draft';workSetId=set.workSetId||'';description=String(set.workDescription||'').trim()}
           else{workType='Initial Draft';description=String(job.notes||'').trim()||'Initial Design'}
         }
@@ -2202,7 +2202,7 @@
         const absolute=Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
         return n<0?'-$'+absolute:'$'+absolute;
       }
-      function financialEntriesForTicket(ticket){return jobFinancials.filter(entry=>String(entry.ticketNumber||'')===String(ticket||''))}
+      function financialEntriesForTicket(ticket){return (Array.isArray(jobFinancials)?jobFinancials:[]).filter(entry=>String(entry.ticketNumber||'')===String(ticket||''))}
       function financialSummary(ticket){
         const entries=financialEntriesForTicket(ticket);
         const income=entries.filter(entry=>entry.type==='Income').reduce((sum,entry)=>sum+Math.max(0,Number(entry.amount)||0),0);
@@ -2708,7 +2708,7 @@
         renderQueue();
         renderBoard();
       }
-      function changeOrderIntakesForJob(job){return changeOrderIntakes.filter(item=>Number(item.ticketNumber)===Number(job&&job.ticketNumber||0)).sort((a,b)=>Number(a.changeOrderNumber)-Number(b.changeOrderNumber))}
+      function changeOrderIntakesForJob(job){return (Array.isArray(changeOrderIntakes)?changeOrderIntakes:[]).filter(item=>Number(item.ticketNumber)===Number(job&&job.ticketNumber||0)).sort((a,b)=>Number(a.changeOrderNumber)-Number(b.changeOrderNumber))}
       function pendingChangeOrderIntakeForJob(job){return changeOrderIntakesForJob(job).find(item=>item.status==='Pending')||null}
       function combinedChangeOrderNotes(intake){if(!intake)return '';const parts=[];const manual=String(intake.manualNotes||'').trim();if(manual)parts.push(manual);changeOrderEmailSourcesForIntake(intake).forEach((source,index)=>{const body=String(source.body||'').trim();if(body)parts.push(`Email ${index+1}${source.receivedAt?' · '+source.receivedAt:''}:\n${body}`)});return parts.join('\n\n--------------------\n\n')}
       function changeOrderEmailSourcesForIntake(intake){return changeOrderEmailSources.filter(source=>String(source.changeOrderIntakeId||'')===String(intake&&intake.changeOrderIntakeId||'')).sort((a,b)=>String(a.receivedAt||'').localeCompare(String(b.receivedAt||'')))}
@@ -2748,7 +2748,7 @@
       function openJobNotesModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;jobNotesTicket=String(ticket);document.getElementById('jobNotesModalJob').textContent=job.title||job.displayTitle||'';const textarea=document.getElementById('jobNotesTextarea');textarea.value=String(job.notes||'');textarea.readOnly=true;document.getElementById('editJobNotesBtn').style.display='inline-block';document.getElementById('doneJobNotesBtn').style.display='none';renderJobNotesEmailSource(job);renderJobNotesChangeOrders(job);document.getElementById('jobNotesModalBackdrop').classList.add('open')}
       function jobDetailsClientIds(job){return {primaryClientId:String(job&& (job.primaryClientId||job.primaryClientID||job.clientId)||''),secondaryClientId:String(job&&job.secondaryClientId||'')}}
       function jobDetailsClientLabel(job){const ids=jobDetailsClientIds(job);if(!ids.primaryClientId)return 'Client Notes';if(ids.secondaryClientId){const sub=subclients.find(item=>item.parentClientId===ids.primaryClientId&&item.id===ids.secondaryClientId);return sub?sub.name+' ('+sub.id+')':ids.secondaryClientId}const client=clients.find(item=>item.id===ids.primaryClientId);return client?client.name+' ('+client.id+')':ids.primaryClientId}
-      function jobDetailsSessionsForWorkSet(set){if(!set)return [];return workSessions.filter(session=>String(session.workSetId||'')===String(set.workSetId||'')).slice().sort((a,b)=>String(a.punchIn||'').localeCompare(String(b.punchIn||'')))}
+      function jobDetailsSessionsForWorkSet(set){if(!set)return [];return (Array.isArray(workSessions)?workSessions:[]).filter(session=>String(session.workSetId||'')===String(set.workSetId||'')).slice().sort((a,b)=>String(a.punchIn||'').localeCompare(String(b.punchIn||'')))}
       function jobDetailsTimeMarkup(set,ticket,label){
         let sessions=jobDetailsSessionsForWorkSet(set);
         if(!set&&label==='Initial Request')sessions=workSessions.filter(session=>Number(session.ticketNumber)===Number(ticket)&&(!session.workSetId||!workSets.some(ws=>String(ws.workSetId||'')===String(session.workSetId||'')))).slice().sort((a,b)=>String(a.punchIn||'').localeCompare(String(b.punchIn||'')));
@@ -2789,11 +2789,11 @@
         const ticket=Number(job.ticketNumber||0);let record=null;let set=null;let title='Initial Request';let notes=String(job.notes||'');let status='';let sources=[];
         if(kind==='change-order'){
           record=changeOrderIntakesForJob(job).find(item=>Number(item.changeOrderNumber||0)===Number(number))||null;
-          set=workSets.find(item=>Number(item.ticketNumber)===ticket&&item.workSetType==='Change Order'&&Number(item.changeOrderNumber||0)===Number(number))||null;
+          set=(Array.isArray(workSets)?workSets:[]).find(item=>Number(item.ticketNumber)===ticket&&item.workSetType==='Change Order'&&Number(item.changeOrderNumber||0)===Number(number))||null;
           title=`Change Order ${Number(number)}`;status=record?String(record.status||''):'';sources=record?changeOrderEmailSourcesForIntake(record):[];
           notes=record&&String(record.manualNotes||'').trim()?String(record.manualNotes||''):(set&&String(set.workDescription||'').trim()?String(set.workDescription||''):sources.map(source=>String(source.body||'').trim()).filter(Boolean).join('\n\n'));
         }else{
-          set=workSets.find(item=>Number(item.ticketNumber)===ticket&&item.workSetType==='Initial Draft')||null;sources=[emailSourceForJob(job)].filter(Boolean);
+          set=(Array.isArray(workSets)?workSets:[]).find(item=>Number(item.ticketNumber)===ticket&&item.workSetType==='Initial Draft')||null;sources=[emailSourceForJob(job)].filter(Boolean);
           if(!notes.trim()&&sources.length)notes=String(sources[0].body||'');
         }
         const key=kind==='change-order'?`co-${number}`:'initial';
@@ -2831,8 +2831,8 @@
       }
       function renderJobDetailsModal(){
         const body=document.getElementById('jobDetailsBody');const job=jobs.find(item=>String(item.ticketNumber||'')===String(jobDetailsTicket));if(!body||!job)return;
-        const jobDetailsTitle=job.title||job.displayTitle||'';document.getElementById('jobDetailsModalJob').textContent=jobDetailsTitle;const jobDetailsFolderBtn=document.getElementById('jobDetailsCreateFolderBtn');if(jobDetailsFolderBtn){jobDetailsFolderBtn.innerHTML=FOLDER_ICON;jobDetailsFolderBtn.setAttribute('data-folder-title',jobDetailsTitle);jobDetailsFolderBtn.setAttribute('data-create-job-folder',String(job.ticketNumber||''))}const jobDetailsCopyBtn=document.getElementById('jobDetailsCopyTitleBtn');if(jobDetailsCopyBtn){jobDetailsCopyBtn.innerHTML=COPY_ICON;jobDetailsCopyBtn.setAttribute('data-copy-title',jobDetailsTitle)}const add=document.getElementById('jobDetailsAddChangeOrderBtn');const pending=pendingChangeOrderIntakeForJob(job);add.disabled=job.status==='Completed';add.textContent='Add Change Order';add.title=job.status==='Completed'?'Completed jobs cannot start a new Change Order.':(pending?'A pending Change Order already exists; open it below.':'Create the next Change Order');renderJobDetailsMoveMenu(job);
-        const records=changeOrderIntakesForJob(job);const numbers=new Set(records.map(item=>Number(item.changeOrderNumber||0)).filter(Boolean));workSets.filter(item=>Number(item.ticketNumber)===Number(job.ticketNumber)&&item.workSetType==='Change Order').forEach(item=>numbers.add(Number(item.changeOrderNumber||0)));const changeOrders=[...numbers].filter(Boolean).sort((a,b)=>b-a);
+        const jobDetailsTitle=job.title||job.displayTitle||'';document.getElementById('jobDetailsModalJob').textContent=jobDetailsTitle;const jobDetailsFolderBtn=document.getElementById('jobDetailsCreateFolderBtn');if(jobDetailsFolderBtn){jobDetailsFolderBtn.innerHTML=FOLDER_ICON;jobDetailsFolderBtn.setAttribute('data-folder-title',jobDetailsTitle);jobDetailsFolderBtn.setAttribute('data-create-job-folder',String(job.ticketNumber||''))}const jobDetailsCopyBtn=document.getElementById('jobDetailsCopyTitleBtn');if(jobDetailsCopyBtn){jobDetailsCopyBtn.innerHTML=COPY_ICON;jobDetailsCopyBtn.setAttribute('data-copy-title',jobDetailsTitle)}const add=document.getElementById('jobDetailsAddChangeOrderBtn');const pending=pendingChangeOrderIntakeForJob(job);if(add){add.disabled=job.status==='Completed';add.textContent='Add Change Order';add.title=job.status==='Completed'?'Completed jobs cannot start a new Change Order.':(pending?'A pending Change Order already exists; open it below.':'Create the next Change Order')}renderJobDetailsMoveMenu(job);
+        const records=changeOrderIntakesForJob(job);const numbers=new Set(records.map(item=>Number(item.changeOrderNumber||0)).filter(Boolean));(Array.isArray(workSets)?workSets:[]).filter(item=>Number(item.ticketNumber)===Number(job.ticketNumber)&&item.workSetType==='Change Order').forEach(item=>numbers.add(Number(item.changeOrderNumber||0)));const changeOrders=[...numbers].filter(Boolean).sort((a,b)=>b-a);
         body.innerHTML=`<div class="job-details-layout"><div class="job-details-pane job-details-pane-left">${renderJobDetailsClient(job)}${renderJobDetailsFinancials(job)}</div><div class="job-details-pane job-details-pane-right">${jobDetailsActiveJobBarMarkup(job)}${jobDetailsAccumulatedMarkup(job)}<div class="job-details-history">${changeOrders.map(number=>jobDetailsSectionMarkup(job,'change-order',number)).join('')}${jobDetailsSectionMarkup(job,'initial')}</div></div></div>`;
         const holder=body;attachEmailDownloadHandlers(holder);
         holder.querySelectorAll('[data-job-details-attachments-toggle]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.getAttribute('data-job-details-attachments-toggle')||'';const list=holder.querySelector(`[data-job-details-attachments-list="${id}"]`);if(!list)return;const open=list.classList.toggle('open');btn.textContent=open?'▼':'▶';btn.setAttribute('aria-expanded',open?'true':'false');btn.setAttribute('aria-label',open?'Hide attachment list':'Show attachment list')}));
@@ -2854,7 +2854,18 @@
         updateActiveJobBarTimers();
         renderActiveJobBar();
       }
-      function openJobDetailsModal(ticket){const job=jobs.find(item=>String(item.ticketNumber||'')===String(ticket));if(!job)return;jobDetailsTicket=String(ticket);jobDetailsClientOpen=true;jobDetailsClientEditing=false;renderJobDetailsModal();document.getElementById('jobDetailsModalBackdrop').classList.add('open');renderActiveJobBar();document.querySelectorAll('#job-priority-app .move-menu.open').forEach(menu=>menu.classList.remove('open'))}
+      function openJobDetailsModal(ticket){
+        const job=(Array.isArray(jobs)?jobs:[]).find(item=>String(item.ticketNumber||'')===String(ticket));if(!job)return;
+        jobDetailsTicket=String(ticket);jobDetailsClientOpen=true;jobDetailsClientEditing=false;
+        const backdrop=document.getElementById('jobDetailsModalBackdrop');if(backdrop)backdrop.classList.add('open');
+        try{renderJobDetailsModal()}catch(err){
+          console.error('Job Details render failed',err);
+          const body=document.getElementById('jobDetailsBody');
+          const title=document.getElementById('jobDetailsModalJob');if(title)title.textContent=job.title||job.displayTitle||('Ticket '+ticket);
+          if(body)body.innerHTML='<div class="preview"><strong>Job Details could not fully render.</strong><div class="meta">'+escapeHtml(err&&err.message?err.message:'Unknown rendering error')+'</div></div>';
+        }
+        renderActiveJobBar();document.querySelectorAll('#job-priority-app .move-menu.open').forEach(menu=>menu.classList.remove('open'))
+      }
       async function saveJobDetailsClientNotes(job){const ids=jobDetailsClientIds(job);if(!ids.primaryClientId)return;const key=clientNotesKey(ids.primaryClientId,ids.secondaryClientId);const notes=document.getElementById('jobDetailsClientGeneral').value;const pricingNotes=document.getElementById('jobDetailsClientPricing').value;const associatedEmails=document.getElementById('jobDetailsClientEmails').value;const btn=document.getElementById('jobDetailsSaveClientNotesBtn');btn.disabled=true;btn.textContent='Saving…';try{const payload=ids.secondaryClientId?{action:'updateSubclientNotes',parentClientId:ids.primaryClientId,subclientId:ids.secondaryClientId,notes,pricingNotes,associatedEmails}:{action:'updateClientNotes',clientId:ids.primaryClientId,notes,pricingNotes,associatedEmails};const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to save client notes');clientNotes[key]=notes;clientPricingNotes[key]=pricingNotes;clientAssociatedEmails[key]=associatedEmails;const record=ids.secondaryClientId?subclients.find(item=>item.parentClientId===ids.primaryClientId&&item.id===ids.secondaryClientId):clients.find(item=>item.id===ids.primaryClientId);if(record){record.notes=notes;record.pricingNotes=pricingNotes;record.associatedEmails=associatedEmails}jobDetailsClientEditing=false;renderJobDetailsModal();renderQueue();renderBoard()}catch(err){alert(err.message)}finally{if(btn){btn.disabled=false;btn.textContent='Save Client Notes'}}}
       async function saveJobDetailsSectionNotes(job,key){const area=document.querySelector(`#jobDetailsBody [data-job-details-notes="${key}"]`);const btn=document.querySelector(`#jobDetailsBody [data-job-details-save-notes="${key}"]`);if(!area||!btn)return;btn.disabled=true;btn.textContent='Saving…';try{if(key==='initial'){const notes=area.value;const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,timeAccruedHours:getTimeAccruedHours(job),notes});if(!data.success)throw new Error(data.error||'Unable to save Initial Request notes');job.notes=notes}else{const number=Number(String(key).replace('co-',''));const record=changeOrderIntakesForJob(job).find(item=>Number(item.changeOrderNumber||0)===number);if(!record)throw new Error('This legacy Change Order does not have an editable Change Order record.');const data=await apiPost({action:'updateChangeOrderIntake',changeOrderIntakeId:record.changeOrderIntakeId,notes:area.value});if(!data.success)throw new Error(data.error||'Unable to save Change Order notes');const updated=data.changeOrderIntake||record;const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===record.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=updated;job.pendingChangeOrderNotes=updated.status==='Pending'?String(updated.manualNotes||''):String(job.pendingChangeOrderNotes||'')}renderJobDetailsModal();renderQueue();renderBoard()}catch(err){alert(err.message)}finally{btn.disabled=false;btn.textContent='Save'}}
       async function cancelJobDetailsChangeOrder(btn){
