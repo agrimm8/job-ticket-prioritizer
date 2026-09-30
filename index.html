@@ -2876,6 +2876,13 @@
       }
       async function copyJobDetailsChangeOrderEmail(btn){const record=changeOrderIntakes.find(item=>String(item.changeOrderIntakeId||'')===String(btn.getAttribute('data-job-details-copy-co-email')||''));if(!record||!record.emailAddress)return;try{if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(record.emailAddress);else{const input=document.createElement('textarea');input.value=record.emailAddress;input.style.position='fixed';input.style.opacity='0';document.body.appendChild(input);input.select();document.execCommand('copy');input.remove()}const old=btn.textContent;btn.textContent='Copied!';setTimeout(()=>btn.textContent=old,1200)}catch(err){alert('Unable to copy the Change Order email address.')}}
       async function addJobDetailsChangeOrder(){const job=jobs.find(item=>String(item.ticketNumber||'')===String(jobDetailsTicket));if(!job||job.status==='Completed')return;openChangeOrderModal(job.ticketNumber)}
+      function formatSessionDuration(minutes){
+        const totalSeconds=Math.max(0,Math.round(Number(minutes||0)*60));
+        const h=Math.floor(totalSeconds/3600),m=Math.floor((totalSeconds%3600)/60),sec=totalSeconds%60;
+        if(h)return `${h}h ${m}m ${sec}s`;
+        if(m)return `${m}m ${sec}s`;
+        return `${sec}s`;
+      }
       function parseBackendDateTime(value){
         if(!value)return null;
         const d=new Date(value);
