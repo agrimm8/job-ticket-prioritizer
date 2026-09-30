@@ -156,13 +156,18 @@
     #job-priority-app .rank{width:24px;height:24px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:light-dark(#e8e8e3,#303030);font-weight:800;font-size:10px}
     #job-priority-app .qtitle{font-size:12px;font-weight:750;line-height:1.3}
     #job-priority-app .qmeta{font-size:10px;opacity:.68;margin-top:3px}
-    #job-priority-app .wsiwon-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin-top:10px;border:1px solid light-dark(#d9d9d4,#414141);border-radius:7px;overflow:hidden;background:light-dark(#fbfbf9,#272727)}
-    #job-priority-app .wsiwon-stat{min-width:0;padding:7px 8px 6px;background:transparent;border-right:1px solid light-dark(#e0e0dc,#414141)}
-    #job-priority-app .wsiwon-stat:nth-child(4n){border-right:0}
-    #job-priority-app .wsiwon-stat-label{font-size:8px;font-weight:700;letter-spacing:.01em;line-height:1.15;opacity:.58;margin-bottom:3px;white-space:nowrap}
+    #job-priority-app .wsiwon-stats{display:flex;flex-direction:column;margin-top:10px;border:1px solid light-dark(#d9d9d4,#414141);border-radius:7px;overflow:hidden;background:light-dark(#fbfbf9,#272727)}
+    #job-priority-app .wsiwon-stat{min-width:0;padding:7px 9px;background:transparent;border-bottom:1px solid light-dark(#e0e0dc,#414141);display:grid;grid-template-columns:108px minmax(0,1fr);align-items:center;gap:8px}
+    #job-priority-app .wsiwon-stat:last-child{border-bottom:0}
+    #job-priority-app .wsiwon-stat-label{font-size:8px;font-weight:700;letter-spacing:.01em;line-height:1.15;opacity:.58;white-space:nowrap}
     #job-priority-app .wsiwon-stat-value{font-size:11px;font-weight:800;line-height:1.2;word-break:break-word}
-    #job-priority-app .wsiwon-stat-sub{font-size:8px;line-height:1.2;opacity:.52;margin-top:2px}
-    #job-priority-app .wsiwon-stat.is-complete .wsiwon-stat-value{color:light-dark(#2f6f3e,#8bd39b)}
+    #job-priority-app .workload-score-pill{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:22px;padding:0 8px;border-radius:999px;font-size:11px;font-weight:900;color:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+    #job-priority-app .workload-score-pill.score-1{background:#3b82f6}
+    #job-priority-app .workload-score-pill.score-2{background:#2f9f9a}
+    #job-priority-app .workload-score-pill.score-3{background:#c79a2b}
+    #job-priority-app .workload-score-pill.score-4{background:#dd7a2b}
+    #job-priority-app .workload-score-pill.score-5{background:#d64545}
+    #job-priority-app .workload-score-pill.score-none{background:#7a7a7a}
     #job-priority-app .wsiwon-stat .timer-readout{font-size:inherit;font-weight:inherit;min-width:0}
     #job-priority-app .wsiwon-stat .reset-block-link{display:block;width:max-content;margin-top:3px;font-size:8px}
     #job-priority-app .badge{font-size:9px;font-weight:800;padding:4px 6px;border-radius:999px;white-space:nowrap}
@@ -736,7 +741,7 @@
     #job-priority-app .hourly-work-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
     #job-priority-app .hourly-work-actions button{min-width:150px;min-height:44px;font-size:13px;font-weight:800}
     #job-priority-app .hourly-work-stop{background:#b42318!important;border-color:#b42318!important;color:#fff!important}
-    @media(max-width:620px){#job-priority-app .hourly-work-modal{padding:28px 20px}#job-priority-app .hourly-work-title{font-size:24px}#job-priority-app .hourly-work-countdown{font-size:48px}#job-priority-app .wsiwon-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#job-priority-app .wsiwon-stat:nth-child(4n){border-right:1px solid light-dark(#e0e0dc,#414141)}#job-priority-app .wsiwon-stat:nth-child(2n){border-right:0}#job-priority-app .wsiwon-stat:nth-child(n+3){border-top:1px solid light-dark(#e0e0dc,#414141)}}
+    @media(max-width:620px){#job-priority-app .hourly-work-modal{padding:28px 20px}#job-priority-app .hourly-work-title{font-size:24px}#job-priority-app .hourly-work-countdown{font-size:48px}}
 </style>
   <div class="wrap">
     <div class="top">
@@ -872,8 +877,7 @@
               <div class="email-draft-actions"><a id="clearEmailDraftNotes">Clear Email Notes</a><span>·</span><span id="emailDraftRetentionNote">Source email will be retained for 7 days after ticket creation.</span></div>
               <div id="emailDraftAttachments"></div>
             </div>
-            <div class="full"><label for="hours">Estimated Time Remaining (hours)</label><input id="hours" type="number" min="0.5" step="0.5" value="1" required><div class="quick-times">Quick Times: <a data-quick-hours="0.5">0.5 Hours</a> | <a data-quick-hours="1">1 Hour</a> | <a data-quick-hours="2">2 Hours</a> | <a data-quick-hours="3">3 Hours</a></div></div>
-            <div class="full"><label for="dueDate">Due Date</label><input id="dueDate" type="date" required><div class="quick-dates">Quick Dates: <a data-quick-days="0">Same Day</a> | <a data-quick-days="1">1 Day</a> | <a data-quick-days="2">2 Days</a> | <a data-quick-days="3">3 Days</a> | <a data-quick-days="4">4 Days</a> | <a data-quick-days="5">5 Days</a></div></div>
+            <div class="full"><label for="workloadScore">Workload Score</label><select id="workloadScore" required><option value="">Select 1–5</option><option value="1">1 — Quickest</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5 — Most Lengthy</option></select><div class="meta" style="margin-top:5px">Sets the automatic due date when this ticket enters To Do.</div></div>
             <div id="jobNumberWrap" class="full" style="display:none"><label for="jobNumber">Job Number</label><input id="jobNumber" type="number" min="1" step="1"><div id="jobNumberAlert" class="field-error" style="display:none">Job ID already in use</div></div>
             <div class="full"><label for="status">Status</label><select id="status"><option>To Do</option><option>Client Review</option><option>In Production / Awaiting Vendor</option><option>To Be Invoiced</option><option>Completed</option></select></div>
           </div>
@@ -935,6 +939,10 @@
         <div id="punchInWorkSetWrap" style="display:none;margin-top:12px">
           <label for="punchInWorkSet">Which Change Order?</label>
           <select id="punchInWorkSet"></select>
+        </div>
+        <div id="punchInWorkloadWrap" style="display:none;margin-top:12px">
+          <label for="punchInWorkloadScore">Workload Score</label>
+          <select id="punchInWorkloadScore"><option value="">Select 1–5</option><option value="1">1 — Quickest</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5 — Most Lengthy</option></select>
         </div>
         <label for="punchInWorkDescription" style="margin-top:12px">Work Description:</label>
         <textarea id="punchInWorkDescription" class="notes-box" style="min-height:110px" placeholder="Describe the work you are starting..."></textarea>
@@ -1056,30 +1064,16 @@
         <h3 id="clientReviewDueChoiceTitle">Return Job to To Do</h3>
         <p id="clientReviewDueChoiceJob" style="margin-bottom:10px"></p>
 
-        <label for="clientReviewEtrSelect">Estimated Time Remaining</label>
+        <label for="clientReviewEtrSelect">Workload Score</label>
         <select id="clientReviewEtrSelect">
-          <option value="">Select ETR</option>
-          <option value="0.5">0.5 Hours</option>
-          <option value="1">1.0 Hours</option>
-          <option value="1.5">1.5 Hours</option>
-          <option value="2">2.0 Hours</option>
-          <option value="2.5">2.5 Hours</option>
-          <option value="3">3.0 Hours</option>
-          <option value="3.5">3.5 Hours</option>
-          <option value="4">4.0 Hours</option>
-          <option value="4.5">4.5 Hours</option>
-          <option value="5">5.0 Hours</option>
+          <option value="">Select 1–5</option>
+          <option value="1">1 — Quickest</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5 — Most Lengthy</option>
         </select>
-
-        <label for="clientReviewDueSelect" style="margin-top:12px">Due Date</label>
-        <select id="clientReviewDueSelect">
-          <option value="">Select Due Date</option>
-          <option value="0">Same Day</option>
-          <option value="1">Next Day</option>
-          <option value="2">2 Days</option>
-          <option value="3">3 Days</option>
-          <option value="5">5 Days</option>
-        </select>
+        <span id="clientReviewDueSelect" style="display:none"></span>
 
         <label for="clientReviewReturnReason" style="margin-top:12px">Reason for Return</label>
         <select id="clientReviewReturnReason">
@@ -1111,11 +1105,11 @@
     </div>
     <div class="timer-modal-backdrop" id="timeEditModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="timeEditModalTitle">
       <div class="timer-modal">
-        <h3 id="timeEditModalTitle">Edit Estimated Time Remaining</h3>
+        <h3 id="timeEditModalTitle">Edit Workload Score</h3>
         <p id="timeEditModalJob" style="margin-bottom:10px"></p>
-        <label for="estimatedRemainingInput" style="margin-top:10px">Estimated Time Remaining (hours)</label>
-        <input id="estimatedRemainingInput" type="number" min="0" step="0.01">
-        <div class="actions"><button class="primary" id="saveJobTimeBtn" type="button">Save</button><button class="secondary" id="cancelJobTimeBtn" type="button">Cancel</button></div>
+        <label for="estimatedRemainingInput" style="margin-top:10px">Workload Score</label>
+        <select id="estimatedRemainingInput"><option value="">—</option><option value="1">1 — Quickest</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5 — Most Lengthy</option></select>
+        <div class="actions"><button class="primary" id="saveJobTimeBtn" type="button">Save Score</button><button class="secondary" id="cancelJobTimeBtn" type="button">Cancel</button></div>
       </div>
     </div>
     <div class="timer-modal-backdrop" id="emailQueueModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="emailQueueModalTitle">
@@ -1199,7 +1193,9 @@
       <div class="timer-modal change-order-modal">
         <h3 id="changeOrderModalTitle">Create Change Order</h3>
         <p id="changeOrderModalJob" style="margin-bottom:12px"></p>
-        <label for="changeOrderNotesInput">Change Order Notes</label>
+        <label for="changeOrderWorkloadScore">Workload Score</label>
+        <select id="changeOrderWorkloadScore"><option value="">Select 1–5</option><option value="1">1 — Quickest</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5 — Most Lengthy</option></select>
+        <label for="changeOrderNotesInput" style="margin-top:12px">Change Order Notes</label>
         <textarea id="changeOrderNotesInput" class="notes-box" style="min-height:190px" placeholder="Type the requested changes here, or leave this blank if the details will arrive by email."></textarea>
         <div id="changeOrderEmailBox" class="change-order-email-box">
           <div class="job-notes-email-source-title" id="changeOrderEmailLabel">Email additional notes or files to this Change Order</div>
@@ -1463,12 +1459,12 @@
       function isWorkday(d){const day=d.getUTCDay();return day!==0&&day!==6}
       function addWorkdays(start,count){let d=new Date(start.getTime());let added=0;while(added<count){d.setUTCDate(d.getUTCDate()+1);if(isWorkday(d))added++;}return d}
       function offsetDate(days){let d=today();d.setUTCDate(d.getUTCDate()+days);return iso(d)}
-      function suggestedDue(){
-        const primary=document.getElementById('primaryClient').value; const t=today();
-        const client=clients.find(c=>c.id===primary);
-        if(client&&client.defaultDueRule==='NEXT_WORKDAY') return {date:iso(addWorkdays(t,1)),reason:client.name+' rule: next working day'};
-        return {date:iso(addWorkdays(t,1)),reason:'Default: next working day'};
-      }
+      function normalizeWorkloadScore(value){const n=Number(value||0);return Number.isInteger(n)&&n>=1&&n<=5?n:0}
+      function workloadScoreForJob(job){if(!job)return 0;const pending=(changeOrderIntakes||[]).filter(item=>Number(item.ticketNumber)===Number(job.ticketNumber)&&item.status==='Pending'&&normalizeWorkloadScore(item.workloadScore)).sort((a,b)=>Number(b.changeOrderNumber||0)-Number(a.changeOrderNumber||0))[0];if(pending)return normalizeWorkloadScore(pending.workloadScore);const direct=normalizeWorkloadScore(job.workloadScore);if(direct)return direct;const sets=(workSets||[]).filter(set=>Number(set.ticketNumber)===Number(job.ticketNumber)&&normalizeWorkloadScore(set.workloadScore)).sort((a,b)=>{const ac=Number(a.changeOrderNumber||0),bc=Number(b.changeOrderNumber||0);if(ac!==bc)return bc-ac;return String(b.createdAt||'').localeCompare(String(a.createdAt||''))});return sets.length?normalizeWorkloadScore(sets[0].workloadScore):0}
+      function workloadScoreMarkup(score){const n=normalizeWorkloadScore(score);return `<span class="workload-score-pill ${n?'score-'+n:'score-none'}">${n||'—'}</span>`}
+      function rawDueAt(job){if(!job)return '';if(job.dueAt)return String(job.dueAt);const d=String(job.due||job.dueDate||'');return d?d+'T23:59:00':''}
+      function dateReceivedForJob(job){return String(job&&job.dateReceived||'')}
+      function formatDateTimeDisplay(value){if(!value)return '—';const d=new Date(value);if(Number.isNaN(d.getTime()))return '—';return d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}
       function getNextSequentialId(){const used=new Set(jobs.map(j=>Number(j.ticketNumber)).filter(Number.isFinite));let n=1564;while(used.has(n))n++;return n}
       function syncNextId(){nextId=Math.max(1564,getNextSequentialId());const input=document.getElementById('jobNumber');if(input)input.value=nextId;validateJobNumber()}
       function validateJobNumber(){const input=document.getElementById('jobNumber');const alert=document.getElementById('jobNumberAlert');const createBtn=document.querySelector('#jobForm button[type="submit"]');if(!input||!alert||!createBtn)return true;const value=Number(input.value);const duplicate=jobs.some(j=>Number(j.ticketNumber)===value);alert.style.display=duplicate?'block':'none';createBtn.disabled=duplicate||!value;createBtn.style.opacity=createBtn.disabled?'.5':'1';createBtn.style.cursor=createBtn.disabled?'not-allowed':'pointer';return !duplicate&&Boolean(value)}
@@ -1499,12 +1495,10 @@
         return `${pid}${num} - ${primary.name} - ${desc}`;
       }
       function updatePreview(){
-        const sug=suggestedDue();
-        const due=document.getElementById('dueDate'); if(!due.dataset.manual) due.value=sug.date;
         const primaryValue=document.getElementById('primaryClient').value; const hasClient=Boolean(primaryValue&&primaryValue!=='__ADD_CLIENT__');
         document.getElementById('ticketPreview').style.display=hasClient?'block':'none';
         document.getElementById('jobNumberWrap').style.display=hasClient?'block':'none';
-        if(hasClient){const jobNumber=Number(document.getElementById('jobNumber').value)||nextId;document.getElementById('titlePreview').textContent=titleFor(jobNumber);document.getElementById('rulePreview').textContent='Due-date rule: '+sug.reason+(due.dataset.manual?' · manually overridden':'');}
+        if(hasClient){const jobNumber=Number(document.getElementById('jobNumber').value)||nextId;document.getElementById('titlePreview').textContent=titleFor(jobNumber);const score=normalizeWorkloadScore(document.getElementById('workloadScore').value);document.getElementById('rulePreview').textContent=score?`Workload Score ${score} · due date will be calculated when the ticket enters To Do`:'Select a Workload Score to calculate the due date';}
       }
       function monthKeyFromDate(d){
         return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
@@ -1732,16 +1726,8 @@
         renderKpis();renderFinancialDashboard();renderCompletedMetricsModal();renderBoard();
       }
       function rawDueDate(j){return String(j.due||j.dueDate||'')}
-      function isOverdueJob(j){
-        const dueValue=rawDueDate(j);
-        return !!dueValue
-          && !['Client Review','In Production / Awaiting Vendor','Completed'].includes(j.status)
-          && dueValue<todayISO();
-      }
-      function effectiveDueDate(j){
-        const dueValue=rawDueDate(j);
-        return isOverdueJob(j)?todayISO():dueValue;
-      }
+      function isOverdueJob(j){const dueAt=rawDueAt(j);if(!dueAt||['Client Review','In Production / Awaiting Vendor','Completed'].includes(j.status))return false;const d=new Date(dueAt);return !Number.isNaN(d.getTime())&&d.getTime()<Date.now()}
+      function effectiveDueDate(j){const dueValue=rawDueDate(j);return isOverdueJob(j)?todayISO():dueValue}
       function parseDateOnlyLocal(value){
         const parts=String(value||'').split('-').map(Number);
         if(parts.length!==3||parts.some(n=>!Number.isFinite(n)))return null;
@@ -1810,20 +1796,7 @@
         }
         return {etr,todayWorked,todaysMinimum,todayMinimumRemaining,workdaysRemaining:remainingWorkdays,behindBy,behindPace:behindBy>=0.25,dueToday,overdue};
       }
-      function priorityScore(j){
-        if(['Client Review','In Production / Awaiting Vendor','Completed'].includes(j.status))return -999;
-        const pace=paceInfo(j);
-        if(pace.overdue)return 100000+(pace.etr*100)+(pace.behindBy*150);
-        if(pace.dueToday)return 90000+(pace.etr*100)+(pace.behindBy*100);
-        const days=Math.max(1,pace.workdaysRemaining||1);
-        const urgency=360/days;
-        const pacePressure=pace.todayMinimumRemaining*95;
-        const dailyLoad=pace.todaysMinimum*35;
-        const deficitPressure=pace.behindBy*125;
-        const workload=pace.etr*3;
-        const satisfiedPenalty=pace.todayMinimumRemaining<=0.01?-75:0;
-        return 1000+urgency+pacePressure+dailyLoad+deficitPressure+workload+satisfiedPenalty;
-      }
+      function priorityScore(j){if(['Client Review','In Production / Awaiting Vendor','Completed'].includes(j.status))return -999;const due=new Date(rawDueAt(j)||'9999-12-31T23:59:00').getTime();return Number.isFinite(due)?-due:0}
       const MENU_ICON='<svg id="Gradient" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><linearGradient id="New_Gradient_Swatch" gradientUnits="userSpaceOnUse" x1="2.698" x2="13.303" y1="2.698" y2="13.303"><stop offset="0" stop-color="#87f1fc"/><stop offset=".2557" stop-color="#7fd4fb"/><stop offset=".5295" stop-color="#78bcfb"/><stop offset=".7844" stop-color="#74aefa"/><stop offset="1" stop-color="#73a9fa"/></linearGradient><path d="m8 15.5a7.5 7.5 0 1 0 -7.5-7.5 7.5027 7.5027 0 0 0 7.5 7.5zm-2.5-11h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1zm0 3h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1zm0 3h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1z" fill="url(#New_Gradient_Swatch)"/></svg>';
       const COPY_ICON='<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="Layer_2" data-name="Layer 2"><path d="m14 22.75h-9a2.752 2.752 0 0 1 -2.75-2.75v-10.86a2.752 2.752 0 0 1 2.75-2.75h3a.75.75 0 0 1 0 1.5h-3a1.251 1.251 0 0 0 -1.25 1.25v10.86a1.252 1.252 0 0 0 1.25 1.25h9a1.252 1.252 0 0 0 1.25-1.25v-3a.75.75 0 0 1 1.5 0v3a2.752 2.752 0 0 1 -2.75 2.75z" fill="#7fbde7"/><path d="m19 17.75h-9a2.752 2.752 0 0 1 -2.75-2.75v-11a2.752 2.752 0 0 1 2.75-2.75h9a2.752 2.752 0 0 1 2.75 2.75v11a2.752 2.752 0 0 1 -2.75 2.75zm-9-15a1.252 1.252 0 0 0 -1.25 1.25v11a1.252 1.252 0 0 0 1.25 1.25h9a1.252 1.252 0 0 0 1.25-1.25v-11a1.252 1.252 0 0 0 -1.25-1.25z" fill="#232323"/></g></svg>';
       const FOLDER_ICON='<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.75 6.75A2.75 2.75 0 0 1 5.5 4h4.1c.77 0 1.5.32 2.02.88l1.13 1.22c.24.26.58.4.93.4h4.82a2.75 2.75 0 0 1 2.75 2.75v7A2.75 2.75 0 0 1 18.5 19h-13a2.75 2.75 0 0 1-2.75-2.75z" fill="none" stroke="#d59b26" stroke-width="1.7" stroke-linejoin="round"/><path d="M3.3 9h17.4" fill="none" stroke="#d59b26" stroke-width="1.7" stroke-linecap="round"/></svg>';
@@ -1835,20 +1808,7 @@
       const PUNCH_OUT_ICON='<svg id="Capa_1" enable-background="new 0 0 497 497" viewBox="0 0 497 497" xmlns="http://www.w3.org/2000/svg"><g><path d="m248.5 0v497c137.243 0 248.5-111.257 248.5-248.5s-111.257-248.5-248.5-248.5z" fill="#ff3e3a"/><path d="m467 248.5c0-137.243-97.826-248.5-218.5-248.5-137.243 0-248.5 111.257-248.5 248.5s111.257 248.5 248.5 248.5c120.674 0 218.5-111.257 218.5-248.5z" fill="#ff5d34"/><path d="m329.752 138.243h-30v220.513h30c16.569 0 30-13.431 30-30v-160.513c0-16.568-13.431-30-30-30z" fill="#c4f3ff"/><path d="m329.752 328.757v-160.514c0-16.569-13.431-30-30-30h-130.513c-16.569 0-30 13.431-30 30v160.513c0 16.569 13.431 30 30 30h130.513c16.569.001 30-13.431 30-29.999z" fill="#fff"/></g></svg>';
       const PUNCH_LOADING_ICON='<span class="timer-spinner" aria-hidden="true"></span>';
       function timerKeyFor(j){return String(j.ticketNumber||j.displayTitle||j.title)}
-      function recommendedWorkSeconds(j){
-        const h=Math.max(0,j.status==='To Be Invoiced'?.1667:Number(j.hours??j.estimatedHoursRemaining??0));
-        const seconds=Math.max(0,Math.round(h*3600));
-        if(seconds<1800)return seconds;
-        const baseline=seconds<3600?1800:3600;
-        const pace=paceInfo(j);
-        const targetHours=Math.max(0,Number(pace.todayMinimumRemaining||0));
-        if(targetHours<=0)return baseline;
-        let paceBlock=3600;
-        if(targetHours<=0.25)paceBlock=900;
-        else if(targetHours<=0.5)paceBlock=1800;
-        else if(targetHours<=0.75)paceBlock=2700;
-        return Math.min(baseline,paceBlock);
-      }
+      function recommendedWorkSeconds(j){return 3600}
       function accruedStorageKey(j){return 'jtp-accrued-'+timerKeyFor(j)}
       function getTimeAccruedHours(j){if(Number.isFinite(Number(j.timeAccruedHours)))return Math.max(0,Number(j.timeAccruedHours));try{return Math.max(0,Number(localStorage.getItem(accruedStorageKey(j))||0))}catch(e){return 0}}
       function getRecordedTimeAccruedHours(j){const ticket=Number(j&&j.ticketNumber);if(!Number.isFinite(ticket))return getTimeAccruedHours(j);const sessions=workSessions.filter(s=>Number(s.ticketNumber)===ticket);if(!sessions.length)return getTimeAccruedHours(j);const completed=sessions.filter(s=>s.punchOut&&Number.isFinite(Number(s.durationMinutes)));return completed.reduce((sum,s)=>sum+Math.max(0,Number(s.durationMinutes)||0),0)/60}
@@ -1990,8 +1950,8 @@
         const setSelect=document.getElementById('punchInWorkSet');setSelect.innerHTML='<option value="">Select Change Order</option>'+changeOrders.map(set=>`<option value="${escapeHtml(set.workSetId)}">${escapeHtml(changeOrderOptionLabel(set))}</option>`).join('');
       }
       function updatePunchInFields(){
-        const job=jobs.find(j=>timerKeyFor(j)===pendingPunchTimerKey);const type=document.getElementById('punchInWorkType').value;const description=document.getElementById('punchInWorkDescription');const setWrap=document.getElementById('punchInWorkSetWrap');const setSelect=document.getElementById('punchInWorkSet');
-        setWrap.style.display=type==='Continuing Change Order'?'block':'none';if(type!=='Continuing Change Order')setSelect.value='';
+        const job=jobs.find(j=>timerKeyFor(j)===pendingPunchTimerKey);const type=document.getElementById('punchInWorkType').value;const description=document.getElementById('punchInWorkDescription');const setWrap=document.getElementById('punchInWorkSetWrap');const setSelect=document.getElementById('punchInWorkSet');const workloadWrap=document.getElementById('punchInWorkloadWrap');const workloadSelect=document.getElementById('punchInWorkloadScore');
+        setWrap.style.display=type==='Continuing Change Order'?'block':'none';if(type!=='Continuing Change Order')setSelect.value='';workloadWrap.style.display=type==='New Change Order'?'block':'none';if(type==='New Change Order'&&job){const pending=pendingChangeOrderIntakeForJob(job);if(pending&&normalizeWorkloadScore(pending.workloadScore))workloadSelect.value=String(pending.workloadScore)}else workloadSelect.value='';
         if(!job){description.readOnly=false;description.value='';updatePunchInSubmitState();return}
         const sets=workSetsForTicket(job.ticketNumber);
         if(type==='Continuing Initial Draft'){const initial=sets.find(set=>set.workSetType==='Initial Draft');description.value=initial?initial.workDescription:'';description.readOnly=true}
@@ -1999,7 +1959,7 @@
         else{if(description.readOnly)description.value='';description.readOnly=false;if(type==='Initial Draft')description.value='Initial Design';description.placeholder=type==='New Change Order'?'Describe the new client change request...':'Describe the work you are starting...'}
         updatePunchInSubmitState();
       }
-      function updatePunchInSubmitState(){const type=document.getElementById('punchInWorkType').value;const description=document.getElementById('punchInWorkDescription').value.trim();const workSetId=document.getElementById('punchInWorkSet').value;let valid=!!type;if(type==='Initial Draft'||type==='New Change Order'||type==='Continuing Initial Draft')valid=valid&&!!description;if(type==='Continuing Change Order')valid=valid&&!!workSetId&&!!description;document.getElementById('punchInStartBtn').disabled=!valid}
+      function updatePunchInSubmitState(){const type=document.getElementById('punchInWorkType').value;const description=document.getElementById('punchInWorkDescription').value.trim();const workSetId=document.getElementById('punchInWorkSet').value;const workloadScore=normalizeWorkloadScore(document.getElementById('punchInWorkloadScore').value);let valid=!!type;if(type==='Initial Draft'||type==='New Change Order'||type==='Continuing Initial Draft')valid=valid&&!!description;if(type==='New Change Order')valid=valid&&!!workloadScore;if(type==='Continuing Change Order')valid=valid&&!!workSetId&&!!description;document.getElementById('punchInStartBtn').disabled=!valid}
       async function closeActiveWorkSession(punchOutAt){
         clearIdleWarning(true);closeHourlyWorkReminder();if(!activeWorkSession||!activeWorkSession.sessionId)return true;
         try{
@@ -2020,16 +1980,16 @@
           return true
         }catch(err){alert('Punch Out could not be saved: '+err.message);return false}
       }
-      async function beginWorkSessionForKey(key,workType,workDescription,workSetId='',punchInAt=''){
+      async function beginWorkSessionForKey(key,workType,workDescription,workSetId='',punchInAt='',workloadScore=0){
         const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return false;if(currentWorkdayState()!=='WORKING'){alert(currentWorkdayState()==='LUNCH'?'Lunch is active. Punch back in from lunch before starting a job.':'Punch in to your workday before starting a job.');return false}if(activeAdminSession&&!await endActiveAdminSession())return false;
-        try{const payload={action:'beginWorkSession',ticketNumber:job.ticketNumber,workType,workDescription,workSetId};if(punchInAt)payload.punchInAt=punchInAt;const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch in');const session=data.session;if(data.workSet&&!workSets.some(set=>set.workSetId===data.workSet.workSetId))workSets.push(data.workSet);if(data.pendingChangeOrderNotes!==undefined)job.pendingChangeOrderNotes=String(data.pendingChangeOrderNotes||'');if(data.changeOrderIntake){const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===data.changeOrderIntake.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=data.changeOrderIntake;else changeOrderIntakes.push(data.changeOrderIntake)}workSessions.push(session);applyWorkSessionContext(session,key);saveActiveWorkSession({...session,timerKey:key});renderActiveJobBar();renderWorkUtilization();return true}catch(err){alert('Punch In could not be saved: '+err.message);return false}
+        try{const payload={action:'beginWorkSession',ticketNumber:job.ticketNumber,workType,workDescription,workSetId};if(punchInAt)payload.punchInAt=punchInAt;if(workType==='New Change Order'&&normalizeWorkloadScore(workloadScore))payload.workloadScore=normalizeWorkloadScore(workloadScore);const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch in');const session=data.session;if(data.workSet&&!workSets.some(set=>set.workSetId===data.workSet.workSetId))workSets.push(data.workSet);if(data.pendingChangeOrderNotes!==undefined)job.pendingChangeOrderNotes=String(data.pendingChangeOrderNotes||'');if(data.changeOrderIntake){const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===data.changeOrderIntake.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=data.changeOrderIntake;else changeOrderIntakes.push(data.changeOrderIntake)}workSessions.push(session);applyWorkSessionContext(session,key);saveActiveWorkSession({...session,timerKey:key});renderActiveJobBar();renderWorkUtilization();return true}catch(err){alert('Punch In could not be saved: '+err.message);return false}
       }
       async function resumeWorkSessionForKey(key,punchInAt=''){const context=workContextByKey[key];if(!context||!context.workSetId)return false;return beginWorkSessionForKey(key,context.workType,context.workDescription,context.workSetId,punchInAt)}
       async function requestStartTimer(key){
         const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;if(activeWorkSession&&activeWorkSession.sessionId){alert(`Ticket ${activeWorkSession.ticketNumber} already has an active punch. Punch out of that session before starting another job.`);return}
         pendingPunchPreset=null;document.getElementById('punchInModalBackdrop').classList.remove('punch-in-targeted');
         const pendingIntake=pendingChangeOrderIntakeForJob(job);const pendingNotes=pendingIntake?(combinedChangeOrderNotes(pendingIntake)||String(job.pendingChangeOrderNotes||'').trim()):String(job.pendingChangeOrderNotes||'').trim();
-        pendingPunchTimerKey=key;document.getElementById('punchInModalTitle').textContent=job.title||job.displayTitle||'Punch In';updatePunchInEmailSourceReminder(job);document.getElementById('punchInWorkDescription').readOnly=false;document.getElementById('punchInWorkDescription').value=pendingNotes;populatePunchInChoices(job);document.getElementById('punchInWorkType').value=(pendingIntake||pendingNotes)?'New Change Order':'';document.getElementById('punchInWorkSet').value='';updatePunchInFields();document.getElementById('punchInModalBackdrop').classList.add('open');
+        pendingPunchTimerKey=key;document.getElementById('punchInModalTitle').textContent=job.title||job.displayTitle||'Punch In';updatePunchInEmailSourceReminder(job);document.getElementById('punchInWorkDescription').readOnly=false;document.getElementById('punchInWorkDescription').value=pendingNotes;populatePunchInChoices(job);document.getElementById('punchInWorkType').value=(pendingIntake||pendingNotes)?'New Change Order':'';document.getElementById('punchInWorkSet').value='';document.getElementById('punchInWorkloadScore').value='';updatePunchInFields();document.getElementById('punchInModalBackdrop').classList.add('open');
       }
       function openJobDetailsPunchIn(job,kind,number=0){
         if(!job)return;const key=timerKeyFor(job);const ticket=Number(job.ticketNumber||0);let set=null;let workType='';let workSetId='';let description='';let label='Initial Request';
@@ -2127,9 +2087,9 @@
         const sessionElapsed=Math.max(0,Math.floor((Date.now()-startedAt)/1000));
         const alreadyCommitted=Math.max(0,Number(state.committedSeconds||0));
         const elapsed=Math.max(0,sessionElapsed-alreadyCommitted);if(elapsed<=0)return;
-        const currentEstimated=Math.max(0,Number(job.hours??job.estimatedHoursRemaining??0));const newEstimated=Math.max(0,currentEstimated-(elapsed/3600));const newAccrued=getTimeAccruedHours(job)+(elapsed/3600);
-        job.hours=newEstimated;job.estimatedHoursRemaining=newEstimated;setTimeAccruedHours(job,newAccrued);state.committedSeconds=alreadyCommitted+elapsed;
-        try{const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,dueDate:job.due||job.dueDate,estimatedHoursRemaining:newEstimated,timeAccruedHours:newAccrued});if(!data.success)throw new Error(data.error||'Unable to save elapsed time')}catch(err){alert(err.message)}
+        const newAccrued=getTimeAccruedHours(job)+(elapsed/3600);
+        setTimeAccruedHours(job,newAccrued);state.committedSeconds=alreadyCommitted+elapsed;
+        try{const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,timeAccruedHours:newAccrued});if(!data.success)throw new Error(data.error||'Unable to save elapsed time')}catch(err){alert(err.message)}
       }
       function renderNotificationTray(){
         const tray=document.getElementById('notificationTray');if(!tray)return;
@@ -2221,17 +2181,12 @@
       function resetBlock(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;const state=ensureTimerState(job);state.remaining=recommendedWorkSeconds(job);state.overtime=0;state.blockStartRemaining=state.remaining;state.blockStartOvertime=0;state.committedSeconds=0;if(state.running)saveTimerSnapshot(key);renderQueue();renderBoard()}
       function showTimerComplete(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;completedTimerKey=key;completedTimerEndedAt=Date.now();renderNotificationTray()}
       function getWSIWONJobs(){
-        const eligible=jobs.filter(j=>priorityScore(j)>-900).sort((a,b)=>{
-          const overdueDiff=Number(isOverdueJob(b))-Number(isOverdueJob(a));
-          if(overdueDiff!==0)return overdueDiff;
-          return priorityScore(b)-priorityScore(a);
-        });
-        const todayValue=todayISO();
-        const dueByEndOfDay=eligible.filter(j=>effectiveDueDate(j)<=todayValue);
-        const laterJobs=eligible.filter(j=>effectiveDueDate(j)>todayValue);
-        return dueByEndOfDay.length>=5
-          ? dueByEndOfDay
-          : [...dueByEndOfDay,...laterJobs.slice(0,5-dueByEndOfDay.length)];
+        return jobs.filter(j=>!['Client Review','In Production / Awaiting Vendor','Completed'].includes(j.status)&&j.archived!==true).sort((a,b)=>{
+          const ad=new Date(rawDueAt(a)||'9999-12-31T23:59:00').getTime();const bd=new Date(rawDueAt(b)||'9999-12-31T23:59:00').getTime();if(ad!==bd)return ad-bd;
+          const ar=new Date(dateReceivedForJob(a)||'9999-12-31T23:59:00').getTime();const br=new Date(dateReceivedForJob(b)||'9999-12-31T23:59:00').getTime();if(ar!==br)return ar-br;
+          const aw=workloadScoreForJob(a)||99,bw=workloadScoreForJob(b)||99;if(aw!==bw)return aw-bw;
+          return Number(a.ticketNumber||0)-Number(b.ticketNumber||0);
+        }).slice(0,5);
       }
       function activePunchDisplayLabel(){
         if(!activeWorkSession||!activeWorkSession.sessionId)return '';
@@ -2483,16 +2438,13 @@
           const overdue=isOverdueJob(j);
           const dueValue=effectiveDueDate(j);
           const dueDays=Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000);
-          const pace=paceInfo(j);
           let urgencyTag='';
           if(overdue)urgencyTag='<span class="card-tag overdue">Overdue</span>';
           else if(dueDays<=0)urgencyTag='<span class="card-tag urgent">Due Today</span>';
           else if(dueDays<=1)urgencyTag='<span class="card-tag soon">Due Soon</span>';
           const invoiceTag=j.status==='To Be Invoiced'?'<span class="card-tag invoice">To Be Invoiced</span>':'';
-          const behindTag=pace.behindPace?'<span class="card-tag behind-pace">Behind Pace</span>':'';
-          const tags=invoiceTag+urgencyTag+behindTag+profitTag(j.ticketNumber);
+          const tags=invoiceTag+urgencyTag+profitTag(j.ticketNumber);
           const title=j.title||j.displayTitle;
-          const hours=pace.etr;
           const accrued=getRecordedTimeAccruedHours(j);
           const key=timerKeyFor(j);
           const jobTimer=ensureTimerState(j);
@@ -2505,13 +2457,10 @@
           const current=escapeHtml(j.status);
           const clientId=escapeHtml(String(j.primaryClientId||j.primaryClientID||j.clientId||''));
           const secondaryClientId=escapeHtml(String(j.secondaryClientId||''));
-          const paceTile=pace.todayMinimumRemaining<=0.01&&!pace.dueToday&&!pace.overdue
-            ? `<div class="wsiwon-stat is-complete"><div class="wsiwon-stat-label">Today's Minimum</div><div class="wsiwon-stat-value">Complete ✓</div><div class="wsiwon-stat-sub">${formatHours(pace.todaysMinimum)} total</div></div>`
-            : `<div class="wsiwon-stat"><div class="wsiwon-stat-label">Today's Minimum</div><div class="wsiwon-stat-value">${formatHours(pace.todayMinimumRemaining)} left</div><div class="wsiwon-stat-sub">${formatHours(pace.todaysMinimum)} total</div></div>`;
           const row=document.createElement('div');
           row.className='queue-item'+((jobTimer.running||isActivelyPunched)?' timer-active':'');
           row.dataset.boardTicket=String(j.ticketNumber||'');
-          row.innerHTML=`<div class="rank-stack"><div class="rank">${i+1}</div><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}"><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-job-financials-ticket="${ticket}">Job Income &amp; Expense</button><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button><button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div>${jobDetailsButton(ticket)}</div><div><div class="title-copy-row"><div class="qtitle">${escapeHtml(title)}</div><button class="create-folder-btn" type="button" data-create-job-folder="${ticket}" data-folder-title="${escapeHtml(title)}" aria-label="Create job folder" title="Create job folder">${FOLDER_ICON}</button><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<div class="wsiwon-stats"><div class="wsiwon-stat"><div class="wsiwon-stat-label">Due Date</div><div class="wsiwon-stat-value">${formatDate(dueValue)}</div></div><div class="wsiwon-stat"><div class="wsiwon-stat-label">Time Accrued</div><div class="wsiwon-stat-value">${formatHours(accrued)}</div></div><div class="wsiwon-stat"><div class="wsiwon-stat-label">Est. Remaining</div><div class="wsiwon-stat-value">${formatHours(hours)}</div></div>${paceTile}</div></div>`;
+          row.innerHTML=`<div class="rank-stack"><div class="rank">${i+1}</div><div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}"><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-job-financials-ticket="${ticket}">Job Income &amp; Expense</button><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button><button type="button" data-edit-time-ticket="${ticket}">Edit Workload Score</button></div></div>${jobDetailsButton(ticket)}</div><div><div class="title-copy-row"><div class="qtitle">${escapeHtml(title)}</div><button class="create-folder-btn" type="button" data-create-job-folder="${ticket}" data-folder-title="${escapeHtml(title)}" aria-label="Create job folder" title="Create job folder">${FOLDER_ICON}</button><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<div class="wsiwon-stats"><div class="wsiwon-stat"><div class="wsiwon-stat-label">Due Date</div><div class="wsiwon-stat-value">${formatDateTimeDisplay(rawDueAt(j))}</div></div><div class="wsiwon-stat"><div class="wsiwon-stat-label">Date Received</div><div class="wsiwon-stat-value">${formatDateTimeDisplay(dateReceivedForJob(j))}</div></div><div class="wsiwon-stat"><div class="wsiwon-stat-label">Workload Score</div><div class="wsiwon-stat-value">${workloadScoreMarkup(workloadScoreForJob(j))}</div></div><div class="wsiwon-stat"><div class="wsiwon-stat-label">Time Accrued</div><div class="wsiwon-stat-value">${formatHours(accrued)}</div></div></div></div>`;
           q.appendChild(row);
         };
         dueToday.forEach((j,i)=>addQueueItem(j,i)); const divider=document.createElement('div');divider.className='eod-divider';divider.textContent='End of Day · 10:00 PM';q.appendChild(divider); later.forEach((j,i)=>addQueueItem(j,dueToday.length+i));
@@ -2530,7 +2479,7 @@
       }
       function renderCards(targetId,list){
         const target=document.getElementById(targetId); target.innerHTML=''; if(!list.length){target.innerHTML='<div class="muted">No jobs.</div>';return}
-        list.forEach(j=>{const c=document.createElement('div');const key=timerKeyFor(j);const jobTimer=ensureTimerState(j);c.className='card'+(targetId==='todoList'&&jobTimer.running?' timer-active':'');c.dataset.boardTicket=String(j.ticketNumber||'');const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const accrued=getRecordedTimeAccruedHours(j);const storedDueValue=j.due||j.dueDate;const overdue=targetId==='todoList'&&isOverdueJob(j);const dueValue=targetId==='todoList'?effectiveDueDate(j):storedDueValue;const followUpValue=j.followUpDate||'';const followUpDue=followUpValue&&followUpValue<=todayISO();const ticket=escapeHtml(String(j.ticketNumber||''));const current=escapeHtml(j.status);const clientId=escapeHtml(String(j.primaryClientId||j.primaryClientID||j.clientId||''));const secondaryClientId=escapeHtml(String(j.secondaryClientId||''));const dueDays=dueValue?Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000):999;const invoiceTag=j.status==='To Be Invoiced'?'<span class="card-tag invoice">To Be Invoiced</span>':'';const completedTag=j.status==='Completed'?`<span class="card-tag">Completed: ${formatDate((j.completedAt||todayISO()).slice(0,10))}</span>`:'';const urgencyTag=targetId==='todoList'?(overdue?'<span class="card-tag overdue">Overdue</span>':dueDays<=0?'<span class="card-tag urgent">Due Today</span>':dueDays<=1?'<span class="card-tag soon">Due Soon</span>':''):'';const tags=completedTag+invoiceTag+urgencyTag+profitTag(j.ticketNumber);const usesFollowUpDate=j.status==='Client Review'||j.status==='In Production / Awaiting Vendor';const quickReturnPunchMenu=j.status==='Client Review'?`<button type="button" data-client-review-punch-ticket="${ticket}">Move to To Do &amp; Punch In</button><div class="menu-separator"></div>`:'';const followUpMenu=usesFollowUpDate?`<button type="button" data-change-follow-up-ticket="${ticket}">Change Follow Up Date</button>`:'';const dueMeta=usesFollowUpDate?'':`<div class="card-meta">Due Date: ${formatDate(dueValue)}</div>`;const followUpMeta=usesFollowUpDate?`<div class="card-meta${followUpDue?' follow-up-due':''}">Follow Up Date: ${followUpValue?formatDate(followUpValue):'—'}</div>`:'';const archiveControl=targetId==='completedList'?`<button class="archive-job-btn" type="button" data-archive-ticket="${ticket}" aria-label="Archive completed job" title="Archive completed job">${ARCHIVE_ICON}</button>`:'';c.innerHTML=`<div class="card-head"><div class="card-control-stack">${archiveControl}<div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}">${quickReturnPunchMenu}<button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-job-financials-ticket="${ticket}">Job Income &amp; Expense</button><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button>${followUpMenu}<button type="button" data-edit-time-ticket="${ticket}">Edit Estimated Time Remaining</button></div></div>${jobDetailsButton(ticket)}</div><div><div class="title-copy-row"><div class="card-title">${escapeHtml(title)}</div><button class="create-folder-btn" type="button" data-create-job-folder="${ticket}" data-folder-title="${escapeHtml(title)}" aria-label="Create job folder" title="Create job folder">${FOLDER_ICON}</button><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}${dueMeta}${followUpMeta}<div class="card-meta">Time Accrued: ${formatHours(accrued)}</div><div class="card-meta">Estimated Time Remaining: ${formatHours(j.status==='To Be Invoiced'?.1667:hours)}</div></div></div>`;target.appendChild(c)});
+        list.forEach(j=>{const c=document.createElement('div');const key=timerKeyFor(j);const jobTimer=ensureTimerState(j);c.className='card'+(targetId==='todoList'&&jobTimer.running?' timer-active':'');c.dataset.boardTicket=String(j.ticketNumber||'');const title=j.title||j.displayTitle;const hours=j.hours??j.estimatedHoursRemaining??0;const accrued=getRecordedTimeAccruedHours(j);const storedDueValue=j.due||j.dueDate;const overdue=targetId==='todoList'&&isOverdueJob(j);const dueValue=targetId==='todoList'?effectiveDueDate(j):storedDueValue;const followUpValue=j.followUpDate||'';const followUpDue=followUpValue&&followUpValue<=todayISO();const ticket=escapeHtml(String(j.ticketNumber||''));const current=escapeHtml(j.status);const clientId=escapeHtml(String(j.primaryClientId||j.primaryClientID||j.clientId||''));const secondaryClientId=escapeHtml(String(j.secondaryClientId||''));const dueDays=dueValue?Math.ceil((new Date(dueValue+'T00:00:00Z')-today())/86400000):999;const invoiceTag=j.status==='To Be Invoiced'?'<span class="card-tag invoice">To Be Invoiced</span>':'';const completedTag=j.status==='Completed'?`<span class="card-tag">Completed: ${formatDate((j.completedAt||todayISO()).slice(0,10))}</span>`:'';const urgencyTag=targetId==='todoList'?(overdue?'<span class="card-tag overdue">Overdue</span>':dueDays<=0?'<span class="card-tag urgent">Due Today</span>':dueDays<=1?'<span class="card-tag soon">Due Soon</span>':''):'';const tags=completedTag+invoiceTag+urgencyTag+profitTag(j.ticketNumber);const usesFollowUpDate=j.status==='Client Review'||j.status==='In Production / Awaiting Vendor';const quickReturnPunchMenu=j.status==='Client Review'?`<button type="button" data-client-review-punch-ticket="${ticket}">Move to To Do &amp; Punch In</button><div class="menu-separator"></div>`:'';const followUpMenu=usesFollowUpDate?`<button type="button" data-change-follow-up-ticket="${ticket}">Change Follow Up Date</button>`:'';const dueMeta=usesFollowUpDate?'':`<div class="card-meta">Due Date: ${formatDateTimeDisplay(rawDueAt(j))}</div>`;const followUpMeta=usesFollowUpDate?`<div class="card-meta${followUpDue?' follow-up-due':''}">Follow Up Date: ${followUpValue?formatDate(followUpValue):'—'}</div>`:'';const archiveControl=targetId==='completedList'?`<button class="archive-job-btn" type="button" data-archive-ticket="${ticket}" aria-label="Archive completed job" title="Archive completed job">${ARCHIVE_ICON}</button>`:'';c.innerHTML=`<div class="card-head"><div class="card-control-stack">${archiveControl}<div class="queue-menu-wrap"><button class="more-btn" type="button" data-menu-ticket="${ticket}" aria-label="Job menu" title="Job menu">${MENU_ICON}</button><div class="move-menu" data-move-menu="${ticket}">${quickReturnPunchMenu}<button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Do">To Do</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Client Review">Client Review</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="In Production / Awaiting Vendor">In Production / Awaiting Vendor</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="To Be Invoiced">To Be Invoiced</button><button type="button" data-move-ticket="${ticket}" data-old-status="${current}" data-new-status="Completed">Completed</button><div class="menu-separator"></div><button type="button" data-job-financials-ticket="${ticket}">Job Income &amp; Expense</button><button type="button" data-edit-title-ticket="${ticket}">Edit Job Ticket Title</button><button type="button" data-change-due-ticket="${ticket}">Change Due Date</button>${followUpMenu}<button type="button" data-edit-time-ticket="${ticket}">Edit Workload Score</button></div></div>${jobDetailsButton(ticket)}</div><div><div class="title-copy-row"><div class="card-title">${escapeHtml(title)}</div><button class="create-folder-btn" type="button" data-create-job-folder="${ticket}" data-folder-title="${escapeHtml(title)}" aria-label="Create job folder" title="Create job folder">${FOLDER_ICON}</button><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}${dueMeta}${followUpMeta}<div class="card-meta">Time Accrued: ${formatHours(accrued)}</div><div class="card-meta">Workload Score: ${workloadScoreForJob(j)||'—'}</div></div></div>`;target.appendChild(c)});
         target.querySelectorAll('[data-menu-ticket]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const ticket=btn.getAttribute('data-menu-ticket');const menu=target.querySelector(`[data-move-menu="${ticket}"]`);document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>{if(m!==menu)m.classList.remove('open')});menu.classList.toggle('open')}));
         target.querySelectorAll('[data-move-ticket]').forEach(btn=>btn.addEventListener('click',()=>changeJobStatusFromMenu(btn)));
         target.querySelectorAll('[data-client-review-punch-ticket]').forEach(btn=>btn.addEventListener('click',()=>quickClientReviewReturnAndPunch(btn.getAttribute('data-client-review-punch-ticket'))));
@@ -2579,7 +2528,7 @@
       }
       function jobSearchCardMarkup(job){
         const ticket=escapeHtml(String(job.ticketNumber||''));const title=job.title||job.displayTitle||('Ticket '+ticket);const key=timerKeyFor(job);const timer=ensureTimerState(job);const accrued=getRecordedTimeAccruedHours(job);const hours=job.hours??job.estimatedHoursRemaining??0;const due=effectiveDueDate(job)||job.due||job.dueDate||'';const followUp=job.followUpDate||'';const usesFollowUp=job.status==='Client Review'||job.status==='In Production / Awaiting Vendor';const overdue=job.status!=='Completed'&&isOverdueJob(job);const dueDays=due?Math.ceil((new Date(due+'T00:00:00Z')-today())/86400000):999;const urgency=job.status==='Completed'?'':(overdue?'<span class="card-tag overdue">Overdue</span>':dueDays<=0?'<span class="card-tag urgent">Due Today</span>':dueDays<=1?'<span class="card-tag soon">Due Soon</span>':'');const invoice=job.status==='To Be Invoiced'?'<span class="card-tag invoice">To Be Invoiced</span>':'';const completed=job.status==='Completed'?`<span class="card-tag">Completed: ${formatDate((job.completedAt||todayISO()).slice(0,10))}</span>`:'';const archived=job.archived===true?'<span class="card-tag archived">Archived</span>':'';const tags=completed+archived+invoice+urgency+profitTag(job.ticketNumber);const boardAction=job.archived===true?`<button class="job-search-locate" type="button" data-search-unarchive="${ticket}">Unarchive</button>`:`<button class="job-search-locate" type="button" data-search-locate="${ticket}">Locate on Board</button>`;
-        return `<div class="job-search-card" data-search-ticket="${ticket}"><div class="job-search-card-head"><span class="job-search-status">${escapeHtml(job.status||'—')}</span>${jobDetailsButton(ticket)}</div><div class="title-copy-row"><div class="card-title">${escapeHtml(title)}</div><button class="create-folder-btn" type="button" data-create-job-folder="${ticket}" data-folder-title="${escapeHtml(title)}" aria-label="Create job folder" title="Create job folder">${FOLDER_ICON}</button><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<div class="card-meta">${usesFollowUp?'Follow Up Date':'Due Date'}: ${formatDate(usesFollowUp?followUp:due)}</div><div class="card-meta">Time Accrued: ${formatHours(accrued)}</div><div class="card-meta">Estimated Time Remaining: ${formatHours(job.status==='To Be Invoiced'?.1667:hours)}</div><div class="job-search-card-actions"><button class="secondary" type="button" data-search-details="${ticket}">Job Details</button>${boardAction}</div></div>`;
+        return `<div class="job-search-card" data-search-ticket="${ticket}"><div class="job-search-card-head"><span class="job-search-status">${escapeHtml(job.status||'—')}</span>${jobDetailsButton(ticket)}</div><div class="title-copy-row"><div class="card-title">${escapeHtml(title)}</div><button class="create-folder-btn" type="button" data-create-job-folder="${ticket}" data-folder-title="${escapeHtml(title)}" aria-label="Create job folder" title="Create job folder">${FOLDER_ICON}</button><button class="copy-title-btn" type="button" data-copy-title="${escapeHtml(title)}" aria-label="Copy job ticket title" title="Copy job ticket title">${COPY_ICON}</button></div>${tags?`<div class="tag-row">${tags}</div>`:''}<div class="card-meta">${usesFollowUp?'Follow Up Date':'Due Date'}: ${usesFollowUp?formatDate(followUp):formatDateTimeDisplay(rawDueAt(job))}</div><div class="card-meta">Time Accrued: ${formatHours(accrued)}</div><div class="card-meta">Workload Score: ${workloadScoreForJob(job)||'—'}</div><div class="job-search-card-actions"><button class="secondary" type="button" data-search-details="${ticket}">Job Details</button>${boardAction}</div></div>`;
       }
       function bindJobSearchResultActions(){
         const target=document.getElementById('jobSearchResults');
@@ -2653,7 +2602,7 @@
       }
       function openArchivedJobs(){renderArchivedJobs();document.getElementById('archivedJobsModalBackdrop').classList.add('open')}
       function closeArchivedJobs(){document.getElementById('archivedJobsModalBackdrop').classList.remove('open')}
-      function openTimeEditModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;timeEditTicket=String(ticket);document.getElementById('timeEditModalJob').textContent=job.title||job.displayTitle||'';document.getElementById('estimatedRemainingInput').value=Number(job.hours??job.estimatedHoursRemaining??0).toFixed(2);document.getElementById('timeEditModalBackdrop').classList.add('open');document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'))}
+      function openTimeEditModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;timeEditTicket=String(ticket);document.getElementById('timeEditModalJob').textContent=job.title||job.displayTitle||'';document.getElementById('estimatedRemainingInput').value=String(workloadScoreForJob(job)||'');document.getElementById('timeEditModalBackdrop').classList.add('open');document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'))}
       function clientNotesKey(primaryClientId,secondaryClientId=''){return secondaryClientId?`secondary:${primaryClientId}:${secondaryClientId}`:`primary:${primaryClientId}`}
       function pricingNotesForClient(primaryClientId,secondaryClientId=''){return String(clientPricingNotes[clientNotesKey(primaryClientId,secondaryClientId)]||'')}
       function updateJobFinancialsClientNotesLink(job){
@@ -2778,14 +2727,14 @@
       }
       function renderChangeOrderModal(){
         const job=jobs.find(j=>String(j.ticketNumber||'')===String(changeOrderModalTicket));if(!job)return;const record=changeOrderModalIntakeId?changeOrderIntakes.find(item=>item.changeOrderIntakeId===changeOrderModalIntakeId):pendingChangeOrderIntakeForJob(job);if(record)changeOrderModalIntakeId=record.changeOrderIntakeId;
-        document.getElementById('changeOrderModalTitle').textContent=record?`Change Order #${record.changeOrderNumber}`:'Create Change Order';document.getElementById('changeOrderModalJob').textContent=job.title||job.displayTitle||'';const input=document.getElementById('changeOrderNotesInput');input.value=record?String(record.manualNotes||''):String(job.pendingChangeOrderNotes||'');
+        document.getElementById('changeOrderModalTitle').textContent=record?`Change Order #${record.changeOrderNumber}`:'Create Change Order';document.getElementById('changeOrderModalJob').textContent=job.title||job.displayTitle||'';document.getElementById('changeOrderWorkloadScore').value=record&&normalizeWorkloadScore(record.workloadScore)?String(record.workloadScore):'';const input=document.getElementById('changeOrderNotesInput');input.value=record?String(record.manualNotes||''):String(job.pendingChangeOrderNotes||'');
         const box=document.getElementById('changeOrderEmailBox');const address=document.getElementById('changeOrderEmailAddress');const sources=document.getElementById('changeOrderModalSources');const save=document.getElementById('saveChangeOrderBtn');
         if(record){box.classList.add('show');address.textContent=record.emailAddress||'';save.textContent='Save Notes';const sourceItems=changeOrderEmailSourcesForIntake(record);sources.innerHTML=sourceItems.length?sourceItems.map(changeOrderSourceMarkup).join(''):'<div class="muted">No emailed notes or files have arrived for this Change Order yet.</div>';wireChangeOrderSourceActions(sources)}else{box.classList.remove('show');address.textContent='';sources.innerHTML='';save.textContent='Create Change Order'}
       }
       function openChangeOrderModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;changeOrderModalTicket=String(ticket);const pending=pendingChangeOrderIntakeForJob(job);changeOrderModalIntakeId=pending?pending.changeOrderIntakeId:'';renderChangeOrderModal();document.getElementById('changeOrderModalBackdrop').classList.add('open');document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'))}
       async function saveChangeOrderModal(){
-        const job=jobs.find(j=>String(j.ticketNumber||'')===String(changeOrderModalTicket));if(!job)return;const notes=document.getElementById('changeOrderNotesInput').value.trim();const btn=document.getElementById('saveChangeOrderBtn');btn.disabled=true;const oldText=btn.textContent;btn.textContent=changeOrderModalIntakeId?'Saving…':'Creating…';
-        try{const payload=changeOrderModalIntakeId?{action:'updateChangeOrderIntake',changeOrderIntakeId:changeOrderModalIntakeId,notes}:{action:'createChangeOrderIntake',ticketNumber:job.ticketNumber,notes};const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to save Change Order');const record=data.changeOrderIntake;const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===record.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=record;else changeOrderIntakes.push(record);changeOrderModalIntakeId=record.changeOrderIntakeId;job.pendingChangeOrderNotes=String(record.manualNotes||'');renderChangeOrderModal();renderQueue();renderBoard();if(jobNotesTicket===String(job.ticketNumber))renderJobNotesChangeOrders(job)}catch(err){alert(err.message)}finally{btn.disabled=false;if(btn.textContent==='Creating…'||btn.textContent==='Saving…')btn.textContent=oldText}}
+        const job=jobs.find(j=>String(j.ticketNumber||'')===String(changeOrderModalTicket));if(!job)return;const notes=document.getElementById('changeOrderNotesInput').value.trim();const workloadScore=normalizeWorkloadScore(document.getElementById('changeOrderWorkloadScore').value);if(!workloadScore){alert('Select a Workload Score from 1 to 5.');return}const btn=document.getElementById('saveChangeOrderBtn');btn.disabled=true;const oldText=btn.textContent;btn.textContent=changeOrderModalIntakeId?'Saving…':'Creating…';
+        try{const payload=changeOrderModalIntakeId?{action:'updateChangeOrderIntake',changeOrderIntakeId:changeOrderModalIntakeId,notes,workloadScore}:{action:'createChangeOrderIntake',ticketNumber:job.ticketNumber,notes,workloadScore};const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to save Change Order');const record=data.changeOrderIntake;const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===record.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=record;else changeOrderIntakes.push(record);changeOrderModalIntakeId=record.changeOrderIntakeId;job.pendingChangeOrderNotes=String(record.manualNotes||'');renderChangeOrderModal();renderQueue();renderBoard();if(jobNotesTicket===String(job.ticketNumber))renderJobNotesChangeOrders(job)}catch(err){alert(err.message)}finally{btn.disabled=false;if(btn.textContent==='Creating…'||btn.textContent==='Saving…')btn.textContent=oldText}}
       async function copyChangeOrderEmail(){const record=changeOrderIntakes.find(item=>item.changeOrderIntakeId===changeOrderModalIntakeId);if(!record||!record.emailAddress)return;try{if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(record.emailAddress);else{const input=document.createElement('textarea');input.value=record.emailAddress;input.style.position='fixed';input.style.opacity='0';document.body.appendChild(input);input.select();document.execCommand('copy');input.remove()}const btn=document.getElementById('copyChangeOrderEmailBtn');const old=btn.textContent;btn.textContent='Copied!';setTimeout(()=>btn.textContent=old,1400)}catch(err){alert('Unable to copy the Change Order email address.')}}
       function renderJobNotesEmailSource(job){
         const holder=document.getElementById('jobNotesEmailSource');if(!holder)return;const source=emailSourceForJob(job);
@@ -2907,7 +2856,7 @@
       }
       function openJobDetailsModal(ticket){const job=jobs.find(item=>String(item.ticketNumber||'')===String(ticket));if(!job)return;jobDetailsTicket=String(ticket);jobDetailsClientOpen=true;jobDetailsClientEditing=false;renderJobDetailsModal();document.getElementById('jobDetailsModalBackdrop').classList.add('open');renderActiveJobBar();document.querySelectorAll('#job-priority-app .move-menu.open').forEach(menu=>menu.classList.remove('open'))}
       async function saveJobDetailsClientNotes(job){const ids=jobDetailsClientIds(job);if(!ids.primaryClientId)return;const key=clientNotesKey(ids.primaryClientId,ids.secondaryClientId);const notes=document.getElementById('jobDetailsClientGeneral').value;const pricingNotes=document.getElementById('jobDetailsClientPricing').value;const associatedEmails=document.getElementById('jobDetailsClientEmails').value;const btn=document.getElementById('jobDetailsSaveClientNotesBtn');btn.disabled=true;btn.textContent='Saving…';try{const payload=ids.secondaryClientId?{action:'updateSubclientNotes',parentClientId:ids.primaryClientId,subclientId:ids.secondaryClientId,notes,pricingNotes,associatedEmails}:{action:'updateClientNotes',clientId:ids.primaryClientId,notes,pricingNotes,associatedEmails};const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to save client notes');clientNotes[key]=notes;clientPricingNotes[key]=pricingNotes;clientAssociatedEmails[key]=associatedEmails;const record=ids.secondaryClientId?subclients.find(item=>item.parentClientId===ids.primaryClientId&&item.id===ids.secondaryClientId):clients.find(item=>item.id===ids.primaryClientId);if(record){record.notes=notes;record.pricingNotes=pricingNotes;record.associatedEmails=associatedEmails}jobDetailsClientEditing=false;renderJobDetailsModal();renderQueue();renderBoard()}catch(err){alert(err.message)}finally{if(btn){btn.disabled=false;btn.textContent='Save Client Notes'}}}
-      async function saveJobDetailsSectionNotes(job,key){const area=document.querySelector(`#jobDetailsBody [data-job-details-notes="${key}"]`);const btn=document.querySelector(`#jobDetailsBody [data-job-details-save-notes="${key}"]`);if(!area||!btn)return;btn.disabled=true;btn.textContent='Saving…';try{if(key==='initial'){const notes=area.value;const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,dueDate:job.due||job.dueDate,estimatedHoursRemaining:Number(job.hours??job.estimatedHoursRemaining??0),timeAccruedHours:getTimeAccruedHours(job),notes});if(!data.success)throw new Error(data.error||'Unable to save Initial Request notes');job.notes=notes}else{const number=Number(String(key).replace('co-',''));const record=changeOrderIntakesForJob(job).find(item=>Number(item.changeOrderNumber||0)===number);if(!record)throw new Error('This legacy Change Order does not have an editable Change Order record.');const data=await apiPost({action:'updateChangeOrderIntake',changeOrderIntakeId:record.changeOrderIntakeId,notes:area.value});if(!data.success)throw new Error(data.error||'Unable to save Change Order notes');const updated=data.changeOrderIntake||record;const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===record.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=updated;job.pendingChangeOrderNotes=updated.status==='Pending'?String(updated.manualNotes||''):String(job.pendingChangeOrderNotes||'')}renderJobDetailsModal();renderQueue();renderBoard()}catch(err){alert(err.message)}finally{btn.disabled=false;btn.textContent='Save'}}
+      async function saveJobDetailsSectionNotes(job,key){const area=document.querySelector(`#jobDetailsBody [data-job-details-notes="${key}"]`);const btn=document.querySelector(`#jobDetailsBody [data-job-details-save-notes="${key}"]`);if(!area||!btn)return;btn.disabled=true;btn.textContent='Saving…';try{if(key==='initial'){const notes=area.value;const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,timeAccruedHours:getTimeAccruedHours(job),notes});if(!data.success)throw new Error(data.error||'Unable to save Initial Request notes');job.notes=notes}else{const number=Number(String(key).replace('co-',''));const record=changeOrderIntakesForJob(job).find(item=>Number(item.changeOrderNumber||0)===number);if(!record)throw new Error('This legacy Change Order does not have an editable Change Order record.');const data=await apiPost({action:'updateChangeOrderIntake',changeOrderIntakeId:record.changeOrderIntakeId,notes:area.value});if(!data.success)throw new Error(data.error||'Unable to save Change Order notes');const updated=data.changeOrderIntake||record;const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===record.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=updated;job.pendingChangeOrderNotes=updated.status==='Pending'?String(updated.manualNotes||''):String(job.pendingChangeOrderNotes||'')}renderJobDetailsModal();renderQueue();renderBoard()}catch(err){alert(err.message)}finally{btn.disabled=false;btn.textContent='Save'}}
       async function cancelJobDetailsChangeOrder(btn){
         const intakeId=String(btn.getAttribute('data-job-details-cancel-co')||'');const record=changeOrderIntakes.find(item=>String(item.changeOrderIntakeId||'')===intakeId);if(!record)return;
         if(!confirm(`Cancel Change Order ${Number(record.changeOrderNumber||0)}?\n\nThis removes the reserved Change Order and its email address.`))return;
@@ -2915,15 +2864,7 @@
         try{const data=await apiPost({action:'cancelChangeOrderIntake',changeOrderIntakeId:intakeId});if(!data.success)throw new Error(data.error||'Unable to cancel Change Order');changeOrderIntakes=changeOrderIntakes.filter(item=>String(item.changeOrderIntakeId||'')!==intakeId);const job=jobs.find(item=>Number(item.ticketNumber)===Number(record.ticketNumber));if(job)job.pendingChangeOrderNotes='';renderJobDetailsModal();renderQueue();renderBoard()}catch(err){alert(err.message);btn.disabled=false;btn.textContent=old}
       }
       async function copyJobDetailsChangeOrderEmail(btn){const record=changeOrderIntakes.find(item=>String(item.changeOrderIntakeId||'')===String(btn.getAttribute('data-job-details-copy-co-email')||''));if(!record||!record.emailAddress)return;try{if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(record.emailAddress);else{const input=document.createElement('textarea');input.value=record.emailAddress;input.style.position='fixed';input.style.opacity='0';document.body.appendChild(input);input.select();document.execCommand('copy');input.remove()}const old=btn.textContent;btn.textContent='Copied!';setTimeout(()=>btn.textContent=old,1200)}catch(err){alert('Unable to copy the Change Order email address.')}}
-      async function addJobDetailsChangeOrder(){const job=jobs.find(item=>String(item.ticketNumber||'')===String(jobDetailsTicket));if(!job||job.status==='Completed')return;const existing=pendingChangeOrderIntakeForJob(job);if(existing){renderJobDetailsModal();const section=document.querySelector(`#jobDetailsBody [data-job-details-section="co-${Number(existing.changeOrderNumber||0)}"]`);if(section)section.scrollIntoView({behavior:'smooth',block:'start'});return}const btn=document.getElementById('jobDetailsAddChangeOrderBtn');btn.disabled=true;btn.textContent='Adding…';try{const data=await apiPost({action:'createChangeOrderIntake',ticketNumber:job.ticketNumber,notes:''});if(!data.success)throw new Error(data.error||'Unable to create Change Order');const record=data.changeOrderIntake;const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===record.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=record;else changeOrderIntakes.push(record);job.pendingChangeOrderNotes=String(record.manualNotes||'');renderJobDetailsModal();renderQueue();renderBoard()}catch(err){alert(err.message)}finally{btn.disabled=false}}
-
-      function formatSessionDuration(minutes){
-        const totalSeconds=Math.max(0,Math.round(Number(minutes||0)*60));
-        const h=Math.floor(totalSeconds/3600),m=Math.floor((totalSeconds%3600)/60),sec=totalSeconds%60;
-        if(h)return `${h}h ${m}m ${sec}s`;
-        if(m)return `${m}m ${sec}s`;
-        return `${sec}s`;
-      }
+      async function addJobDetailsChangeOrder(){const job=jobs.find(item=>String(item.ticketNumber||'')===String(jobDetailsTicket));if(!job||job.status==='Completed')return;openChangeOrderModal(job.ticketNumber)}
       function parseBackendDateTime(value){
         if(!value)return null;
         const d=new Date(value);
@@ -3052,14 +2993,13 @@
       }
       function updateClientReviewSubmitState(){
         if(clientReviewReturnCompleted){document.getElementById('clientReviewSubmitBtn').disabled=false;return}
-        const etr=document.getElementById('clientReviewEtrSelect').value;
-        const due=document.getElementById('clientReviewDueSelect').value;
+        const score=normalizeWorkloadScore(document.getElementById('clientReviewEtrSelect').value);
         const reason=document.getElementById('clientReviewReturnReason').value;
         const validReason=reason==='Change Order'||reason==='Correction';
-        document.getElementById('clientReviewSubmitBtn').disabled=!(etr!==''&&due!==''&&validReason);
+        document.getElementById('clientReviewSubmitBtn').disabled=!(score&&validReason);
       }
       function setClientReviewReturnFormDisabled(disabled){
-        ['clientReviewEtrSelect','clientReviewDueSelect','clientReviewReturnReason','clientReviewChangeOrderNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=disabled});
+        ['clientReviewEtrSelect','clientReviewReturnReason','clientReviewChangeOrderNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=disabled});
       }
       function openClientReviewDueChoice(ticket){
         const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));
@@ -3069,8 +3009,7 @@
         setClientReviewReturnFormDisabled(false);
         document.getElementById('clientReviewDueChoiceTitle').textContent='Return Job to To Do';
         document.getElementById('clientReviewDueChoiceJob').textContent=job.title||job.displayTitle||'';
-        document.getElementById('clientReviewEtrSelect').value='';
-        document.getElementById('clientReviewDueSelect').value='';
+        document.getElementById('clientReviewEtrSelect').value=String(workloadScoreForJob(job)||'');
         document.getElementById('clientReviewReturnReason').value='Change Order';
         const pending=pendingChangeOrderIntakeForJob(job);
         document.getElementById('clientReviewChangeOrderNotes').value=pending?String(pending.manualNotes||''):String(job.pendingChangeOrderNotes||'');
@@ -3097,14 +3036,10 @@
         const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));
         if(!job)return;
 
-        const newHours=Number(document.getElementById('clientReviewEtrSelect').value);
-        const dueOffsetValue=document.getElementById('clientReviewDueSelect').value;
+        const newScore=normalizeWorkloadScore(document.getElementById('clientReviewEtrSelect').value);
         const returnReason=document.getElementById('clientReviewReturnReason').value;
         const changeOrderNotes=document.getElementById('clientReviewChangeOrderNotes').value.trim();
-        if(!newHours||dueOffsetValue===''||!returnReason)return;
-
-        const dueOffset=Number(dueOffsetValue);
-        const newDue=dueOffset===0?todayISO():iso(addWorkdays(today(),dueOffset));
+        if(!newScore||!returnReason)return;
         let pendingChangeOrderNotes='';
         let changeOrderRecord=null;
         const submitBtn=document.getElementById('clientReviewSubmitBtn');
@@ -3114,8 +3049,8 @@
           if(returnReason==='Change Order'){
             const existing=pendingChangeOrderIntakeForJob(job);
             const intakePayload=existing
-              ?{action:'updateChangeOrderIntake',changeOrderIntakeId:existing.changeOrderIntakeId,notes:changeOrderNotes}
-              :{action:'createChangeOrderIntake',ticketNumber:job.ticketNumber,notes:changeOrderNotes};
+              ?{action:'updateChangeOrderIntake',changeOrderIntakeId:existing.changeOrderIntakeId,notes:changeOrderNotes,workloadScore:newScore}
+              :{action:'createChangeOrderIntake',ticketNumber:job.ticketNumber,notes:changeOrderNotes,workloadScore:newScore};
             const intakeData=await apiPost(intakePayload);
             if(!intakeData.success)throw new Error(intakeData.error||'Unable to create Change Order');
             changeOrderRecord=intakeData.changeOrderIntake;
@@ -3128,17 +3063,15 @@
             action:'updateJob',
             ticketNumber:ticket,
             status:'To Do',
-            dueDate:newDue,
             followUpDate:job.followUpDate||'',
-            estimatedHoursRemaining:newHours
+            workloadScore:newScore
           };
           if(returnReason==='Change Order')updatePayload.pendingChangeOrderNotes=pendingChangeOrderNotes;
           else if(!pendingChangeOrderIntakeForJob(job))updatePayload.pendingChangeOrderNotes='';
           const data=await apiPost(updatePayload);
           if(!data.success)throw new Error(data.error||'Unable to update job');
 
-          job.status='To Do';job.dueDate=newDue;job.due=newDue;job.hours=newHours;job.estimatedHoursRemaining=newHours;if(returnReason==='Change Order'||!pendingChangeOrderIntakeForJob(job))job.pendingChangeOrderNotes=pendingChangeOrderNotes;
-          const state=ensureTimerState(job);state.running=false;state.remaining=Math.round(newHours*3600);state.overtime=0;state.blockStartRemaining=state.remaining;state.blockStartOvertime=0;state.committedSeconds=0;
+          job.status='To Do';job.workloadScore=newScore;job.dateReceived=data.dateReceived||new Date().toISOString();job.dueAt=data.dueAt||job.dueAt;job.dueDate=data.dueDate||job.dueDate;job.due=job.dueDate;if(returnReason==='Change Order'||!pendingChangeOrderIntakeForJob(job))job.pendingChangeOrderNotes=pendingChangeOrderNotes;
           renderQueue();renderBoard();
 
           if(returnReason==='Change Order'&&changeOrderRecord){
@@ -3163,31 +3096,21 @@
           return;
         }
         document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'));
-        const newHours=.5;
-        const newDue=todayISO();
+        const score=workloadScoreForJob(job)||1;
         try{
           const data=await apiPost({
             action:'updateJob',
             ticketNumber:String(ticket),
             status:'To Do',
-            dueDate:newDue,
             followUpDate:job.followUpDate||'',
-            estimatedHoursRemaining:newHours
+            workloadScore:score
           });
           if(!data.success)throw new Error(data.error||'Unable to move job to To Do');
           job.status='To Do';
-          job.dueDate=data.dueDate||newDue;
+          job.workloadScore=score;job.dateReceived=data.dateReceived||new Date().toISOString();job.dueAt=data.dueAt||'';
+          job.dueDate=data.dueDate||'';
           job.due=job.dueDate;
           job.followUpDate=data.followUpDate!==undefined?data.followUpDate:(job.followUpDate||'');
-          job.hours=newHours;
-          job.estimatedHoursRemaining=newHours;
-          const state=ensureTimerState(job);
-          state.running=false;
-          state.remaining=Math.round(newHours*3600);
-          state.overtime=0;
-          state.blockStartRemaining=state.remaining;
-          state.blockStartOvertime=0;
-          state.committedSeconds=0;
           renderQueue();
           renderBoard();
           await requestStartTimer(timerKeyFor(job));
@@ -3199,7 +3122,7 @@
         const ticket=button.getAttribute('data-move-ticket'); const oldStatus=button.getAttribute('data-old-status'); const newStatus=button.getAttribute('data-new-status'); const job=jobs.find(j=>String(j.ticketNumber||'')===ticket); if(!job)return;
         if(newStatus===oldStatus)return;
         if(oldStatus==='Client Review'&&newStatus==='To Do'){openClientReviewDueChoice(ticket);return}
-        let newDue=job.due||job.dueDate||''; if(newStatus==='To Do'&&oldStatus==='In Production / Awaiting Vendor')newDue=iso(addWorkdays(today(),1));
+        let newDue=job.due||job.dueDate||'';
         const newFollowUp=newStatus==='Client Review'&&oldStatus!=='Client Review'?defaultFollowUpDate():newStatus==='In Production / Awaiting Vendor'&&oldStatus!=='In Production / Awaiting Vendor'?defaultProductionFollowUpDate():(job.followUpDate||'');
         try{
           if(!['To Do','In Progress'].includes(newStatus)){
@@ -3209,11 +3132,10 @@
               await pauseTimer(key);
             }
           }
-          const effectiveHours=newStatus==='Client Review'?0:Number(job.hours??job.estimatedHoursRemaining??0);
-          const data=await apiPost({action:'updateJob',ticketNumber:ticket,status:newStatus,dueDate:newDue,followUpDate:newFollowUp,estimatedHoursRemaining:effectiveHours});
+          const payload={action:'updateJob',ticketNumber:ticket,status:newStatus,followUpDate:newFollowUp};const moveScore=workloadScoreForJob(job);if(newStatus==='To Do'&&moveScore)payload.workloadScore=moveScore;const data=await apiPost(payload);
           if(!data.success)throw new Error(data.error||'Unable to update job');
           const savedDue=data.dueDate||newDue;
-          job.status=newStatus;job.dueDate=savedDue;job.due=savedDue;job.followUpDate=data.followUpDate!==undefined?data.followUpDate:newFollowUp;job.hours=effectiveHours;job.estimatedHoursRemaining=effectiveHours;if(newStatus!==oldStatus)job.archived=false;
+          job.status=newStatus;job.dueDate=savedDue;job.due=savedDue;job.dueAt=data.dueAt!==undefined?data.dueAt:job.dueAt;job.dateReceived=data.dateReceived!==undefined?data.dateReceived:job.dateReceived;if(data.workloadScore)job.workloadScore=data.workloadScore;job.followUpDate=data.followUpDate!==undefined?data.followUpDate:newFollowUp;if(newStatus!==oldStatus)job.archived=false;
           if(newStatus==='Client Review'){
             const state=ensureTimerState(job);
             state.running=false;state.remaining=0;state.overtime=0;state.blockStartRemaining=0;state.blockStartOvertime=0;state.committedSeconds=0;
@@ -3709,9 +3631,9 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       function clearEmailDraftState(){emailDraftQueueId='';const panel=document.getElementById('emailDraftPanel');if(panel)panel.style.display='none';const notes=document.getElementById('emailDraftJobNotes');if(notes)notes.value='';const attachments=document.getElementById('emailDraftAttachments');if(attachments)attachments.innerHTML=''}
       function loadEmailIntoNewJob(queueId){
         const item=emailQueueItem(queueId);if(!item)return;emailDraftQueueId=String(queueId);
-        document.getElementById('jobForm').reset();document.getElementById('dueDate').dataset.manual='';populateClients();syncNextId();
+        document.getElementById('jobForm').reset();populateClients();syncNextId();
         if(item.matchedPrimaryClientId&&clients.some(c=>c.id===item.matchedPrimaryClientId)){document.getElementById('primaryClient').value=item.matchedPrimaryClientId;updateSecondaryVisibility();updateSubs();if(item.matchedSecondaryClientId&&subclients.some(s=>s.parentClientId===item.matchedPrimaryClientId&&s.id===item.matchedSecondaryClientId))document.getElementById('secondaryClient').value=item.matchedSecondaryClientId}
-        document.getElementById('description').value=item.cleanSubject||item.subject||'';document.getElementById('hours').value='1';document.getElementById('status').value='To Do';document.getElementById('emailDraftJobNotes').value=String(item.body||'');
+        document.getElementById('description').value=item.cleanSubject||item.subject||'';document.getElementById('workloadScore').value='';document.getElementById('status').value='To Do';document.getElementById('emailDraftJobNotes').value=String(item.body||'');
         const sender=[item.originalSenderName,item.originalSenderEmail].filter(Boolean).join(item.originalSenderName&&item.originalSenderEmail?' · ':'');document.getElementById('emailDraftMeta').textContent=`${sender||'Unknown sender'}${item.receivedAt?' · '+item.receivedAt:''}`;
         const panel=document.getElementById('emailDraftPanel');panel.style.display='block';const attachments=document.getElementById('emailDraftAttachments');attachments.innerHTML=emailAttachmentMarkup(item,'draft');attachEmailDownloadHandlers(attachments);updatePreview();
         document.getElementById('emailQueueModalBackdrop').classList.remove('open');document.querySelector('.new-job-panel').scrollIntoView({behavior:'smooth',block:'start'});
@@ -3848,14 +3770,11 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           const toast=document.getElementById('copyToast');toast.textContent='Job Ticket Title Copied!';toast.classList.add('show');if(copyToastTimer)clearTimeout(copyToastTimer);copyToastTimer=setTimeout(()=>toast.classList.remove('show'),1600);
         }catch(err){alert('Unable to copy the Job Ticket Title.')}
       }
-      document.getElementById('primaryClient').addEventListener('change',()=>{const value=document.getElementById('primaryClient').value;document.getElementById('clientModal').classList.toggle('open',value==='__ADD_CLIENT__');document.getElementById('jobNumberWrap').style.display=value&&value!=='__ADD_CLIENT__'?'block':'none';if(value&&value!=='__ADD_CLIENT__')syncNextId();updateSecondaryVisibility();updateSubs();document.getElementById('dueDate').dataset.manual='';updatePreview()});
+      document.getElementById('primaryClient').addEventListener('change',()=>{const value=document.getElementById('primaryClient').value;document.getElementById('clientModal').classList.toggle('open',value==='__ADD_CLIENT__');document.getElementById('jobNumberWrap').style.display=value&&value!=='__ADD_CLIENT__'?'block':'none';if(value&&value!=='__ADD_CLIENT__')syncNextId();updateSecondaryVisibility();updateSubs();updatePreview()});
       document.getElementById('secondaryClient').addEventListener('change',()=>{const value=document.getElementById('secondaryClient').value;document.getElementById('subclientModal').classList.toggle('open',value==='__ADD_SUBCLIENT__');updatePreview()});
       document.getElementById('description').addEventListener('input',updatePreview);
-      document.getElementById('dueDate').addEventListener('input',e=>{e.currentTarget.dataset.manual='1';updatePreview()});
+      document.getElementById('workloadScore').addEventListener('change',updatePreview);
       document.getElementById('jobNumber').addEventListener('input',()=>{validateJobNumber();updatePreview()});
-      document.querySelectorAll('[data-quick-hours]').forEach(link=>link.addEventListener('click',()=>{document.getElementById('hours').value=link.getAttribute('data-quick-hours')}));
-      document.querySelectorAll('[data-quick-days]').forEach(link=>link.addEventListener('click',()=>{const days=Number(link.getAttribute('data-quick-days'));document.getElementById('dueDate').value=days===0?todayISO():iso(addWorkdays(today(),days));document.getElementById('dueDate').dataset.manual='1';updatePreview()}));
-      document.getElementById('status').addEventListener('change',e=>{if(e.target.value==='To Be Invoiced')document.getElementById('hours').value='.17'});
       document.getElementById('cancelClientBtn').addEventListener('click',()=>{document.getElementById('clientModal').classList.remove('open');document.getElementById('primaryClient').value='';document.getElementById('newClientName').value='';document.getElementById('newClientId').value='';document.getElementById('clientIdAlert').style.display='none';document.getElementById('clientIdAlert').textContent='';updatePreview()});
       document.getElementById('newClientId').addEventListener('input',e=>{const id=e.currentTarget.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);e.currentTarget.value=id;const alert=document.getElementById('clientIdAlert');if(id.length===3&&clients.some(c=>c.id===id)){alert.textContent='That 3-letter Client ID is already in use.';alert.style.display='block'}else{alert.textContent='';alert.style.display='none'}});
       document.getElementById('newSubclientId').addEventListener('input',e=>{const id=e.currentTarget.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);e.currentTarget.value=id;const parent=document.getElementById('primaryClient').value;const alert=document.getElementById('subclientIdAlert');if(id.length===3&&subclients.some(s=>s.parentClientId===parent&&s.id===id)){alert.textContent='That 3-letter Secondary Client ID is already in use for this client.';alert.style.display='block'}else{alert.textContent='';alert.style.display='none'}});
@@ -3916,7 +3835,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           if(clientNotesTarget)openClientNotesModal(clientNotesTarget.primaryClientId,clientNotesTarget.secondaryClientId||'');
         }catch(err){alert(err.message)}finally{saveBtn.disabled=false}
       });
-      document.getElementById('clearBtn').addEventListener('click',()=>{document.getElementById('jobForm').reset();clearEmailDraftState();document.getElementById('clientModal').classList.remove('open');document.getElementById('subclientModal').classList.remove('open');document.getElementById('dueDate').dataset.manual='';populateClients();syncNextId();document.getElementById('ticketPreview').style.display='none';document.getElementById('jobNumberWrap').style.display='none'});
+      document.getElementById('clearBtn').addEventListener('click',()=>{document.getElementById('jobForm').reset();clearEmailDraftState();document.getElementById('clientModal').classList.remove('open');document.getElementById('subclientModal').classList.remove('open');populateClients();syncNextId();document.getElementById('ticketPreview').style.display='none';document.getElementById('jobNumberWrap').style.display='none'});
       document.getElementById('viewCompletedJobsBtn').addEventListener('click',openCompletedMetricsModal);
       document.getElementById('archiveAllCompletedBtn').addEventListener('click',archiveAllCompleted);
       document.getElementById('closeCompletedMetricsBtn').addEventListener('click',()=>document.getElementById('completedMetricsModalBackdrop').classList.remove('open'));
@@ -4052,11 +3971,10 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           if(state.running||activeTimerKey===key||(activeWorkSession&&activeWorkSession.timerKey===key)){
             const paused=await pauseTimer(key);if(paused===false)throw new Error('Unable to stop the active timer before completing this job.');
           }
-          const effectiveHours=Number(job.hours??job.estimatedHoursRemaining??0);
-          const data=await apiPost({action:'updateJob',ticketNumber:ticket,status:'Completed',dueDate:job.due||job.dueDate||'',followUpDate:job.followUpDate||'',estimatedHoursRemaining:effectiveHours});
+          const data=await apiPost({action:'updateJob',ticketNumber:ticket,status:'Completed',followUpDate:job.followUpDate||''});
           if(!data.success)throw new Error(data.error||'Unable to move job to Completed');
           const savedDue=data.dueDate||job.due||job.dueDate||'';
-          job.status='Completed';job.dueDate=savedDue;job.due=savedDue;job.followUpDate=data.followUpDate!==undefined?data.followUpDate:(job.followUpDate||'');job.hours=effectiveHours;job.estimatedHoursRemaining=effectiveHours;job.completedAt=(data.job&&data.job.completedAt)||new Date().toISOString();
+          job.status='Completed';job.dueDate=savedDue;job.due=savedDue;job.followUpDate=data.followUpDate!==undefined?data.followUpDate:(job.followUpDate||'');job.completedAt=(data.job&&data.job.completedAt)||new Date().toISOString();
           document.getElementById('jobFinancialsModalBackdrop').classList.remove('open');jobFinancialsTicket='';jobFinancialsOriginTicket='';jobFinancialsViewTicket='';jobFinancialsOriginDraft=null;clientNotesReturnToFinancial=false;renderQueue();renderBoard();
         }catch(err){alert('Financials were saved, but the job could not be moved to Completed: '+err.message)}finally{moveBtn.disabled=false;moveBtn.textContent='Move to Completed'}
       }
@@ -4074,15 +3992,13 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const seconds=Math.max(0,Number(recoveredSeconds)||0);if(!seconds)return true;
         const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return false;
         const recoveredHours=seconds/3600;
-        const currentEstimated=Math.max(0,Number(job.hours??job.estimatedHoursRemaining??0));
-        const newEstimated=Math.max(0,currentEstimated-recoveredHours);
         const newAccrued=getTimeAccruedHours(job)+recoveredHours;
-        job.hours=newEstimated;job.estimatedHoursRemaining=newEstimated;setTimeAccruedHours(job,newAccrued);
+        setTimeAccruedHours(job,newAccrued);
         try{
-          const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,dueDate:job.due||job.dueDate,estimatedHoursRemaining:newEstimated,timeAccruedHours:newAccrued});
+          const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,timeAccruedHours:newAccrued});
           if(!data.success)throw new Error(data.error||'Unable to save recovered time');
           return true;
-        }catch(err){alert('Recovered time was added to the punch, but the job estimate could not be updated: '+err.message);return false}
+        }catch(err){alert('Recovered time was added to the punch, but Time Accrued could not be updated: '+err.message);return false}
       }
       async function continueCompletedBlock(includeGap=false){
         if(!completedTimerKey)return;
@@ -4194,7 +4110,6 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       });
       document.getElementById('cancelFollowUpDateBtn').addEventListener('click',()=>{followUpDateEditTicket='';document.getElementById('followUpDateModalBackdrop').classList.remove('open')});
       document.getElementById('clientReviewEtrSelect').addEventListener('change',updateClientReviewSubmitState);
-      document.getElementById('clientReviewDueSelect').addEventListener('change',updateClientReviewSubmitState);
       document.getElementById('clientReviewReturnReason').addEventListener('change',()=>{
         if(!clientReviewReturnCompleted){document.getElementById('clientReviewSubmitBtn').textContent=document.getElementById('clientReviewReturnReason').value==='Change Order'?'Create Change Order & Move to To Do':'Move to To Do'}
         updateClientReviewReturnFields();
@@ -4221,6 +4136,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('punchInWorkType').addEventListener('change',updatePunchInFields);
       document.getElementById('punchInWorkSet').addEventListener('change',updatePunchInFields);
       document.getElementById('punchInWorkDescription').addEventListener('input',updatePunchInSubmitState);
+      document.getElementById('punchInWorkloadScore').addEventListener('change',updatePunchInSubmitState);
       document.getElementById('punchInCancelBtn').addEventListener('click',()=>{
         pendingPunchTimerKey='';pendingPunchPreset=null;
         const backdrop=document.getElementById('punchInModalBackdrop');backdrop.classList.remove('open');backdrop.classList.remove('punch-in-targeted');
@@ -4245,7 +4161,8 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const workType=document.getElementById('punchInWorkType').value;
         const workDescription=document.getElementById('punchInWorkDescription').value.trim();
         const workSetId=document.getElementById('punchInWorkSet').value;
-        if(!workType||!workDescription||(workType==='Continuing Change Order'&&!workSetId))return;
+        const workloadScore=normalizeWorkloadScore(document.getElementById('punchInWorkloadScore').value);
+        if(!workType||!workDescription||(workType==='Continuing Change Order'&&!workSetId)||(workType==='New Change Order'&&!workloadScore))return;
         const startBtn=document.getElementById('punchInStartBtn');
         const cancelBtn=document.getElementById('punchInCancelBtn');
         const originalStartHtml=startBtn.innerHTML;
@@ -4261,7 +4178,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
             const paused=await pauseTimer(oldKey);
             if(!paused)return;
           }
-          const started=await beginWorkSessionForKey(key,workType,workDescription,workSetId);
+          const started=await beginWorkSessionForKey(key,workType,workDescription,workSetId,'',workloadScore);
           if(!started)return;
           const punchBackdrop=document.getElementById('punchInModalBackdrop');punchBackdrop.classList.remove('open');punchBackdrop.classList.remove('punch-in-targeted');
           pendingPunchTimerKey='';pendingPunchPreset=null;
@@ -4277,7 +4194,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         }
       });
       document.getElementById('cancelJobTimeBtn').addEventListener('click',()=>{timeEditTicket='';document.getElementById('timeEditModalBackdrop').classList.remove('open')});
-      document.getElementById('saveJobTimeBtn').addEventListener('click',async()=>{const job=jobs.find(j=>String(j.ticketNumber||'')===timeEditTicket);if(!job)return;const estimated=Math.max(0,Number(document.getElementById('estimatedRemainingInput').value)||0);try{const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,dueDate:job.due||job.dueDate,estimatedHoursRemaining:estimated});if(!data.success)throw new Error(data.error||'Unable to save estimated time remaining');job.hours=estimated;job.estimatedHoursRemaining=estimated;const state=ensureTimerState(job);state.remaining=recommendedWorkSeconds(job);state.blockStartRemaining=state.remaining;state.blockStartOvertime=state.overtime||0;state.committedSeconds=0;document.getElementById('timeEditModalBackdrop').classList.remove('open');timeEditTicket='';renderQueue();renderBoard()}catch(err){alert(err.message)}});
+      document.getElementById('saveJobTimeBtn').addEventListener('click',async()=>{const job=jobs.find(j=>String(j.ticketNumber||'')===timeEditTicket);if(!job)return;const score=normalizeWorkloadScore(document.getElementById('estimatedRemainingInput').value);if(!score){alert('Select a Workload Score from 1 to 5.');return}try{const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,workloadScore:score});if(!data.success)throw new Error(data.error||'Unable to save Workload Score');job.workloadScore=score;job.dateReceived=data.dateReceived!==undefined?data.dateReceived:job.dateReceived;job.dueAt=data.dueAt!==undefined?data.dueAt:job.dueAt;job.dueDate=data.dueDate||job.dueDate;job.due=job.dueDate;document.getElementById('timeEditModalBackdrop').classList.remove('open');timeEditTicket='';renderQueue();renderBoard()}catch(err){alert(err.message)}});
       document.getElementById('editClientNotesBtn').addEventListener('click',()=>{const textarea=document.getElementById('clientNotesTextarea');const pricingTextarea=document.getElementById('clientPricingNotesTextarea');const associatedEmailsTextarea=document.getElementById('clientAssociatedEmailsTextarea');textarea.readOnly=false;pricingTextarea.readOnly=false;associatedEmailsTextarea.readOnly=false;textarea.focus();document.getElementById('editClientNotesBtn').style.display='none';document.getElementById('doneClientNotesBtn').style.display='inline-block'});
       document.getElementById('doneClientNotesBtn').addEventListener('click',async()=>{
         if(!clientNotesTarget)return;
@@ -4323,7 +4240,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('jobDetailsModalBackdrop').addEventListener('click',e=>{if(e.target!==e.currentTarget)return;if(jobDetailsHasUnsavedEdits())return;closeJobDetailsModal()});
       document.getElementById('closeClientNotesBtn').addEventListener('click',()=>{const returnToFinancial=clientNotesReturnToFinancial;const returnToClients=clientNotesReturnToClients;clientNotesTarget=null;clientNotesReturnToFinancial=false;clientNotesReturnToClients=false;document.getElementById('clientNotesModalBackdrop').classList.remove('open');if(returnToFinancial&&jobFinancialsViewTicket)document.getElementById('jobFinancialsModalBackdrop').classList.add('open');else if(returnToClients){renderClientsDirectory();document.getElementById('clientsModalBackdrop').classList.add('open')}});
       document.getElementById('editJobNotesBtn').addEventListener('click',()=>{const textarea=document.getElementById('jobNotesTextarea');textarea.readOnly=false;textarea.focus();document.getElementById('editJobNotesBtn').style.display='none';document.getElementById('doneJobNotesBtn').style.display='inline-block'});
-      document.getElementById('doneJobNotesBtn').addEventListener('click',async()=>{const job=jobs.find(j=>String(j.ticketNumber||'')===jobNotesTicket);if(!job)return;const textarea=document.getElementById('jobNotesTextarea');const notes=textarea.value;try{const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,dueDate:job.due||job.dueDate,estimatedHoursRemaining:Number(job.hours??job.estimatedHoursRemaining??0),timeAccruedHours:getTimeAccruedHours(job),notes});if(!data.success)throw new Error(data.error||'Unable to save job notes');job.notes=notes;textarea.readOnly=true;document.getElementById('editJobNotesBtn').style.display='inline-block';document.getElementById('doneJobNotesBtn').style.display='none'}catch(err){alert(err.message)}});
+      document.getElementById('doneJobNotesBtn').addEventListener('click',async()=>{const job=jobs.find(j=>String(j.ticketNumber||'')===jobNotesTicket);if(!job)return;const textarea=document.getElementById('jobNotesTextarea');const notes=textarea.value;try{const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,timeAccruedHours:getTimeAccruedHours(job),notes});if(!data.success)throw new Error(data.error||'Unable to save job notes');job.notes=notes;textarea.readOnly=true;document.getElementById('editJobNotesBtn').style.display='inline-block';document.getElementById('doneJobNotesBtn').style.display='none'}catch(err){alert(err.message)}});
       document.getElementById('closeTimeRecordBtn').addEventListener('click',()=>{timeRecordTicket='';document.getElementById('timeRecordModalBackdrop').classList.remove('open')});
       document.getElementById('cancelPunchEditBtn').addEventListener('click',()=>{editPunchSessionId='';document.getElementById('editPunchModalBackdrop').classList.remove('open')});
       document.getElementById('savePunchEditBtn').addEventListener('click',async()=>{
@@ -4377,10 +4294,10 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         if(createBtn){createBtn.disabled=true;createBtn.classList.add('is-loading');createBtn.innerHTML=PUNCH_LOADING_ICON+'<span>Creating…</span>'}
         try{
           const createAction=emailDraftQueueId?'createJobFromEmailQueue':'createJob';
-          const payload={action:createAction,ticketNumber:requestedTicketNumber,primaryClientId:primary,secondaryClientId:secondary,description:desc,designType:'',estimatedHoursRemaining:Number(document.getElementById('hours').value),status,dueDate:document.getElementById('dueDate').dataset.manual?document.getElementById('dueDate').value:'',notes:emailDraftQueueId?document.getElementById('emailDraftJobNotes').value:''};
+          const payload={action:createAction,ticketNumber:requestedTicketNumber,primaryClientId:primary,secondaryClientId:secondary,description:desc,designType:'',workloadScore:normalizeWorkloadScore(document.getElementById('workloadScore').value),status,notes:emailDraftQueueId?document.getElementById('emailDraftJobNotes').value:''};
           if(emailDraftQueueId)payload.queueId=emailDraftQueueId;
           const data=await apiPost(payload);
-          if(!data.success)throw new Error(data.error||'Unable to create job'); jobs.push(data.job);if(emailDraftQueueId){const source=emailQueueItem(emailDraftQueueId);if(source)recentEmailSources.unshift({...source,ticketNumber:data.job.ticketNumber,deleteAfter:data.deleteAfter||''});emailQueue=emailQueue.filter(item=>String(item.queueId||'')!==String(emailDraftQueueId))}clearEmailDraftState();renderEmailQueue(); renderQueue(); renderBoard(); document.getElementById('jobForm').reset(); document.getElementById('clientModal').classList.remove('open'); document.getElementById('subclientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; document.getElementById('clientIdAlert').style.display='none'; document.getElementById('clientIdAlert').textContent=''; document.getElementById('newSubclientName').value=''; document.getElementById('newSubclientId').value=''; document.getElementById('subclientIdAlert').style.display='none'; document.getElementById('subclientIdAlert').textContent=''; document.getElementById('dueDate').dataset.manual=''; populateClients(); syncNextId(); document.getElementById('ticketPreview').style.display='none'; document.getElementById('jobNumberWrap').style.display='none';
+          if(!data.success)throw new Error(data.error||'Unable to create job'); jobs.push(data.job);if(emailDraftQueueId){const source=emailQueueItem(emailDraftQueueId);if(source)recentEmailSources.unshift({...source,ticketNumber:data.job.ticketNumber,deleteAfter:data.deleteAfter||''});emailQueue=emailQueue.filter(item=>String(item.queueId||'')!==String(emailDraftQueueId))}clearEmailDraftState();renderEmailQueue(); renderQueue(); renderBoard(); document.getElementById('jobForm').reset(); document.getElementById('clientModal').classList.remove('open'); document.getElementById('subclientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; document.getElementById('clientIdAlert').style.display='none'; document.getElementById('clientIdAlert').textContent=''; document.getElementById('newSubclientName').value=''; document.getElementById('newSubclientId').value=''; document.getElementById('subclientIdAlert').style.display='none'; document.getElementById('subclientIdAlert').textContent=''; populateClients(); syncNextId(); document.getElementById('ticketPreview').style.display='none'; document.getElementById('jobNumberWrap').style.display='none';
         }catch(err){alert(err.message)}finally{if(createBtn){createBtn.classList.remove('is-loading');createBtn.innerHTML=originalCreateHtml;validateJobNumber()}}
       });
       const markActivity=()=>{if(systemIdleDetectionState==='active')lastActivityAt=Date.now()};
