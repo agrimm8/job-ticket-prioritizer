@@ -725,6 +725,11 @@
     #job-priority-app .motivator-error.show{display:block}
     #job-priority-app .motivator-loading{display:flex;align-items:center;justify-content:center;gap:8px;min-height:220px;font-weight:800;opacity:.75}
     #job-priority-app .motivator-select-backdrop{z-index:14000}
+    #job-priority-app .motivator-select-loading-backdrop{z-index:15000}
+    #job-priority-app .motivator-select-loading-modal{width:min(390px,calc(100vw - 32px));text-align:center}
+    #job-priority-app .motivator-select-loading-spinner{width:34px;height:34px;margin:4px auto 14px;border-width:4px;color:#2f67b2}
+    #job-priority-app .motivator-select-loading-title{font-size:16px;font-weight:900;margin-bottom:6px}
+    #job-priority-app .motivator-select-loading-copy{font-size:11px;line-height:1.45;opacity:.7;margin:0}
     #job-priority-app .motivator-select-modal{width:min(430px,calc(100vw - 32px))}
     #job-priority-app .motivator-select-clock{font-size:30px;font-weight:950;letter-spacing:.03em;margin:12px 0 5px}
     #job-priority-app .motivator-select-meta{font-size:10px;opacity:.68}
@@ -1035,6 +1040,14 @@
           <button class="secondary" id="motivatorSelectIndefiniteBtn" type="button">Continue Indefinitely</button>
           <button class="secondary" id="motivatorSelectStopBtn" type="button">Stop</button>
         </div>
+      </div>
+    </div>
+
+    <div class="timer-modal-backdrop motivator-select-loading-backdrop" id="motivatorSelectLoadingBackdrop" role="dialog" aria-modal="true" aria-labelledby="motivatorSelectLoadingTitle">
+      <div class="timer-modal motivator-select-loading-modal">
+        <span class="timer-spinner motivator-select-loading-spinner" aria-hidden="true"></span>
+        <div class="motivator-select-loading-title" id="motivatorSelectLoadingTitle">Motivator Select is loading…</div>
+        <p class="motivator-select-loading-copy">Choosing a job and starting your work session. Please wait.</p>
       </div>
     </div>
 
@@ -3376,6 +3389,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       let motivatorSelectSeconds=0;
       let motivatorSelectKey='';
       let motivatorSelectTicket='';
+      let motivatorSelectLaunching=false;
       let motivatorCurrentFileId='';
       const MOTIVATOR_R2_API_BASE='https://jtp-motivator-api.andrew-grimm85.workers.dev';
       const MOTIVATOR_GO_QUOTES=[
@@ -3610,14 +3624,25 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const job=jobs.find(j=>String(j.ticketNumber||'')===String(motivatorSelectTicket||''));document.getElementById('motivatorSelectModalMessage').textContent=job?`Continue working on ${job.title||job.displayTitle||('Ticket '+job.ticketNumber)}?`:'Continue working on this job?';document.getElementById('motivatorSelectModalBackdrop').classList.add('open');renderQueue();renderBoard();renderActiveJobBar();
       },1000)}
       async function launchMotivatorSelect(){
-        if(activeWorkSession&&activeWorkSession.sessionId){alert('You already have an active job. Stop that timer before using Motivator Select.');return}
-        const eligible=motivatorSelectEligibleJobs();if(!eligible.length){alert('Motivator Select could not find an Overdue or Due Today job in To Do.');return}
-        const job=eligible[Math.floor(Math.random()*eligible.length)];const target=motivatorSelectTargetForJob(job);const key=timerKeyFor(job);motivatorSelectKey=key;motivatorSelectTicket=String(job.ticketNumber||'');
-        pendingPunchKeys.add(key);renderQueue();try{
+        if(motivatorSelectLaunching)return;
+        motivatorSelectLaunching=true;
+        const loadingBackdrop=document.getElementById('motivatorSelectLoadingBackdrop');
+        if(loadingBackdrop)loadingBackdrop.classList.add('open');
+        let key='';
+        try{
+          if(activeWorkSession&&activeWorkSession.sessionId){alert('You already have an active job. Stop that timer before using Motivator Select.');return}
+          const eligible=motivatorSelectEligibleJobs();if(!eligible.length){alert('Motivator Select could not find an Overdue or Due Today job in To Do.');return}
+          const job=eligible[Math.floor(Math.random()*eligible.length)];const target=motivatorSelectTargetForJob(job);key=timerKeyFor(job);motivatorSelectKey=key;motivatorSelectTicket=String(job.ticketNumber||'');
+          pendingPunchKeys.add(key);renderQueue();
           const started=await beginWorkSessionForKey(key,target.workType,target.description,target.workSetId);if(!started){motivatorSelectKey='';motivatorSelectTicket='';return}
           const state=ensureTimerState(job);if(state.remaining<600){state.remaining=600;state.blockStartRemaining=600;state.blockStartOvertime=state.overtime||0;state.committedSeconds=0}
           await startTimerInternal(key);openJobDetailsModal(String(job.ticketNumber||''));requestAnimationFrame(()=>{const sectionKey=target.kind==='change-order'?`co-${target.number}`:'initial';const section=document.querySelector(`#jobDetailsBody [data-job-details-section="${CSS.escape(sectionKey)}"]`);if(section)section.scrollIntoView({behavior:'smooth',block:'center'})});startMotivatorSelectCountdown();
-        }finally{pendingPunchKeys.delete(key);renderQueue();renderBoard()}
+        }finally{
+          if(key)pendingPunchKeys.delete(key);
+          renderQueue();renderBoard();
+          if(loadingBackdrop)loadingBackdrop.classList.remove('open');
+          motivatorSelectLaunching=false;
+        }
       }
       async function continueMotivatorSelect(){const backdrop=document.getElementById('motivatorSelectModalBackdrop');backdrop.classList.remove('open');const state=timerState[motivatorSelectKey];if(!state||!activeWorkSession||!activeWorkSession.sessionId)return;state.running=true;await startTimerInternal(motivatorSelectKey,true);startMotivatorSelectCountdown()}
       async function continueMotivatorSelectIndefinitely(){const backdrop=document.getElementById('motivatorSelectModalBackdrop');backdrop.classList.remove('open');clearMotivatorSelectInterval();const key=motivatorSelectKey;const state=timerState[key];if(!state||!activeWorkSession||!activeWorkSession.sessionId)return;state.running=true;await startTimerInternal(key,true);motivatorSelectKey='';motivatorSelectTicket='';motivatorSelectSeconds=0;renderQueue();renderBoard();renderActiveJobBar();if(jobDetailsTicket)renderJobDetailsModal()}
