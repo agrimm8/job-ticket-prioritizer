@@ -215,6 +215,48 @@
     #job-priority-app .active-job-stop{background:#b42318;color:#fff;border-color:#b42318}
     #job-priority-app .active-job-stop:hover{background:#921b13}
     #job-priority-app .job-details-active-job-bar{position:sticky;top:0;z-index:6;margin:0 0 12px}
+    #job-priority-app .focus-countdown{display:none;position:fixed;z-index:22000;top:150px;right:24px;color:#f6f0e8;font-family:Arial,sans-serif;user-select:none}
+    #job-priority-app .focus-countdown.show{display:block}
+    #job-priority-app .focus-countdown-shell{width:330px;border:1px solid #3e302d;border-radius:15px;background:linear-gradient(180deg,#1a1615,#090808 62%,#120b0a);box-shadow:0 18px 45px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.04);overflow:hidden}
+    #job-priority-app .focus-countdown-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 9px 7px 12px;background:linear-gradient(180deg,#2b2523,#171312);border-bottom:1px solid #3a2b28;cursor:grab}
+    #job-priority-app .focus-countdown.dragging .focus-countdown-head{cursor:grabbing}
+    #job-priority-app .focus-countdown-kicker{font-size:8px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#c9b9b2}
+    #job-priority-app .focus-countdown-job{min-width:0;max-width:205px;margin-top:2px;font-size:9px;color:#8f827d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #job-priority-app .focus-countdown-window-actions{display:flex;gap:4px}
+    #job-priority-app .focus-countdown-window-actions button{width:27px;height:25px;min-width:27px;min-height:25px;padding:0;border:1px solid #50413e;border-radius:6px;background:#211b19;color:#d8cbc6;font-size:12px;line-height:1}
+    #job-priority-app .focus-countdown-face{padding:13px 13px 11px;background:radial-gradient(circle at 50% 30%,rgba(127,16,10,.18),transparent 56%),#070707}
+    #job-priority-app .focus-countdown-status{margin-bottom:5px;text-align:center;font-size:8px;font-weight:900;letter-spacing:.14em;color:#704d49}
+    #job-priority-app .focus-countdown-digits{font-family:'Courier New',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:43px;line-height:1;font-weight:800;letter-spacing:1px;text-align:center;font-variant-numeric:tabular-nums;color:#ff3d28;text-shadow:0 0 4px #ff341f,0 0 12px rgba(255,45,24,.68),0 0 24px rgba(170,14,4,.34)}
+    #job-priority-app .focus-countdown.urgent .focus-countdown-digits{color:#ff2917;text-shadow:0 0 5px #ff2b18,0 0 16px rgba(255,35,15,.9),0 0 32px rgba(211,17,5,.56)}
+    #job-priority-app .focus-countdown.final-minute .focus-countdown-digits{animation:focusCountdownPulse .82s ease-in-out infinite}
+    #job-priority-app .focus-countdown.expired .focus-countdown-digits{animation:focusCountdownExpired .48s steps(2,end) infinite}
+    @keyframes focusCountdownPulse{0%,100%{opacity:1;filter:brightness(1)}50%{opacity:.63;filter:brightness(1.45)}}
+    @keyframes focusCountdownExpired{0%,45%{opacity:1;filter:brightness(1.6)}46%,100%{opacity:.28;filter:brightness(.75)}}
+    #job-priority-app .focus-countdown-main-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:10px 12px 4px;background:#151110}
+    #job-priority-app .focus-countdown-main-actions button{min-height:33px;border-radius:7px;font-size:10px;font-weight:900}
+    #job-priority-app .focus-countdown-stop{background:#8f1d15;color:#fff;border-color:#b92b1f}
+    #job-priority-app .focus-countdown-reset{background:#292321;color:#e3d8d3;border-color:#4b3d39}
+    #job-priority-app .focus-countdown-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:8px 12px 12px;background:#151110}
+    #job-priority-app .focus-countdown-presets button{min-height:27px;padding:4px 3px;border:1px solid #443733;border-radius:6px;background:#211b19;color:#cfc1bb;font-size:8px;font-weight:800;white-space:nowrap}
+    #job-priority-app .focus-countdown-presets button:hover{background:#312522;color:#fff}
+    #job-priority-app .focus-countdown.compact,#job-priority-app .focus-countdown.mini{top:auto!important;left:auto!important;right:18px!important;bottom:18px!important}
+    #job-priority-app .focus-countdown.compact .focus-countdown-shell{width:255px;border-radius:11px}
+    #job-priority-app .focus-countdown.compact .focus-countdown-head,#job-priority-app .focus-countdown.compact .focus-countdown-main-actions,#job-priority-app .focus-countdown.compact .focus-countdown-presets{display:none}
+    #job-priority-app .focus-countdown-compact{display:none;align-items:center;gap:8px;padding:8px;background:#0a0909}
+    #job-priority-app .focus-countdown.compact .focus-countdown-face{display:none}
+    #job-priority-app .focus-countdown.compact .focus-countdown-compact{display:flex}
+    #job-priority-app .focus-countdown-compact-digits{flex:1;min-width:0;font-family:'Courier New',ui-monospace,monospace;font-size:24px;font-weight:900;letter-spacing:.5px;color:#ff3d28;text-shadow:0 0 5px #ff341f,0 0 13px rgba(255,45,24,.55);font-variant-numeric:tabular-nums;white-space:nowrap}
+    #job-priority-app .focus-countdown-compact-actions{display:flex;gap:4px}
+    #job-priority-app .focus-countdown-compact-actions button{width:28px;height:28px;min-width:28px;min-height:28px;padding:0;border:1px solid #493a36;border-radius:6px;background:#211b19;color:#ded2cd;font-size:11px}
+    #job-priority-app .focus-countdown.mini .focus-countdown-shell{width:auto;border-radius:9px}
+    #job-priority-app .focus-countdown.mini .focus-countdown-head,#job-priority-app .focus-countdown.mini .focus-countdown-face,#job-priority-app .focus-countdown.mini .focus-countdown-main-actions,#job-priority-app .focus-countdown.mini .focus-countdown-presets,#job-priority-app .focus-countdown.mini .focus-countdown-compact{display:none}
+    #job-priority-app .focus-countdown-mini{display:none;border:0;background:#080707;color:#ff3d28;padding:7px 10px;border-radius:8px;font-family:'Courier New',ui-monospace,monospace;font-size:17px;font-weight:900;letter-spacing:.4px;text-shadow:0 0 5px #ff341f,0 0 12px rgba(255,45,24,.55);font-variant-numeric:tabular-nums}
+    #job-priority-app .focus-countdown.mini .focus-countdown-mini{display:block}
+    #job-priority-app .focus-countdown.compact.urgent .focus-countdown-compact-digits,#job-priority-app .focus-countdown.mini.urgent .focus-countdown-mini{filter:brightness(1.28)}
+    #job-priority-app .focus-countdown.compact.final-minute .focus-countdown-compact-digits,#job-priority-app .focus-countdown.mini.final-minute .focus-countdown-mini{animation:focusCountdownPulse .82s ease-in-out infinite}
+    #job-priority-app .focus-countdown.compact.expired .focus-countdown-compact-digits,#job-priority-app .focus-countdown.mini.expired .focus-countdown-mini{animation:focusCountdownExpired .48s steps(2,end) infinite}
+    @media(max-width:700px){#job-priority-app .focus-countdown{top:120px;right:10px}#job-priority-app .focus-countdown-shell{width:min(310px,calc(100vw - 20px))}#job-priority-app .focus-countdown-digits{font-size:38px}#job-priority-app .focus-countdown.compact,#job-priority-app .focus-countdown.mini{right:10px!important;bottom:10px!important}}
+    @media(prefers-reduced-motion:reduce){#job-priority-app .focus-countdown.final-minute .focus-countdown-digits,#job-priority-app .focus-countdown.expired .focus-countdown-digits,#job-priority-app .focus-countdown.compact.final-minute .focus-countdown-compact-digits,#job-priority-app .focus-countdown.mini.final-minute .focus-countdown-mini,#job-priority-app .focus-countdown.compact.expired .focus-countdown-compact-digits,#job-priority-app .focus-countdown.mini.expired .focus-countdown-mini{animation:none}}
     @media(max-width:700px){#job-priority-app .active-job-bar.show{align-items:flex-start;flex-direction:column}#job-priority-app .active-job-main{width:100%}#job-priority-app .active-job-times{width:100%}#job-priority-app .active-job-actions{width:100%;justify-content:flex-end}}
     #job-priority-app .tag-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
     #job-priority-app .card-tag{display:inline-block;padding:2px 6px;border-radius:999px;background:light-dark(#e8e8e3,#333);font-size:9px;font-weight:800;line-height:1.4}
@@ -821,6 +863,44 @@
         <button class="active-job-stop" id="activeJobStopBtn" type="button">Stop Timer</button>
       </div>
     </div>
+    <div class="focus-countdown" id="focusCountdown" aria-live="polite">
+      <div class="focus-countdown-shell">
+        <div class="focus-countdown-head" id="focusCountdownDragHandle">
+          <div style="min-width:0"><div class="focus-countdown-kicker">Focus Countdown</div><div class="focus-countdown-job" id="focusCountdownJob">Active Job</div></div>
+          <div class="focus-countdown-window-actions">
+            <button type="button" data-focus-view="compact" aria-label="Semi-minimize countdown" title="Semi-minimize">▁</button>
+            <button type="button" data-focus-view="mini" aria-label="Minimize countdown" title="Minimize">−</button>
+          </div>
+        </div>
+        <div class="focus-countdown-face">
+          <div class="focus-countdown-status" id="focusCountdownStatus">CHOOSE A TIME</div>
+          <div class="focus-countdown-digits" id="focusCountdownDigits">00:00:00</div>
+        </div>
+        <div class="focus-countdown-main-actions">
+          <button class="focus-countdown-stop" id="focusCountdownStopBtn" type="button">Stop</button>
+          <button class="focus-countdown-reset" id="focusCountdownResetBtn" type="button">Reset</button>
+        </div>
+        <div class="focus-countdown-presets" aria-label="Quick countdown times">
+          <button type="button" data-focus-preset="900">15 Minutes</button>
+          <button type="button" data-focus-preset="1800">30 Minutes</button>
+          <button type="button" data-focus-preset="3600">1 Hour</button>
+          <button type="button" data-focus-preset="5400">1.5 Hours</button>
+          <button type="button" data-focus-preset="7200">2 Hours</button>
+          <button type="button" data-focus-preset="10800">3 Hours</button>
+          <button type="button" data-focus-preset="14400">4 Hours</button>
+          <button type="button" data-focus-preset="18000">5 Hours</button>
+        </div>
+        <div class="focus-countdown-compact">
+          <div class="focus-countdown-compact-digits" id="focusCountdownCompactDigits">00:00:00</div>
+          <div class="focus-countdown-compact-actions">
+            <button type="button" id="focusCountdownCompactStopBtn" aria-label="Stop or start countdown" title="Stop / Start">■</button>
+            <button type="button" data-focus-view="full" aria-label="Expand countdown" title="Expand">↗</button>
+            <button type="button" data-focus-view="mini" aria-label="Minimize countdown" title="Minimize">−</button>
+          </div>
+        </div>
+        <button class="focus-countdown-mini" id="focusCountdownMiniBtn" type="button" aria-label="Expand focus countdown" title="Expand countdown">00:00:00</button>
+      </div>
+    </div>
     <div class="hourly-work-backdrop" id="hourlyWorkReminderBackdrop" role="dialog" aria-modal="true" aria-labelledby="hourlyWorkReminderTitle">
       <div class="hourly-work-modal">
         <div class="hourly-work-kicker">Hourly Work Check-In</div>
@@ -1396,6 +1476,10 @@
       let recoveryOpenSession=null;
       let holidayCalendar=[];
       let activeWorkSession=null;
+      let focusCountdownInterval=null;
+      let focusCountdownState={sessionId:'',selectedSeconds:0,remainingSeconds:0,targetAt:0,running:false,alarmed:false};
+      let focusCountdownView={mode:'full',left:null,top:null};
+      let focusCountdownDrag=null;
       let pendingPunchTimerKey='';
       const pendingPunchKeys=new Set();
       const workContextByKey={};
@@ -1845,6 +1929,45 @@
           setTimeout(()=>ctx.close().catch(()=>{}),700);
         }catch(e){}
       }
+      function focusCountdownStorageKey(){return 'jtp-focus-countdown-state'}
+      function focusCountdownViewStorageKey(){return 'jtp-focus-countdown-view'}
+      function loadFocusCountdownView(){try{const raw=localStorage.getItem(focusCountdownViewStorageKey());if(raw){const parsed=JSON.parse(raw);focusCountdownView.mode=['full','compact','mini'].includes(parsed.mode)?parsed.mode:'full';focusCountdownView.left=Number.isFinite(Number(parsed.left))?Number(parsed.left):null;focusCountdownView.top=Number.isFinite(Number(parsed.top))?Number(parsed.top):null}}catch(e){}}
+      function saveFocusCountdownView(){try{localStorage.setItem(focusCountdownViewStorageKey(),JSON.stringify(focusCountdownView))}catch(e){}}
+      function saveFocusCountdownState(){try{localStorage.setItem(focusCountdownStorageKey(),JSON.stringify(focusCountdownState))}catch(e){}}
+      function restoreFocusCountdownStateForSession(sessionId){
+        let restored=null;try{const raw=localStorage.getItem(focusCountdownStorageKey());if(raw){const parsed=JSON.parse(raw);if(String(parsed.sessionId||'')===String(sessionId||''))restored=parsed}}catch(e){}
+        if(restored){focusCountdownState={sessionId:String(sessionId||''),selectedSeconds:Math.max(0,Number(restored.selectedSeconds)||0),remainingSeconds:Math.max(0,Number(restored.remainingSeconds)||0),targetAt:Math.max(0,Number(restored.targetAt)||0),running:!!restored.running,alarmed:!!restored.alarmed}}
+        else{focusCountdownState={sessionId:String(sessionId||''),selectedSeconds:0,remainingSeconds:0,targetAt:0,running:false,alarmed:false};saveFocusCountdownState()}
+      }
+      function focusCountdownSecondsRemaining(){if(!focusCountdownState.running)return Math.max(0,Math.ceil(Number(focusCountdownState.remainingSeconds)||0));return Math.max(0,Math.ceil((Number(focusCountdownState.targetAt||0)-Date.now())/1000))}
+      function formatFocusCountdown(seconds){const total=Math.max(0,Math.ceil(Number(seconds)||0));const h=Math.floor(total/3600);const m=Math.floor((total%3600)/60);const s=total%60;return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
+      function playFocusCountdownAlarm(){
+        try{const AudioContextClass=window.AudioContext||window.webkitAudioContext;if(!AudioContextClass)return;const ctx=new AudioContextClass();const now=ctx.currentTime;[0,.19,.38,.72,.91,.1+1].forEach((delay,index)=>{const osc=ctx.createOscillator();const gain=ctx.createGain();osc.type='square';osc.frequency.setValueAtTime(index<3?760:930,now+delay);gain.gain.setValueAtTime(.0001,now+delay);gain.gain.exponentialRampToValueAtTime(.16,now+delay+.015);gain.gain.exponentialRampToValueAtTime(.0001,now+delay+.12);osc.connect(gain);gain.connect(ctx.destination);osc.start(now+delay);osc.stop(now+delay+.14)});setTimeout(()=>ctx.close().catch(()=>{}),1800)}catch(e){}
+      }
+      function setFocusCountdownView(mode){focusCountdownView.mode=['full','compact','mini'].includes(mode)?mode:'full';saveFocusCountdownView();renderFocusCountdown()}
+      function setFocusCountdownDuration(seconds){const value=Math.max(1,Math.floor(Number(seconds)||0));if(!activeWorkSession||!activeWorkSession.sessionId||!value)return;focusCountdownState.sessionId=String(activeWorkSession.sessionId);focusCountdownState.selectedSeconds=value;focusCountdownState.remainingSeconds=value;focusCountdownState.targetAt=Date.now()+value*1000;focusCountdownState.running=true;focusCountdownState.alarmed=false;saveFocusCountdownState();renderFocusCountdown()}
+      function toggleFocusCountdownRunning(){if(!activeWorkSession||!activeWorkSession.sessionId)return;if(focusCountdownState.running){focusCountdownState.remainingSeconds=focusCountdownSecondsRemaining();focusCountdownState.running=false;focusCountdownState.targetAt=0}else{let remaining=Math.max(0,Number(focusCountdownState.remainingSeconds)||0);if(remaining<=0)remaining=Math.max(0,Number(focusCountdownState.selectedSeconds)||0);if(remaining<=0){alert('Choose a quick countdown time first.');return}focusCountdownState.remainingSeconds=remaining;focusCountdownState.targetAt=Date.now()+remaining*1000;focusCountdownState.running=true;focusCountdownState.alarmed=false}saveFocusCountdownState();renderFocusCountdown()}
+      function resetFocusCountdown(){const value=Math.max(0,Number(focusCountdownState.selectedSeconds)||0);if(!value){alert('Choose a quick countdown time first.');return}setFocusCountdownDuration(value)}
+      function updateFocusCountdownDisplay(){
+        const widget=document.getElementById('focusCountdown');if(!widget||!activeWorkSession||!activeWorkSession.sessionId)return;
+        let remaining=focusCountdownSecondsRemaining();if(focusCountdownState.running&&remaining<=0){focusCountdownState.running=false;focusCountdownState.remainingSeconds=0;focusCountdownState.targetAt=0;if(!focusCountdownState.alarmed){focusCountdownState.alarmed=true;playFocusCountdownAlarm()}saveFocusCountdownState()}else if(focusCountdownState.running){focusCountdownState.remainingSeconds=remaining}
+        const text=formatFocusCountdown(remaining);['focusCountdownDigits','focusCountdownCompactDigits','focusCountdownMiniBtn'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=text});
+        const hasDuration=focusCountdownState.selectedSeconds>0;const expired=hasDuration&&remaining<=0&&focusCountdownState.alarmed;widget.classList.toggle('urgent',remaining>60&&remaining<=300);widget.classList.toggle('final-minute',remaining>0&&remaining<=60);widget.classList.toggle('expired',expired);
+        const status=document.getElementById('focusCountdownStatus');if(status)status.textContent=expired?'TIME\'S UP':(!hasDuration?'CHOOSE A TIME':(focusCountdownState.running?(remaining<=60?'FINAL MINUTE':remaining<=300?'FIVE MINUTES OR LESS':'COUNTING DOWN'):'STOPPED'));
+        const stop=document.getElementById('focusCountdownStopBtn');if(stop)stop.textContent=focusCountdownState.running?'Stop':'Start';const compactStop=document.getElementById('focusCountdownCompactStopBtn');if(compactStop){compactStop.textContent=focusCountdownState.running?'■':'▶';compactStop.title=focusCountdownState.running?'Stop countdown':'Start countdown'}
+      }
+      function applyFocusCountdownPosition(){const widget=document.getElementById('focusCountdown');if(!widget||focusCountdownView.mode!=='full')return;if(Number.isFinite(focusCountdownView.left)&&Number.isFinite(focusCountdownView.top)){const maxLeft=Math.max(6,window.innerWidth-widget.offsetWidth-6);const maxTop=Math.max(6,window.innerHeight-widget.offsetHeight-6);const left=Math.min(Math.max(6,focusCountdownView.left),maxLeft);const top=Math.min(Math.max(6,focusCountdownView.top),maxTop);widget.style.left=`${left}px`;widget.style.top=`${top}px`;widget.style.right='auto';widget.style.bottom='auto';focusCountdownView.left=left;focusCountdownView.top=top}else{widget.style.left='';widget.style.top='150px';widget.style.right='24px';widget.style.bottom='auto'}}
+      function renderFocusCountdown(){
+        const widget=document.getElementById('focusCountdown');if(!widget)return;const active=!!(activeWorkSession&&activeWorkSession.sessionId);widget.classList.toggle('show',active);if(!active){if(focusCountdownInterval){clearInterval(focusCountdownInterval);focusCountdownInterval=null}return}
+        const sessionId=String(activeWorkSession.sessionId||'');if(String(focusCountdownState.sessionId||'')!==sessionId)restoreFocusCountdownStateForSession(sessionId);
+        widget.classList.remove('compact','mini');if(focusCountdownView.mode!=='full')widget.classList.add(focusCountdownView.mode);const job=jobs.find(j=>String(j.ticketNumber||'')===String(activeWorkSession.ticketNumber||''));const title=job?(job.title||job.displayTitle||`Ticket ${activeWorkSession.ticketNumber}`):`Ticket ${activeWorkSession.ticketNumber}`;const label=document.getElementById('focusCountdownJob');if(label)label.textContent=title;requestAnimationFrame(applyFocusCountdownPosition);updateFocusCountdownDisplay();if(!focusCountdownInterval)focusCountdownInterval=setInterval(updateFocusCountdownDisplay,250)
+      }
+      function beginFocusCountdownDrag(event){const widget=document.getElementById('focusCountdown');if(!widget||focusCountdownView.mode!=='full'||event.button!==0||event.target.closest('button'))return;const rect=widget.getBoundingClientRect();focusCountdownDrag={pointerId:event.pointerId,offsetX:event.clientX-rect.left,offsetY:event.clientY-rect.top};widget.classList.add('dragging');try{widget.setPointerCapture(event.pointerId)}catch(e){}event.preventDefault()}
+      function moveFocusCountdownDrag(event){if(!focusCountdownDrag||event.pointerId!==focusCountdownDrag.pointerId)return;const widget=document.getElementById('focusCountdown');if(!widget)return;const maxLeft=Math.max(6,window.innerWidth-widget.offsetWidth-6);const maxTop=Math.max(6,window.innerHeight-widget.offsetHeight-6);const left=Math.min(Math.max(6,event.clientX-focusCountdownDrag.offsetX),maxLeft);const top=Math.min(Math.max(6,event.clientY-focusCountdownDrag.offsetY),maxTop);widget.style.left=`${left}px`;widget.style.top=`${top}px`;widget.style.right='auto';widget.style.bottom='auto';focusCountdownView.left=left;focusCountdownView.top=top}
+      function endFocusCountdownDrag(event){if(!focusCountdownDrag||event.pointerId!==focusCountdownDrag.pointerId)return;const widget=document.getElementById('focusCountdown');if(widget)widget.classList.remove('dragging');focusCountdownDrag=null;saveFocusCountdownView()}
+      function initializeFocusCountdown(){
+        loadFocusCountdownView();const widget=document.getElementById('focusCountdown');if(!widget)return;widget.addEventListener('click',event=>{const preset=event.target.closest('[data-focus-preset]');if(preset){setFocusCountdownDuration(Number(preset.getAttribute('data-focus-preset')));return}const view=event.target.closest('[data-focus-view]');if(view){setFocusCountdownView(view.getAttribute('data-focus-view'));return}});document.getElementById('focusCountdownStopBtn').addEventListener('click',toggleFocusCountdownRunning);document.getElementById('focusCountdownCompactStopBtn').addEventListener('click',toggleFocusCountdownRunning);document.getElementById('focusCountdownResetBtn').addEventListener('click',resetFocusCountdown);document.getElementById('focusCountdownMiniBtn').addEventListener('click',()=>setFocusCountdownView('compact'));document.getElementById('focusCountdownDragHandle').addEventListener('pointerdown',beginFocusCountdownDrag);window.addEventListener('pointermove',moveFocusCountdownDrag);window.addEventListener('pointerup',endFocusCountdownDrag);window.addEventListener('pointercancel',endFocusCountdownDrag);window.addEventListener('resize',()=>{if(focusCountdownView.mode==='full')applyFocusCountdownPosition()});renderFocusCountdown()
+      }
       function playIdleAlarmBurst(){
         if(idleAlarmMuted||!activeWorkSession||!activeWorkSession.sessionId)return;
         try{
@@ -2162,7 +2285,7 @@
       function activeWorkSectionLabel(session){if(!session)return '';if(session.workSetType==='Change Order')return `Change Order ${Number(session.changeOrderNumber||0)||''}`.trim();return 'Initial Request'}
       function updateActiveJobBarTimers(){if(activeWorkSession){const elapsed=formatActiveSessionElapsed();document.querySelectorAll('[data-active-job-session-time]').forEach(el=>{el.textContent=elapsed});checkHourlyWorkReminder()}updateJobDetailsAccumulatedTime()}
       function jobDetailsActiveJobBarMarkup(job){if(!activeWorkSession||!activeWorkSession.sessionId||String(activeWorkSession.ticketNumber||'')!==String(job.ticketNumber||''))return '';const title=job.title||job.displayTitle||`Ticket ${activeWorkSession.ticketNumber}`;const section=activeWorkSectionLabel(activeWorkSession);const type=String(activeWorkSession.workType||'').trim();return `<div class="active-job-bar show job-details-active-job-bar" id="jobDetailsActiveJobBar" role="status" aria-live="polite"><div class="active-job-main"><span class="active-job-dot" aria-hidden="true"></span><div class="active-job-copy"><div class="active-job-kicker">Active Job</div><div class="active-job-title">${escapeHtml(title)}</div><div class="active-job-meta">${escapeHtml([section,type].filter(Boolean).join(' · '))}</div></div></div><div class="active-job-times"><div class="active-job-time"><span class="active-job-time-label">Session</span><span class="active-job-time-value" data-active-job-session-time>${formatActiveSessionElapsed()}</span></div></div><div class="active-job-actions"><button class="active-job-stop" id="jobDetailsActiveJobStopBtn" type="button">Stop Timer</button></div></div>`}
-      function renderActiveJobBar(){const bar=document.getElementById('activeJobBar');if(!bar)return;const hasActive=!!(activeWorkSession&&activeWorkSession.sessionId);const detailsOpen=document.getElementById('jobDetailsModalBackdrop')?.classList.contains('open');const activeDetailsOpen=hasActive&&detailsOpen&&String(jobDetailsTicket||'')===String(activeWorkSession.ticketNumber||'');bar.classList.toggle('show',hasActive&&!activeDetailsOpen);if(!hasActive)return;const job=jobs.find(j=>String(j.ticketNumber||'')===String(activeWorkSession.ticketNumber||''));const title=job?(job.title||job.displayTitle||`Ticket ${activeWorkSession.ticketNumber}`):`Ticket ${activeWorkSession.ticketNumber}`;const section=activeWorkSectionLabel(activeWorkSession);const type=String(activeWorkSession.workType||'').trim();document.getElementById('activeJobTitle').textContent=title;document.getElementById('activeJobMeta').textContent=[section,type].filter(Boolean).join(' · ');updateActiveJobBarTimers()}
+      function renderActiveJobBar(){const bar=document.getElementById('activeJobBar');if(!bar)return;const hasActive=!!(activeWorkSession&&activeWorkSession.sessionId);const detailsOpen=document.getElementById('jobDetailsModalBackdrop')?.classList.contains('open');const activeDetailsOpen=hasActive&&detailsOpen&&String(jobDetailsTicket||'')===String(activeWorkSession.ticketNumber||'');bar.classList.toggle('show',hasActive&&!activeDetailsOpen);renderFocusCountdown();if(!hasActive)return;const job=jobs.find(j=>String(j.ticketNumber||'')===String(activeWorkSession.ticketNumber||''));const title=job?(job.title||job.displayTitle||`Ticket ${activeWorkSession.ticketNumber}`):`Ticket ${activeWorkSession.ticketNumber}`;const section=activeWorkSectionLabel(activeWorkSession);const type=String(activeWorkSession.workType||'').trim();document.getElementById('activeJobTitle').textContent=title;document.getElementById('activeJobMeta').textContent=[section,type].filter(Boolean).join(' · ');updateActiveJobBarTimers()}
       function openActiveJobDetails(){if(!activeWorkSession)return;const ticket=String(activeWorkSession.ticketNumber||'');openJobDetailsModal(ticket);requestAnimationFrame(()=>{const key=activeWorkSession.workSetType==='Change Order'?`co-${Number(activeWorkSession.changeOrderNumber||0)}`:'initial';const section=document.querySelector(`#jobDetailsBody [data-job-details-section="${CSS.escape(key)}"]`);if(section)section.scrollIntoView({behavior:'smooth',block:'center'})})}
       async function stopActiveJobFromBar(){if(!activeWorkSession)return;const btn=document.getElementById('activeJobStopBtn');const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');if(!key)return;const originalHtml=btn.innerHTML;btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Punching Out…</span>';try{const stopped=await pauseTimer(key);if(stopped){renderActiveJobBar();if(jobDetailsTicket)renderJobDetailsModal()}}finally{btn.disabled=false;btn.classList.remove('is-loading');btn.innerHTML=originalHtml}}
       async function stopActiveJobFromDetails(){if(!activeWorkSession)return;const btn=document.getElementById('jobDetailsActiveJobStopBtn');const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');if(!key||!btn)return;const originalHtml=btn.innerHTML;btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Punching Out…</span>';try{const stopped=await pauseTimer(key);if(stopped){renderActiveJobBar();if(jobDetailsTicket)renderJobDetailsModal()}}finally{if(document.body.contains(btn)){btn.disabled=false;btn.classList.remove('is-loading');btn.innerHTML=originalHtml}}}
@@ -4374,7 +4497,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       window.addEventListener('focus',checkMidnightRollover);
       document.addEventListener('click',()=>document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open')));
       window.addEventListener('beforeunload',event=>{if(!activeWorkSession||!activeWorkSession.sessionId)return;if(activeTimerKey)saveTimerSnapshot(activeTimerKey);saveActiveWorkSession(activeWorkSession);event.preventDefault();event.returnValue=''});
-      loadIdleAlarmPreference();populateClients();renderQueue();renderBoard();renderActiveJobBar();renderNotificationTray();renderEmailQueue();renderWorkUtilization();
+      loadIdleAlarmPreference();initializeFocusCountdown();populateClients();renderQueue();renderBoard();renderActiveJobBar();renderNotificationTray();renderEmailQueue();renderWorkUtilization();
       if(PREVIEW_MODE){
         setBackendStatus(false,'Preview Mode — live sync paused');
       }else{
