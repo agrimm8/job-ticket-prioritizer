@@ -282,6 +282,21 @@
     #job-priority-app .job-details-modal{width:min(1180px,calc(100vw - 28px));height:min(90vh,900px);max-height:90vh;overflow:hidden;display:flex;flex-direction:column}
     #job-priority-app .job-details-modal>.job-details-head{flex:0 0 auto}
     #job-priority-app .job-details-modal>#jobDetailsBody{flex:1 1 auto;min-height:0;overflow:hidden}
+    #job-priority-app .job-activity-panel{margin-top:12px;border:1px solid light-dark(#d8d8d4,#444);border-radius:10px;background:light-dark(#fafaf7,#232323);overflow:hidden}
+    #job-priority-app .job-activity-panel>summary{cursor:pointer;list-style:none;padding:11px 12px;font-size:11px;font-weight:850;display:flex;align-items:center;justify-content:space-between;gap:10px}
+    #job-priority-app .job-activity-panel>summary::-webkit-details-marker{display:none}
+    #job-priority-app .job-activity-panel>summary:after{content:'▸';font-size:11px;opacity:.6;transition:transform .15s ease}
+    #job-priority-app .job-activity-panel[open]>summary:after{transform:rotate(90deg)}
+    #job-priority-app .job-activity-body{border-top:1px solid light-dark(#e0e0dc,#3d3d3d);padding:4px 12px 10px}
+    #job-priority-app .job-activity-loading,#job-priority-app .job-activity-empty,#job-priority-app .job-activity-error{padding:12px 0;font-size:10px;opacity:.68}
+    #job-priority-app .job-activity-item{display:grid;grid-template-columns:112px 76px minmax(0,1fr);gap:9px;padding:10px 0;border-bottom:1px solid light-dark(#e8e8e4,#363636);align-items:start}
+    #job-priority-app .job-activity-item:last-child{border-bottom:0}
+    #job-priority-app .job-activity-time{font-size:9px;line-height:1.35;opacity:.64}
+    #job-priority-app .job-activity-category{display:inline-flex;width:max-content;max-width:100%;padding:3px 6px;border-radius:999px;font-size:8px;font-weight:850;text-transform:uppercase;letter-spacing:.04em;background:light-dark(#e8eef8,#263348);color:light-dark(#315b96,#a8c8f5)}
+    #job-priority-app .job-activity-category.time{background:light-dark(#e6f3ea,#243a2b);color:light-dark(#2f6f46,#9fd3ad)}
+    #job-priority-app .job-activity-action{font-size:10px;font-weight:850;line-height:1.35}
+    #job-priority-app .job-activity-details{font-size:9px;line-height:1.4;opacity:.7;margin-top:2px;white-space:pre-wrap}
+    @media(max-width:700px){#job-priority-app .job-activity-item{grid-template-columns:1fr;gap:4px}.job-activity-category{margin:1px 0}}
     #job-priority-app .job-details-modal>.actions{flex:0 0 auto;margin-top:10px}
     #job-priority-app .job-details-layout{display:grid;grid-template-columns:minmax(300px,38%) minmax(0,62%);gap:12px;height:100%;min-height:0}
     #job-priority-app .job-details-pane{min-height:0;overflow:auto;overscroll-behavior:contain;padding-right:3px}
@@ -2829,12 +2844,29 @@
           if(jobDetailsTicket)renderJobDetailsModal();
         }));
       }
+      function jobDetailsActivityMarkup(job){
+        return `<details class="job-activity-panel" data-job-activity-details data-ticket="${escapeHtml(String(job&&job.ticketNumber||''))}"><summary>Activity Log</summary><div class="job-activity-body" data-job-activity-body><div class="job-activity-loading">Expand to load this ticket’s activity.</div></div></details>`;
+      }
+      function formatJobActivityTimestamp(value){
+        const d=parseBackendDateTime(value);if(!d)return '—';
+        return d.toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+      }
+      function renderJobActivityRows(activity){
+        if(!Array.isArray(activity)||!activity.length)return '<div class="job-activity-empty">No activity has been recorded for this ticket yet.</div>';
+        return activity.map(item=>{const category=String(item.category||'Workflow');const isTime=category.toLowerCase()==='time';return `<div class="job-activity-item"><div class="job-activity-time">${escapeHtml(formatJobActivityTimestamp(item.timestamp))}</div><div><span class="job-activity-category${isTime?' time':''}">${escapeHtml(category)}</span></div><div><div class="job-activity-action">${escapeHtml(item.action||'Updated')}</div>${item.details?`<div class="job-activity-details">${escapeHtml(item.details)}</div>`:''}</div></div>`}).join('');
+      }
+      async function loadJobActivity(details){
+        if(!details||details.dataset.loading==='1')return;const ticket=String(details.getAttribute('data-ticket')||'');const body=details.querySelector('[data-job-activity-body]');if(!ticket||!body)return;
+        details.dataset.loading='1';body.innerHTML='<div class="job-activity-loading">Loading activity…</div>';
+        try{const data=await apiPost({action:'getJobActivity',ticketNumber:Number(ticket)});if(!data.success)throw new Error(data.error||'Unable to load job activity');body.innerHTML=renderJobActivityRows(data.activity)}catch(err){body.innerHTML='<div class="job-activity-error">Unable to load activity: '+escapeHtml(err&&err.message?err.message:'Unknown error')+'</div>'}finally{details.dataset.loading='0';details.dataset.loaded='1'}
+      }
       function renderJobDetailsModal(){
         const body=document.getElementById('jobDetailsBody');const job=jobs.find(item=>String(item.ticketNumber||'')===String(jobDetailsTicket));if(!body||!job)return;
         const jobDetailsTitle=job.title||job.displayTitle||'';document.getElementById('jobDetailsModalJob').textContent=jobDetailsTitle;const jobDetailsFolderBtn=document.getElementById('jobDetailsCreateFolderBtn');if(jobDetailsFolderBtn){jobDetailsFolderBtn.innerHTML=FOLDER_ICON;jobDetailsFolderBtn.setAttribute('data-folder-title',jobDetailsTitle);jobDetailsFolderBtn.setAttribute('data-create-job-folder',String(job.ticketNumber||''))}const jobDetailsCopyBtn=document.getElementById('jobDetailsCopyTitleBtn');if(jobDetailsCopyBtn){jobDetailsCopyBtn.innerHTML=COPY_ICON;jobDetailsCopyBtn.setAttribute('data-copy-title',jobDetailsTitle)}const add=document.getElementById('jobDetailsAddChangeOrderBtn');const pending=pendingChangeOrderIntakeForJob(job);if(add){add.disabled=job.status==='Completed';add.textContent='Add Change Order';add.title=job.status==='Completed'?'Completed jobs cannot start a new Change Order.':(pending?'A pending Change Order already exists; open it below.':'Create the next Change Order')}renderJobDetailsMoveMenu(job);
         const records=changeOrderIntakesForJob(job);const numbers=new Set(records.map(item=>Number(item.changeOrderNumber||0)).filter(Boolean));(Array.isArray(workSets)?workSets:[]).filter(item=>Number(item.ticketNumber)===Number(job.ticketNumber)&&item.workSetType==='Change Order').forEach(item=>numbers.add(Number(item.changeOrderNumber||0)));const changeOrders=[...numbers].filter(Boolean).sort((a,b)=>b-a);
-        body.innerHTML=`<div class="job-details-layout"><div class="job-details-pane job-details-pane-left">${renderJobDetailsClient(job)}${renderJobDetailsFinancials(job)}</div><div class="job-details-pane job-details-pane-right">${jobDetailsActiveJobBarMarkup(job)}${jobDetailsAccumulatedMarkup(job)}<div class="job-details-history">${changeOrders.map(number=>jobDetailsSectionMarkup(job,'change-order',number)).join('')}${jobDetailsSectionMarkup(job,'initial')}</div></div></div>`;
+        body.innerHTML=`<div class="job-details-layout"><div class="job-details-pane job-details-pane-left">${renderJobDetailsClient(job)}${renderJobDetailsFinancials(job)}</div><div class="job-details-pane job-details-pane-right">${jobDetailsActiveJobBarMarkup(job)}${jobDetailsAccumulatedMarkup(job)}<div class="job-details-history">${changeOrders.map(number=>jobDetailsSectionMarkup(job,'change-order',number)).join('')}${jobDetailsSectionMarkup(job,'initial')}</div>${jobDetailsActivityMarkup(job)}</div></div>`;
         const holder=body;attachEmailDownloadHandlers(holder);
+        const activityDetails=holder.querySelector('[data-job-activity-details]');if(activityDetails)activityDetails.addEventListener('toggle',()=>{if(activityDetails.open&&activityDetails.dataset.loaded!=='1')loadJobActivity(activityDetails)});
         holder.querySelectorAll('[data-job-details-attachments-toggle]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.getAttribute('data-job-details-attachments-toggle')||'';const list=holder.querySelector(`[data-job-details-attachments-list="${id}"]`);if(!list)return;const open=list.classList.toggle('open');btn.textContent=open?'▼':'▶';btn.setAttribute('aria-expanded',open?'true':'false');btn.setAttribute('aria-label',open?'Hide attachment list':'Show attachment list')}));
         holder.querySelectorAll('[data-job-details-cancel-co]').forEach(btn=>btn.addEventListener('click',()=>cancelJobDetailsChangeOrder(btn)));
         holder.querySelectorAll('[data-job-details-play-kind]').forEach(btn=>btn.addEventListener('click',()=>handleJobDetailsPlay(btn)));
