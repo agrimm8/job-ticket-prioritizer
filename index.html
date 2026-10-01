@@ -404,6 +404,8 @@
     #job-priority-app .punch-in-targeted label[for="punchInWorkType"],#job-priority-app .punch-in-targeted #punchInWorkType,#job-priority-app .punch-in-targeted #punchInWorkSetWrap,#job-priority-app .punch-in-targeted label[for="punchInWorkDescription"],#job-priority-app .punch-in-targeted #punchInWorkDescription{display:none!important}
     #job-priority-app .job-details-cancel-co:hover{background:light-dark(#f3e9e7,#3a2624);color:#b42318;opacity:1}
     #job-priority-app .job-details-section-title{font-size:13px;font-weight:850;line-height:1.25}
+    #job-priority-app .job-details-section-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+    #job-priority-app .job-details-section-title-row .workload-score-pill{height:20px;padding:0 7px;font-size:10px;font-weight:800}
     #job-priority-app .job-details-section-status{font-size:9px;opacity:.62;margin-top:2px}
     #job-priority-app .job-details-time{margin:0 12px 10px;border:1px solid light-dark(#e0e0dc,#414141);border-radius:8px;overflow:hidden}
     #job-priority-app .job-details-time-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:7px 9px;border-top:1px solid light-dark(#ecece8,#393939);font-size:10px}
@@ -2953,6 +2955,17 @@
         const linkLabel=total>1?`View Source Email ${index+1}`:'View Source Email';
         return `<div class="job-details-source"><div class="job-details-source-head"><div class="change-order-source-title">${escapeHtml(subject)}</div>${linkAvailable?`<a class="job-details-source-email-link" href="${escapeHtml(source.gmailPermalink)}" target="_blank" rel="noopener noreferrer">${escapeHtml(linkLabel)}</a>`:(sourceAvailable?'':'<span class="job-details-source-expired">Source Email Expired</span>')}</div><div class="job-details-source-meta">${escapeHtml(sender)}${source.receivedAt?' · '+escapeHtml(source.receivedAt):''}</div>${attachmentHtml}</div>`;
       }
+      function workloadScoreForJobDetailsSection(job,kind,number=0){
+        if(!job)return 0;
+        const ticket=Number(job.ticketNumber||0);
+        if(kind==='change-order'){
+          const record=changeOrderIntakesForJob(job).find(item=>Number(item.changeOrderNumber||0)===Number(number))||null;
+          const set=(Array.isArray(workSets)?workSets:[]).find(item=>Number(item.ticketNumber)===ticket&&item.workSetType==='Change Order'&&Number(item.changeOrderNumber||0)===Number(number))||null;
+          return normalizeWorkloadScore(record&&record.workloadScore)||normalizeWorkloadScore(set&&set.workloadScore)||0;
+        }
+        const initial=(Array.isArray(workSets)?workSets:[]).find(item=>Number(item.ticketNumber)===ticket&&item.workSetType==='Initial Draft')||null;
+        return normalizeWorkloadScore(initial&&initial.workloadScore)||normalizeWorkloadScore(job.workloadScore)||0;
+      }
       function jobDetailsSectionMarkup(job,kind,number=0){
         const ticket=Number(job.ticketNumber||0);let record=null;let set=null;let title='Initial Request';let notes=String(job.notes||'');let status='';let sources=[];
         if(kind==='change-order'){
@@ -2970,7 +2983,8 @@
         const sectionActive=activeWorkSession&&String(activeWorkSession.ticketNumber||'')===String(job.ticketNumber||'')&&((kind==='initial'&&activeWorkSession.workSetType==='Initial Draft')||(kind==='change-order'&&activeWorkSession.workSetType==='Change Order'&&Number(activeWorkSession.changeOrderNumber||0)===Number(number)));
         const anotherActive=activeWorkSession&&activeWorkSession.sessionId&&!sectionActive;const playIcon=sectionActive?PUNCH_OUT_ICON:(anotherActive?PUNCH_DISABLED_ICON:PUNCH_IN_ICON);const playTitle=sectionActive?`Pause ${title}`:(anotherActive?'Another work section is currently active':`Start work on ${title}`);
         const toneClass=kind==='initial'?'job-details-tone-a':(Number(number)%2===1?'job-details-tone-b':'job-details-tone-a');
-        let html=`<section class="job-details-section ${toneClass}${sectionActive?' timer-active':''}" data-job-details-section="${escapeHtml(key)}"><div class="job-details-section-head"><div class="job-details-section-heading">${canCancel?`<button class="job-details-cancel-co" type="button" data-job-details-cancel-co="${escapeHtml(record.changeOrderIntakeId)}" aria-label="Cancel ${escapeHtml(title)}" title="Cancel ${escapeHtml(title)}">×</button>`:''}<div><div class="job-details-section-title">${escapeHtml(title)}</div>${record&&record.emailAddress?`<div class="job-details-co-email"><span class="job-details-co-email-address">${escapeHtml(record.emailAddress)}</span><button class="job-details-co-email-copy" type="button" data-job-details-copy-co-email="${escapeHtml(record.changeOrderIntakeId)}" aria-label="Copy Change Order email address" title="Copy email address">${COPY_ICON}</button></div>`:''}${status?`<div class="job-details-section-status">${escapeHtml(status)}</div>`:''}</div></div><div class="job-details-section-controls"><button class="job-details-play" type="button" data-job-details-play-kind="${escapeHtml(kind)}" data-job-details-play-number="${Number(number||0)}" aria-label="${escapeHtml(playTitle)}" title="${escapeHtml(playTitle)}" ${anotherActive?'disabled':''}>${playIcon}</button></div></div>`;
+        const sectionWorkloadScore=workloadScoreForJobDetailsSection(job,kind,number);
+        let html=`<section class="job-details-section ${toneClass}${sectionActive?' timer-active':''}" data-job-details-section="${escapeHtml(key)}"><div class="job-details-section-head"><div class="job-details-section-heading">${canCancel?`<button class="job-details-cancel-co" type="button" data-job-details-cancel-co="${escapeHtml(record.changeOrderIntakeId)}" aria-label="Cancel ${escapeHtml(title)}" title="Cancel ${escapeHtml(title)}">×</button>`:''}<div><div class="job-details-section-title-row"><div class="job-details-section-title">${escapeHtml(title)}</div>${workloadScoreMarkup(sectionWorkloadScore)}</div>${record&&record.emailAddress?`<div class="job-details-co-email"><span class="job-details-co-email-address">${escapeHtml(record.emailAddress)}</span><button class="job-details-co-email-copy" type="button" data-job-details-copy-co-email="${escapeHtml(record.changeOrderIntakeId)}" aria-label="Copy Change Order email address" title="Copy email address">${COPY_ICON}</button></div>`:''}${status?`<div class="job-details-section-status">${escapeHtml(status)}</div>`:''}</div></div><div class="job-details-section-controls"><button class="job-details-play" type="button" data-job-details-play-kind="${escapeHtml(kind)}" data-job-details-play-number="${Number(number||0)}" aria-label="${escapeHtml(playTitle)}" title="${escapeHtml(playTitle)}" ${anotherActive?'disabled':''}>${playIcon}</button></div></div>`;
         const orphan=orphanSessionForTicket(ticket);if(orphan&&((kind==='initial'&&(!set||String(orphan.workSetId||'')===String(set.workSetId||'')))||(kind==='change-order'&&set&&String(orphan.workSetId||'')===String(set.workSetId||''))))html+=`<div class="orphan-punch-banner show job-details-orphan"><span>⚠ This section has an unresolved open punch.</span><button type="button" data-job-details-fix-orphan="${escapeHtml(orphan.sessionId)}">Fix Punch</button></div>`;
         html+=jobDetailsTimeMarkup(set,ticket,title);
         html+=`<div class="job-details-notes-wrap"><div class="job-details-notes-head"><div class="job-details-notes-label">Notes / Request</div>${editable?`<div class="job-details-notes-actions"><button class="secondary" type="button" data-job-details-edit-notes="${escapeHtml(key)}">Edit</button><button class="primary" type="button" data-job-details-save-notes="${escapeHtml(key)}" style="display:none">Save</button></div>`:''}</div><textarea class="notes-box job-details-notes" data-job-details-notes="${escapeHtml(key)}" readonly placeholder="No notes yet.">${escapeHtml(notes)}</textarea>`;
@@ -3060,7 +3074,41 @@
         try{const data=await apiPost({action:'cancelChangeOrderIntake',changeOrderIntakeId:intakeId});if(!data.success)throw new Error(data.error||'Unable to cancel Change Order');changeOrderIntakes=changeOrderIntakes.filter(item=>String(item.changeOrderIntakeId||'')!==intakeId);const job=jobs.find(item=>Number(item.ticketNumber)===Number(record.ticketNumber));if(job)job.pendingChangeOrderNotes='';renderJobDetailsModal();renderQueue();renderBoard()}catch(err){alert(err.message);btn.disabled=false;btn.textContent=old}
       }
       async function copyJobDetailsChangeOrderEmail(btn){const record=changeOrderIntakes.find(item=>String(item.changeOrderIntakeId||'')===String(btn.getAttribute('data-job-details-copy-co-email')||''));if(!record||!record.emailAddress)return;try{if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(record.emailAddress);else{const input=document.createElement('textarea');input.value=record.emailAddress;input.style.position='fixed';input.style.opacity='0';document.body.appendChild(input);input.select();document.execCommand('copy');input.remove()}const old=btn.textContent;btn.textContent='Copied!';setTimeout(()=>btn.textContent=old,1200)}catch(err){alert('Unable to copy the Change Order email address.')}}
-      async function addJobDetailsChangeOrder(){const job=jobs.find(item=>String(item.ticketNumber||'')===String(jobDetailsTicket));if(!job||job.status==='Completed')return;openChangeOrderModal(job.ticketNumber)}
+      async function addJobDetailsChangeOrder(){
+        const job=jobs.find(item=>String(item.ticketNumber||'')===String(jobDetailsTicket));
+        if(!job||job.status==='Completed')return;
+        const existing=pendingChangeOrderIntakeForJob(job);
+        if(existing){
+          renderJobDetailsModal();
+          requestAnimationFrame(()=>{
+            const section=document.querySelector(`#jobDetailsBody [data-job-details-section=\"co-${Number(existing.changeOrderNumber||0)}\"]`);
+            if(section)section.scrollIntoView({behavior:'smooth',block:'start'});
+          });
+          return;
+        }
+        const btn=document.getElementById('jobDetailsAddChangeOrderBtn');
+        const originalText=btn?btn.textContent:'Add Change Order';
+        if(btn){btn.disabled=true;btn.textContent='Adding…'}
+        try{
+          const data=await apiPost({action:'createChangeOrderIntake',ticketNumber:job.ticketNumber,notes:''});
+          if(!data.success)throw new Error(data.error||'Unable to create Change Order');
+          const record=data.changeOrderIntake;
+          if(!record)throw new Error('Change Order was created, but its details were not returned.');
+          const idx=changeOrderIntakes.findIndex(item=>String(item.changeOrderIntakeId||'')===String(record.changeOrderIntakeId||''));
+          if(idx>=0)changeOrderIntakes[idx]=record;else changeOrderIntakes.push(record);
+          job.pendingChangeOrderNotes=String(record.manualNotes||'');
+          renderJobDetailsModal();
+          renderQueue();
+          renderBoard();
+          requestAnimationFrame(()=>{
+            const section=document.querySelector(`#jobDetailsBody [data-job-details-section=\"co-${Number(record.changeOrderNumber||0)}\"]`);
+            if(section)section.scrollIntoView({behavior:'smooth',block:'start'});
+          });
+        }catch(err){
+          alert('Change Order could not be created: '+err.message);
+          if(btn){btn.disabled=false;btn.textContent=originalText}
+        }
+      }
       function formatSessionDuration(minutes){
         const totalSeconds=Math.max(0,Math.round(Number(minutes||0)*60));
         const h=Math.floor(totalSeconds/3600),m=Math.floor((totalSeconds%3600)/60),sec=totalSeconds%60;
