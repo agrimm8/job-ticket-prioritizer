@@ -163,7 +163,7 @@
     #job-priority-app .wsiwon-stat-label{font-size:8px;font-weight:700;letter-spacing:.01em;line-height:1.15;opacity:.58;white-space:nowrap}
     #job-priority-app .wsiwon-stat-value{font-size:11px;font-weight:800;line-height:1.2;word-break:break-word}
     #job-priority-app .wsiwon-stat-value.creation-date-value{font-weight:400;opacity:.62}
-    #job-priority-app .workload-score-pill{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:22px;padding:0 8px;border-radius:999px;font-size:11px;font-weight:900;color:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+    #job-priority-app .workload-score-pill{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:18px;padding:0 6px;border-radius:999px;font-size:9px;font-weight:850;color:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
     #job-priority-app .workload-score-pill.score-1{background:#3b82f6}
     #job-priority-app .workload-score-pill.score-2{background:#2f9f9a}
     #job-priority-app .workload-score-pill.score-3{background:#c79a2b}
@@ -415,7 +415,7 @@
     #job-priority-app .job-details-cancel-co:hover{background:light-dark(#f3e9e7,#3a2624);color:#b42318;opacity:1}
     #job-priority-app .job-details-section-title{font-size:13px;font-weight:850;line-height:1.25}
     #job-priority-app .job-details-section-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
-    #job-priority-app .job-details-section-title-row .workload-score-pill{height:20px;padding:0 7px;font-size:10px;font-weight:800}
+    #job-priority-app .job-details-section-title-row .workload-score-pill{height:18px;padding:0 6px;font-size:9px;font-weight:800}
     #job-priority-app .job-details-section-status{font-size:9px;opacity:.62;margin-top:2px}
     #job-priority-app .job-details-time{margin:0 12px 10px;border:1px solid light-dark(#e0e0dc,#414141);border-radius:8px;overflow:hidden}
     #job-priority-app .job-details-time-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:7px 9px;border-top:1px solid light-dark(#ecece8,#393939);font-size:10px}
@@ -3774,8 +3774,31 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           if(applyMidnightRolloverResponse(data,oldWorkSession,oldAdminSession))midnightObservedKey=currentKey;
         }catch(err){console.warn('Midnight rollover will retry:',err)}finally{midnightRolloverInFlight=false}
       }
+      let pendingActionButton=null;let pendingActionButtonTimer=null;
+      root.addEventListener('click',e=>{const btn=e.target.closest('button');if(!btn||!root.contains(btn))return;pendingActionButton=btn;if(pendingActionButtonTimer)clearTimeout(pendingActionButtonTimer);pendingActionButtonTimer=setTimeout(()=>{if(pendingActionButton===btn)pendingActionButton=null},900)},true);
+      function automaticBusyLabel(button,payload){
+        const action=String(payload&&payload.action||'').toLowerCase();const text=String(button&&button.textContent||'').trim().toLowerCase();
+        if(action.includes('delete')||text.includes('delete'))return 'Deleting…';
+        if(action.includes('unarchive')||text.includes('unarchive')||text.includes('restore'))return 'Restoring…';
+        if(action.includes('archive')||text.includes('archive'))return 'Archiving…';
+        if(action.includes('create')||action.includes('add')||text.includes('create')||text.startsWith('add '))return 'Creating…';
+        if(action.includes('scan')||action.includes('refresh')||text.includes('check')||text.includes('refresh'))return 'Checking…';
+        if(action.includes('beginworksession')||text.includes('punch in'))return 'Punching In…';
+        if(action.includes('endworksession')||text.includes('punch out'))return 'Punching Out…';
+        if(action.includes('move')||text.startsWith('move'))return 'Moving…';
+        if(text.includes('close punch'))return 'Closing…';
+        if(text.includes('start'))return 'Starting…';
+        if(text.includes('stop'))return 'Stopping…';
+        return 'Saving…';
+      }
+      function beginAutomaticButtonFeedback(payload){
+        const btn=pendingActionButton;pendingActionButton=null;if(pendingActionButtonTimer){clearTimeout(pendingActionButtonTimer);pendingActionButtonTimer=null}
+        if(!btn||!document.body.contains(btn)||btn.disabled||btn.classList.contains('is-loading')||btn.dataset.autoBusy==='1')return null;
+        const originalHtml=btn.innerHTML;const originalDisabled=btn.disabled;btn.dataset.autoBusy='1';btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>'+escapeHtml(automaticBusyLabel(btn,payload))+'</span>';
+        return ()=>{if(!document.body.contains(btn))return;delete btn.dataset.autoBusy;btn.disabled=originalDisabled;btn.classList.remove('is-loading');btn.innerHTML=originalHtml};
+      }
       async function apiGet(){if(PREVIEW_MODE)throw new Error('Live backend access is disabled in Preview Mode.');const res=await fetch(API_URL+'?action=bootstrap',{method:'GET'});if(!res.ok)throw new Error('Unable to reach backend');return res.json()}
-      async function apiPost(payload){if(PREVIEW_MODE)throw new Error('Live backend access is disabled in Preview Mode.');const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});if(!res.ok)throw new Error('Backend request failed');return res.json()}
+      async function apiPost(payload){if(PREVIEW_MODE)throw new Error('Live backend access is disabled in Preview Mode.');const restore=beginAutomaticButtonFeedback(payload);try{const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});if(!res.ok)throw new Error('Backend request failed');return await res.json()}finally{if(restore)restore()}}
       function changeOrderRefreshSignatureForTicket(ticket){
         const ticketText=String(ticket||'');
         const intakes=changeOrderIntakes.filter(item=>String(item.ticketNumber||'')===ticketText).map(item=>({id:String(item.changeOrderIntakeId||''),number:Number(item.changeOrderNumber||0),status:String(item.status||''),notes:String(item.manualNotes||''),email:String(item.emailAddress||'')}));
