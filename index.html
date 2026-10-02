@@ -3372,7 +3372,6 @@
       async function changeJobStatusFromMenu(button){
         const ticket=button.getAttribute('data-move-ticket'); const oldStatus=button.getAttribute('data-old-status'); const newStatus=button.getAttribute('data-new-status'); const job=jobs.find(j=>String(j.ticketNumber||'')===ticket); if(!job)return;
         if(newStatus===oldStatus)return;
-        if(oldStatus==='Client Review'&&newStatus==='To Do'){openClientReviewDueChoice(ticket);return}
         let newDue=job.due||job.dueDate||'';
         const newFollowUp=newStatus==='Client Review'&&oldStatus!=='Client Review'?defaultFollowUpDate():newStatus==='In Production / Awaiting Vendor'&&oldStatus!=='In Production / Awaiting Vendor'?defaultProductionFollowUpDate():(job.followUpDate||'');
         try{
