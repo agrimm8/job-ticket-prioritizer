@@ -2150,6 +2150,16 @@
         updatePunchInSubmitState();
       }
       function updatePunchInSubmitState(){const type=document.getElementById('punchInWorkType').value;const description=document.getElementById('punchInWorkDescription').value.trim();const workSetId=document.getElementById('punchInWorkSet').value;const workloadScore=normalizeWorkloadScore(document.getElementById('punchInWorkloadScore').value);let valid=!!type;if(type==='Initial Draft'||type==='New Change Order'||type==='Continuing Initial Draft')valid=valid&&!!description;if(type==='New Change Order')valid=valid&&!!workloadScore;if(type==='Continuing Change Order')valid=valid&&!!workSetId&&!!description;document.getElementById('punchInStartBtn').disabled=!valid}
+      const recentlyClosedWorkSessions=new Map();
+      function rememberRecentlyClosedWorkSession(sessionId){
+        const id=String(sessionId||'');if(!id)return;recentlyClosedWorkSessions.set(id,Date.now());
+        setTimeout(()=>{const saved=recentlyClosedWorkSessions.get(id);if(saved&&Date.now()-saved>=5000)recentlyClosedWorkSessions.delete(id)},5500);
+      }
+      function wasWorkSessionRecentlyClosed(sessionId){
+        const id=String(sessionId||'');const at=recentlyClosedWorkSessions.get(id);if(!at)return false;
+        if(Date.now()-at>5000){recentlyClosedWorkSessions.delete(id);return false}
+        return true;
+      }
       async function closeActiveWorkSession(punchOutAt){
         clearIdleWarning(true);closeHourlyWorkReminder();if(!activeWorkSession||!activeWorkSession.sessionId)return true;
         try{
@@ -2163,10 +2173,11 @@
             if(String(session.sessionId||'')===String(localSession.sessionId||'')){session.punchOut=closedAt;session.durationMinutes=closedMinutes;matched=true}
           });
           if(!matched)workSessions.push({...localSession,punchOut:closedAt,durationMinutes:closedMinutes});
+          rememberRecentlyClosedWorkSession(localSession.sessionId);
           saveActiveWorkSession(null);clearTimerSnapshot();
           renderActiveJobBar();renderWorkUtilization();renderNotificationTray();
-          await checkForOrphanPunch();
-          renderNotificationTray();
+          if(jobDetailsTicket&&String(jobDetailsTicket)===String(localSession.ticketNumber||''))renderJobDetailsModal();
+          setTimeout(()=>{checkForOrphanPunch().then(()=>renderNotificationTray()).catch(()=>{})},1200);
           return true
         }catch(err){alert('Punch Out could not be saved: '+err.message);return false}
       }
@@ -2244,7 +2255,10 @@
           const res=await fetch(API_URL+'?action=openWorkSession',{method:'GET'});if(!res.ok)return;const data=await res.json();if(!data.success)return;
           const open=data.openWorkSession||null;
           const activeId=activeWorkSession&&activeWorkSession.sessionId?String(activeWorkSession.sessionId):'';
-          const backendOpenId=open&&open.sessionId?String(open.sessionId):'';
+          let backendOpenId=open&&open.sessionId?String(open.sessionId):'';
+          if(backendOpenId&&wasWorkSessionRecentlyClosed(backendOpenId)){
+            backendOpenId='';
+          }
           const beforeCount=workSessions.length;
           workSessions=workSessions.filter(session=>{
             if(session.punchOut)return true;
@@ -2252,7 +2266,7 @@
             if(activeId&&sessionId===activeId)return true;
             return !!backendOpenId&&sessionId===backendOpenId;
           });
-          if(!open){
+          if(!backendOpenId){
             if(workSessions.length!==beforeCount){renderQueue();renderBoard();renderNotificationTray()}
             return;
           }
