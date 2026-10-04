@@ -383,7 +383,18 @@
     #job-priority-app .job-details-client-grid{display:grid;grid-template-columns:1fr;gap:10px}
     #job-priority-app .job-details-client-grid .full{grid-column:auto}
     #job-priority-app .job-details-client textarea{min-height:118px}
+    #job-priority-app .job-details-client-note-section{border-top:1px solid light-dark(#e7e7e2,#383838);padding-top:9px}
+    #job-priority-app .job-details-client-note-section:first-child{border-top:0;padding-top:0}
+    #job-priority-app .job-details-client-note-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 0 6px;border:0;background:transparent;color:inherit;font:inherit;font-weight:800;text-align:left;cursor:pointer}
+    #job-priority-app .job-details-client-note-toggle:hover{background:transparent}
+    #job-priority-app .job-details-client-note-chevron{font-size:11px;line-height:1;opacity:.65;transition:transform .15s ease}
+    #job-priority-app .job-details-client-note-section.collapsed .job-details-client-note-chevron{transform:rotate(-90deg)}
+    #job-priority-app .job-details-client-note-section.collapsed .job-details-client-note-body{display:none}
+    #job-priority-app #jobDetailsClientGeneral{min-height:178px}
+    #job-priority-app #jobDetailsClientPricing{min-height:118px}
+    #job-priority-app #jobDetailsClientEmails{min-height:100px}
     #job-priority-app .job-details-client-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:8px}
+    #job-priority-app #jobDetailsSaveClientNotesBtn{justify-content:center;text-align:center}
     #job-priority-app .job-details-client textarea[readonly]{cursor:text}
     #job-priority-app .job-details-client textarea:not([readonly]){box-shadow:0 0 0 2px light-dark(rgba(46,125,50,.14),rgba(106,190,112,.14))}
     #job-priority-app .job-details-total-time{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;padding:10px 12px;border:1px solid light-dark(#cfded5,#375243);border-radius:10px;background:light-dark(#f4faf6,#1c2a21);font-size:11px;font-weight:850}
@@ -3124,7 +3135,9 @@
       }
       function renderJobDetailsClient(job){
         const ids=jobDetailsClientIds(job);if(!ids.primaryClientId)return '<div class="job-details-client"><div class="job-details-client-heading"><strong>Client Notes</strong><span class="muted">No client is linked to this ticket.</span></div></div>';
-        const key=clientNotesKey(ids.primaryClientId,ids.secondaryClientId);return `<div class="job-details-client open" id="jobDetailsClientSection"><div class="job-details-client-heading"><strong>Client Notes</strong><span class="muted">${escapeHtml(jobDetailsClientLabel(job))}</span></div><div class="job-details-client-body"><div class="job-details-client-grid"><div><label>General Notes</label><textarea class="notes-box" id="jobDetailsClientGeneral" readonly>${escapeHtml(clientNotes[key]||'')}</textarea></div><div><label>Pricing Notes</label><textarea class="notes-box" id="jobDetailsClientPricing" readonly>${escapeHtml(clientPricingNotes[key]||'')}</textarea></div><div><label>Associated Emails</label><textarea class="notes-box" id="jobDetailsClientEmails" readonly>${escapeHtml(clientAssociatedEmails[key]||'')}</textarea></div></div><div class="job-details-client-actions"><button class="primary" id="jobDetailsSaveClientNotesBtn" type="button" style="display:none">Save</button><button class="secondary" id="jobDetailsCancelClientNotesBtn" type="button" style="display:none">Cancel</button></div></div></div>`;
+        const key=clientNotesKey(ids.primaryClientId,ids.secondaryClientId);
+        const section=(id,label,value,collapsed=false)=>`<div class="job-details-client-note-section${collapsed?' collapsed':''}" data-client-note-section="${id}"><button class="job-details-client-note-toggle" type="button" data-client-note-toggle="${id}" aria-expanded="${collapsed?'false':'true'}"><span>${label}</span><span class="job-details-client-note-chevron" aria-hidden="true">▼</span></button><div class="job-details-client-note-body"><textarea class="notes-box" id="${id}" readonly>${escapeHtml(value||'')}</textarea></div></div>`;
+        return `<div class="job-details-client open" id="jobDetailsClientSection"><div class="job-details-client-heading"><strong>Client Notes</strong><span class="muted">${escapeHtml(jobDetailsClientLabel(job))}</span></div><div class="job-details-client-body"><div class="job-details-client-grid">${section('jobDetailsClientGeneral','General Notes',clientNotes[key],false)}${section('jobDetailsClientPricing','Pricing Notes',clientPricingNotes[key],false)}${section('jobDetailsClientEmails','Associated Emails',clientAssociatedEmails[key],true)}</div><div class="job-details-client-actions"><button class="primary" id="jobDetailsSaveClientNotesBtn" type="button" style="display:none">Save</button><button class="secondary" id="jobDetailsCancelClientNotesBtn" type="button" style="display:none">Cancel</button></div></div></div>`;
       }
       function renderJobDetailsMoveMenu(job){
         const menu=document.getElementById('jobDetailsMoveColumnMenu');if(!menu||!job)return;
@@ -3163,6 +3176,7 @@
         holder.querySelectorAll('[data-job-details-attachments-toggle]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.getAttribute('data-job-details-attachments-toggle')||'';const list=holder.querySelector(`[data-job-details-attachments-list="${id}"]`);if(!list)return;const open=list.classList.toggle('open');btn.textContent=open?'▼':'▶';btn.setAttribute('aria-expanded',open?'true':'false');btn.setAttribute('aria-label',open?'Hide attachment list':'Show attachment list')}));
         holder.querySelectorAll('[data-job-details-cancel-co]').forEach(btn=>btn.addEventListener('click',()=>cancelJobDetailsChangeOrder(btn)));
         const detailsPunch=document.getElementById('jobDetailsPunchBtn');if(detailsPunch)detailsPunch.addEventListener('click',()=>handleJobDetailsPunchControl());
+        holder.querySelectorAll('[data-client-note-toggle]').forEach(btn=>btn.addEventListener('click',()=>{const section=btn.closest('[data-client-note-section]');if(!section)return;const collapsed=section.classList.toggle('collapsed');btn.setAttribute('aria-expanded',collapsed?'false':'true')}));
         const beginClientEdit=()=>{if(jobDetailsClientEditing)return;jobDetailsClientEditing=true;['jobDetailsClientGeneral','jobDetailsClientPricing','jobDetailsClientEmails'].forEach(id=>{const el=document.getElementById(id);if(el)el.readOnly=false});const save=holder.querySelector('#jobDetailsSaveClientNotesBtn');const cancel=holder.querySelector('#jobDetailsCancelClientNotesBtn');if(save)save.style.display='inline-flex';if(cancel)cancel.style.display='inline-flex'};
         ['jobDetailsClientGeneral','jobDetailsClientPricing','jobDetailsClientEmails'].forEach(id=>{const el=holder.querySelector('#'+id);if(el)el.addEventListener('click',()=>{beginClientEdit();el.focus()})});
         const saveClient=holder.querySelector('#jobDetailsSaveClientNotesBtn');if(saveClient)saveClient.addEventListener('click',()=>saveJobDetailsClientNotes(job));
