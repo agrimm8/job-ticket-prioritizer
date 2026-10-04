@@ -910,10 +910,29 @@
     #job-priority-app .hourly-work-actions button{min-width:150px;min-height:44px;font-size:13px;font-weight:800}
     #job-priority-app .hourly-work-stop{background:#b42318!important;border-color:#b42318!important;color:#fff!important}
     @media(max-width:620px){#job-priority-app .hourly-work-modal{padding:28px 20px}#job-priority-app .hourly-work-title{font-size:24px}#job-priority-app .hourly-work-countdown{font-size:48px}}
+
+    /* Compact dashboard header */
+    #job-priority-app .compact-top{justify-content:flex-start;align-items:center;margin-bottom:8px;gap:8px}
+    #job-priority-app .compact-top .top-controls{justify-content:flex-start;gap:7px;width:100%}
+    #job-priority-app .compact-top .top-controls>button,#job-priority-app .compact-top .motivator-launch{min-height:31px;padding:5px 10px;font-size:10px}
+    #job-priority-app .workday-bar{padding:8px 11px;margin-bottom:9px}
+    #job-priority-app .workday-main{gap:9px}
+    #job-priority-app .workday-copy{min-width:0}
+    #job-priority-app .workday-sheet-status{display:flex;align-items:center;gap:5px;margin-top:4px;font-size:9px;font-weight:750;opacity:.75}
+    #job-priority-app .workday-sheet-status .backend-dot{width:7px;height:7px;flex:0 0 auto;border-radius:999px;background:#8b8b85}
+    #job-priority-app .workday-sheet-status a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+    #job-priority-app .backend-text-visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+    #job-priority-app .kpi-card{padding:10px 12px}
+    #job-priority-app .completed-kpi-bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:5px;flex-wrap:wrap}
+    #job-priority-app .completed-kpi-bottom .kpi-link{margin-top:0}
+    #job-priority-app .compact-financial-dashboard{margin:0;gap:5px 10px;justify-content:flex-end}
+    #job-priority-app .compact-financial-dashboard .financial-dashboard-item{font-size:9px;gap:4px}
+    #job-priority-app .compact-financial-dashboard .financial-dashboard-value{font-size:11px}
+    #job-priority-app .compact-financial-dashboard .overhead-inline-btn{min-height:23px;padding:3px 7px;font-size:8px;margin-left:0}
+    @media(max-width:700px){#job-priority-app .compact-top .top-controls{gap:6px}#job-priority-app .completed-kpi-bottom{align-items:flex-start;flex-direction:column}#job-priority-app .compact-financial-dashboard{justify-content:flex-start}}
 </style>
   <div class="wrap">
-    <div class="top">
-      <div><h1>Job Ticket Prioritizer</h1><p class="sub">Live ticket creation, automatic due-date rules, statuses, and priority ranking.</p><div class="financial-dashboard"><div class="financial-dashboard-item"><span class="financial-dashboard-label" id="monthlyNetProfitLabel">Net Profit</span><span class="financial-dashboard-value zero" id="monthlyNetProfitValue">$0.00</span></div><div class="financial-dashboard-item"><span class="financial-dashboard-label">Potential Project Profit</span><span class="financial-dashboard-value zero" id="potentialProjectProfitValue">$0.00</span></div><button class="secondary overhead-inline-btn" id="overheadBtn" type="button">Overhead</button></div><div class="backend-status"><span class="backend-dot" id="backendDot"></span><span id="backendText">Connecting to Google Sheets…</span><span>· <a href="https://docs.google.com/spreadsheets/d/11PBs4KyIzJFDdBXQAWEXuKaxWxCrQJtmUhB7-PYmp14/edit" target="_blank" rel="noopener noreferrer">open sheet</a></span></div></div>
+    <div class="top compact-top">
       <div class="top-controls">
         <button class="secondary" id="jobSearchBtn" type="button">Search Jobs</button>
         <button class="secondary" id="clientsBtn" type="button">Clients</button>
@@ -933,7 +952,7 @@
     <div class="workday-bar" id="workdayBar" role="status" aria-live="polite">
       <div class="workday-main">
         <span class="workday-dot" aria-hidden="true"></span>
-        <div><div class="workday-kicker">Workday</div><div class="workday-status" id="workdayStatusText">Not Punched In</div><div class="workday-meta" id="workdayMetaText">Punch in when your workday begins.</div></div>
+        <div class="workday-copy"><div class="workday-kicker">Workday</div><div class="workday-status" id="workdayStatusText">Not Punched In</div><div class="workday-meta" id="workdayMetaText">Punch in when your workday begins.</div><div class="workday-sheet-status"><span class="backend-dot" id="backendDot"></span><span id="backendText" class="backend-text-visually-hidden">Connecting to Google Sheets…</span><a href="https://docs.google.com/spreadsheets/d/11PBs4KyIzJFDdBXQAWEXuKaxWxCrQJtmUhB7-PYmp14/edit" target="_blank" rel="noopener noreferrer">Open Sheet</a></div></div>
       </div>
       <div class="workday-actions">
         <div class="auto-workday-control" title="Automatically punches the workday in at 8:30 AM and out at 10:00 PM on weekdays.">
@@ -1065,7 +1084,7 @@
           <div class="kpi-label">Jobs Completed</div>
           <div><span class="kpi-value" id="completedKpiCurrent">—</span><span class="kpi-unit">this month</span></div>
           <div class="kpi-comparison" id="completedKpiPrevious">Last month: —</div>
-          <a class="kpi-link" id="viewCompletedJobsBtn">View Completed Jobs</a>
+          <div class="completed-kpi-bottom"><a class="kpi-link" id="viewCompletedJobsBtn">View Completed Jobs</a><div class="financial-dashboard compact-financial-dashboard"><div class="financial-dashboard-item"><span class="financial-dashboard-label" id="monthlyNetProfitLabel">Net Profit</span><span class="financial-dashboard-value zero" id="monthlyNetProfitValue">$0.00</span></div><div class="financial-dashboard-item"><span class="financial-dashboard-label">Potential</span><span class="financial-dashboard-value zero" id="potentialProjectProfitValue">$0.00</span></div><button class="secondary overhead-inline-btn" id="overheadBtn" type="button">Overhead</button></div></div>
         </div>
         <div class="kpi-card utilization-kpi-card" id="workUtilizationKpiBtn" role="button" tabindex="0" aria-label="Open today's productivity details">
           <div class="kpi-label">Work Utilization</div>
