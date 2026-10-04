@@ -916,12 +916,20 @@
     #job-priority-app .compact-top .top-controls{justify-content:flex-start;gap:7px;width:100%}
     #job-priority-app .compact-top .top-controls>button,#job-priority-app .compact-top .motivator-launch{min-height:31px;padding:5px 10px;font-size:10px}
     #job-priority-app .workday-bar{padding:8px 11px;margin-bottom:9px}
-    #job-priority-app .workday-main{gap:9px}
+    #job-priority-app .workday-main{gap:0;align-items:flex-start}
     #job-priority-app .workday-copy{min-width:0}
-    #job-priority-app .workday-sheet-status{display:flex;align-items:center;gap:5px;margin-top:4px;font-size:9px;font-weight:750;opacity:.75}
-    #job-priority-app .workday-sheet-status .backend-dot{width:7px;height:7px;flex:0 0 auto;border-radius:999px;background:#8b8b85}
-    #job-priority-app .workday-sheet-status a{color:inherit;text-decoration:underline;text-underline-offset:2px}
-    #job-priority-app .backend-text-visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+    #job-priority-app .workday-status-line{display:flex;align-items:flex-start;gap:9px;min-width:0}
+    #job-priority-app .workday-status-line .workday-dot{width:9px;height:9px;margin-top:3px;border-radius:999px;flex:0 0 auto;box-shadow:0 0 0 3px rgba(139,139,133,.12)}
+    #job-priority-app .sheet-status-btn{display:inline-flex;align-items:center;gap:7px;min-height:31px;padding:5px 10px;font-size:10px}
+    #job-priority-app .sheet-status-dot{width:8px;height:8px;border-radius:999px;background:#8b8b85;flex:0 0 auto;box-shadow:0 0 0 3px rgba(139,139,133,.12)}
+    #job-priority-app .toolbar-dropdown{position:relative;display:inline-flex;align-items:center}
+    #job-priority-app .toolbar-dropdown-launch{min-height:31px;padding:5px 10px;font-size:10px;display:inline-flex;align-items:center;gap:5px}
+    #job-priority-app .toolbar-dropdown-menu{position:absolute;top:calc(100% + 5px);left:0;z-index:90;display:none;min-width:180px;padding:5px;background:light-dark(#fff,#252525);border:1px solid light-dark(#d8d8d4,#444);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,0,.2)}
+    #job-priority-app .toolbar-dropdown-menu.open{display:block}
+    #job-priority-app .toolbar-dropdown-menu button{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:30px;padding:6px 8px;background:transparent;color:inherit;text-align:left;font-size:10px}
+    #job-priority-app .toolbar-dropdown-menu button:hover{background:light-dark(#f0f0ec,#303030)}
+    #job-priority-app .toolbar-dropdown-menu button.is-selected{font-weight:850;background:light-dark(#f2f2ee,#303030)}
+    #job-priority-app .toolbar-dropdown-caret{font-size:9px;opacity:.65}
     #job-priority-app .kpi-card{padding:10px 12px}
     #job-priority-app .completed-kpi-bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:5px;flex-wrap:wrap}
     #job-priority-app .completed-kpi-bottom .kpi-link{margin-top:0}
@@ -934,8 +942,23 @@
   <div class="wrap">
     <div class="top compact-top">
       <div class="top-controls">
+        <button class="secondary sheet-status-btn" id="sheetStatusBtn" type="button" title="Open Google Sheet"><span class="sheet-status-dot" id="backendDot" aria-hidden="true"></span><span id="backendText">Disconnected</span></button>
         <button class="secondary" id="jobSearchBtn" type="button">Search Jobs</button>
         <button class="secondary" id="clientsBtn" type="button">Clients</button>
+        <div class="toolbar-dropdown" id="autoWorkdayControl">
+          <button class="secondary toolbar-dropdown-launch" id="autoWorkdayBtn" type="button" aria-haspopup="menu" aria-expanded="false"><span id="autoWorkdayStateLabel">Auto Workday Off</span><span class="toolbar-dropdown-caret">▾</span></button>
+          <div class="toolbar-dropdown-menu" id="autoWorkdayMenu" role="menu" aria-label="Auto Workday setting">
+            <button type="button" role="menuitem" data-auto-workday="on">On · Mon–Fri · 8:30 AM–10:00 PM</button>
+            <button type="button" role="menuitem" data-auto-workday="off">Off</button>
+          </div>
+        </div>
+        <div class="toolbar-dropdown" id="idleAlarmControl">
+          <button class="secondary toolbar-dropdown-launch" id="idleAlarmBtn" type="button" aria-haspopup="menu" aria-expanded="false"><span id="idleAlarmStateLabel">Idle Alert On</span><span class="toolbar-dropdown-caret">▾</span></button>
+          <div class="toolbar-dropdown-menu" id="idleAlarmMenu" role="menu" aria-label="Idle Alert setting">
+            <button type="button" role="menuitem" data-idle-alarm="on">On · Show alert + sound</button>
+            <button type="button" role="menuitem" data-idle-alarm="off">Off · Show alert silently</button>
+          </div>
+        </div>
         <div class="motivator-control" id="motivatorControl" aria-label="Motivator controls">
           <button class="secondary motivator-launch" id="motivatorBtn" type="button" aria-haspopup="menu" aria-expanded="false">Motivator <span class="motivator-launch-caret">▾</span></button>
           <div class="motivator-menu" id="motivatorMenu" role="menu" aria-label="Choose Motivator level">
@@ -951,24 +974,11 @@
 
     <div class="workday-bar" id="workdayBar" role="status" aria-live="polite">
       <div class="workday-main">
-        <span class="workday-dot" aria-hidden="true"></span>
-        <div class="workday-copy"><div class="workday-kicker">Workday</div><div class="workday-status" id="workdayStatusText">Not Punched In</div><div class="workday-meta" id="workdayMetaText">Punch in when your workday begins.</div><div class="workday-sheet-status"><span class="backend-dot" id="backendDot"></span><span id="backendText" class="backend-text-visually-hidden">Connecting to Google Sheets…</span><a href="https://docs.google.com/spreadsheets/d/11PBs4KyIzJFDdBXQAWEXuKaxWxCrQJtmUhB7-PYmp14/edit" target="_blank" rel="noopener noreferrer">Open Sheet</a></div></div>
+        <div class="workday-copy">
+          <div class="workday-status-line"><span class="workday-dot" aria-hidden="true"></span><div><div class="workday-status" id="workdayStatusText">Not Punched In</div><div class="workday-meta" id="workdayMetaText">Punch in when your workday begins.</div></div></div>
+        </div>
       </div>
       <div class="workday-actions">
-        <div class="auto-workday-control" title="Automatically punches the workday in at 8:30 AM and out at 10:00 PM on weekdays.">
-          <label class="idle-alarm-switch" for="autoWorkdayToggle">
-            <input id="autoWorkdayToggle" type="checkbox" role="switch" aria-label="Toggle automatic workday punches">
-            <span class="idle-alarm-slider"></span>
-          </label>
-          <span id="autoWorkdayStateLabel">Auto Workday Off</span>
-        </div>
-        <div class="idle-alarm-control" title="When switched on, the idle warning remains visible but makes no sound.">
-          <label class="idle-alarm-switch" for="idleAlarmOffToggle">
-            <input id="idleAlarmOffToggle" type="checkbox" role="switch" aria-label="Turn idle alarm sound off">
-            <span class="idle-alarm-slider"></span>
-          </label>
-          <span id="idleAlarmStateLabel">Idle Alarm On</span>
-        </div>
         <button class="primary" id="workdayPunchInBtn" type="button">Punch In</button>
         <button class="secondary" id="adminWorkBtn" type="button" style="display:none">Admin Work</button>
         <button class="secondary" id="lunchOutBtn" type="button" style="display:none">Lunch Out</button>
@@ -1912,7 +1922,7 @@
       }
       function formatProductivityDuration(seconds){const mins=Math.max(0,Math.round(Number(seconds||0)/60));const h=Math.floor(mins/60);const m=mins%60;if(!h)return `${m}m`;return `${h}h ${m}m`}
       function formatProductivityPercent(value){return value===null||!Number.isFinite(value)?'—':`${Math.round(value)}%`}
-      function renderWorkdayBar(){const bar=document.getElementById('workdayBar');if(!bar)return;const snap=productivitySnapshot();const state=snap.state;const isClient=state==='WORKING'&&!!activeWorkSession;const isAdmin=state==='WORKING'&&!!activeAdminSession&&!isClient;const isUnassigned=state==='WORKING'&&!isClient&&!isAdmin;bar.classList.remove('working','lunch','workday-unassigned','workday-admin','workday-client','workday-lunch');if(isClient)bar.classList.add('workday-client');else if(isAdmin)bar.classList.add('workday-admin');else if(isUnassigned)bar.classList.add('workday-unassigned');else if(state==='LUNCH')bar.classList.add('workday-lunch');const status=document.getElementById('workdayStatusText');const meta=document.getElementById('workdayMetaText');const inBtn=document.getElementById('workdayPunchInBtn');const adminBtn=document.getElementById('adminWorkBtn');const lunchOut=document.getElementById('lunchOutBtn');const lunchIn=document.getElementById('lunchInBtn');const outBtn=document.getElementById('workdayPunchOutBtn');const autoToggle=document.getElementById('autoWorkdayToggle');const autoLabel=document.getElementById('autoWorkdayStateLabel');if(autoToggle)autoToggle.checked=!!autoWorkdayConfig.enabled;if(autoLabel)autoLabel.textContent=autoWorkdayConfig.enabled?'Auto Workday On · Mon–Fri · 8:30 AM–10:00 PM':'Auto Workday Off';const weekend=isWeekendClient();if(weekend&&inBtn){inBtn.disabled=true;inBtn.title='Workday clock stays off on weekends. Job punches are still available.';}
+      function renderWorkdayBar(){const bar=document.getElementById('workdayBar');if(!bar)return;const snap=productivitySnapshot();const state=snap.state;const isClient=state==='WORKING'&&!!activeWorkSession;const isAdmin=state==='WORKING'&&!!activeAdminSession&&!isClient;const isUnassigned=state==='WORKING'&&!isClient&&!isAdmin;bar.classList.remove('working','lunch','workday-unassigned','workday-admin','workday-client','workday-lunch');if(isClient)bar.classList.add('workday-client');else if(isAdmin)bar.classList.add('workday-admin');else if(isUnassigned)bar.classList.add('workday-unassigned');else if(state==='LUNCH')bar.classList.add('workday-lunch');const status=document.getElementById('workdayStatusText');const meta=document.getElementById('workdayMetaText');const inBtn=document.getElementById('workdayPunchInBtn');const adminBtn=document.getElementById('adminWorkBtn');const lunchOut=document.getElementById('lunchOutBtn');const lunchIn=document.getElementById('lunchInBtn');const outBtn=document.getElementById('workdayPunchOutBtn');const autoLabel=document.getElementById('autoWorkdayStateLabel');if(autoLabel)autoLabel.textContent=autoWorkdayConfig.enabled?'Auto Workday On':'Auto Workday Off';document.querySelectorAll('[data-auto-workday]').forEach(btn=>btn.classList.toggle('is-selected',(btn.dataset.autoWorkday==='on')===!!autoWorkdayConfig.enabled));const weekend=isWeekendClient();if(weekend&&inBtn){inBtn.disabled=true;inBtn.title='Workday clock stays off on weekends. Job punches are still available.';}
         inBtn.style.display=state==='OFF'?'inline-flex':'none';lunchIn.style.display=state==='LUNCH'?'inline-flex':'none';adminBtn.style.display=state==='WORKING'?'inline-flex':'none';lunchOut.style.display=state==='WORKING'?'inline-flex':'none';outBtn.style.display=state==='WORKING'?'inline-flex':'none';
         if(state==='OFF'){status.textContent=todayWorkdayPunches().length?'Punched Out':'Not Punched In';meta.textContent=todayWorkdayPunches().length?`Today's clocked time: ${formatProductivityDuration(snap.clocked)}`:'Punch in when your workday begins.'}
         else if(state==='LUNCH'){status.textContent='On Lunch';meta.textContent=`Today's clocked time: ${formatProductivityDuration(snap.clocked)} · lunch is excluded from utilization.`}
@@ -1928,7 +1938,7 @@
       async function endActiveAdminSession(){if(!activeAdminSession||!activeAdminSession.adminSessionId)return true;try{const data=await apiPost({action:'endAdminSession',adminSessionId:activeAdminSession.adminSessionId});if(!data.success)throw new Error(data.error||'Unable to stop Admin Work');const idx=adminSessions.findIndex(s=>s.adminSessionId===activeAdminSession.adminSessionId);if(idx>=0)adminSessions[idx]=data.session;activeAdminSession=null;renderWorkUtilization();return true}catch(err){alert('Admin Work could not be stopped: '+err.message);return false}}
       async function stopActiveProductivityForClockChange(){if(activeWorkSession&&activeWorkSession.sessionId){if(!confirm('A client job is currently running. Stop that job timer before changing your workday clock?'))return false;const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');if(!await pauseTimer(key))return false}if(activeAdminSession){if(!confirm('Admin Work is currently running. Stop the admin session before changing your workday clock?'))return false;if(!await endActiveAdminSession())return false}return true}
       async function addWorkdayPunch(eventType,button){if((eventType==='LUNCH_OUT'||eventType==='PUNCH_OUT')&&!await stopActiveProductivityForClockChange())return;const old=button.innerHTML;button.disabled=true;button.classList.add('is-loading');button.innerHTML=PUNCH_LOADING_ICON+'<span>Saving…</span>';try{const data=await apiPost({action:'addWorkdayPunch',eventType});if(!data.success)throw new Error(data.error||'Unable to save workday punch');workdayPunches.push(data.punch);if(eventType==='PUNCH_IN')setMotivatorBankServer({active:true,shiftStartMs:new Date(data.punch.timestamp).getTime(),spentSeconds:0});else if(eventType==='PUNCH_OUT')setMotivatorBankServer({active:false,spentSeconds:0});renderWorkUtilization();refreshMotivatorMenuGateLabels()}catch(err){alert('Workday punch could not be saved: '+err.message)}finally{button.disabled=false;button.classList.remove('is-loading');button.innerHTML=old}}
-      async function setAutoWorkdayEnabled(enabled,toggle){if(!toggle)return;toggle.disabled=true;try{const data=await apiPost({action:'setAutoWorkdayEnabled',enabled:!!enabled});if(!data.success)throw new Error(data.error||'Unable to update Auto Workday');autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig;workdayPunches=data.workdayPunches||workdayPunches;renderWorkUtilization();refreshMotivatorMenuGateLabels()}catch(err){toggle.checked=!enabled;alert('Auto Workday could not be updated: '+err.message)}finally{toggle.disabled=false}}
+      async function setAutoWorkdayEnabled(enabled,button){if(button)button.disabled=true;try{const data=await apiPost({action:'setAutoWorkdayEnabled',enabled:!!enabled});if(!data.success)throw new Error(data.error||'Unable to update Auto Workday');autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig;workdayPunches=data.workdayPunches||workdayPunches;renderWorkUtilization();refreshMotivatorMenuGateLabels()}catch(err){alert('Auto Workday could not be updated: '+err.message)}finally{if(button)button.disabled=false}}
       async function openAdminWork(){if(currentWorkdayState()!=='WORKING'){alert('Punch in to your workday before starting Admin Work.');return}if(activeAdminSession){await endActiveAdminSession();return}if(activeWorkSession&&activeWorkSession.sessionId){if(!confirm('A client job is currently running. Stop that job timer and switch to Admin Work?'))return;const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');if(!await pauseTimer(key))return}document.getElementById('adminWorkCategory').value='';document.getElementById('adminWorkDescription').value='';document.getElementById('adminWorkModalBackdrop').classList.add('open')}
       async function startAdminWork(){const category=document.getElementById('adminWorkCategory').value;const description=document.getElementById('adminWorkDescription').value.trim();if(!category){alert('Choose an Admin Work category.');return}const btn=document.getElementById('startAdminWorkBtn');const old=btn.innerHTML;btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Starting…</span>';try{const data=await apiPost({action:'beginAdminSession',category,description});if(!data.success)throw new Error(data.error||'Unable to start Admin Work');activeAdminSession=data.session;adminSessions.push(data.session);document.getElementById('adminWorkModalBackdrop').classList.remove('open');renderWorkUtilization()}catch(err){alert('Admin Work could not be started: '+err.message)}finally{btn.disabled=false;btn.classList.remove('is-loading');btn.innerHTML=old}}
       function renderKpis(){
@@ -2155,10 +2165,9 @@
         },3400);
       }
       function updateIdleAlarmControl(){
-        const toggle=document.getElementById('idleAlarmOffToggle');
         const label=document.getElementById('idleAlarmStateLabel');
-        if(toggle)toggle.checked=idleAlarmMuted;
-        if(label)label.textContent=idleAlarmMuted?'Idle Alarm Off':'Idle Alarm On';
+        if(label)label.textContent=idleAlarmMuted?'Idle Alert Off':'Idle Alert On';
+        document.querySelectorAll('[data-idle-alarm]').forEach(btn=>btn.classList.toggle('is-selected',(btn.dataset.idleAlarm==='off')===idleAlarmMuted));
       }
       function loadIdleAlarmPreference(){
         try{idleAlarmMuted=localStorage.getItem('jtp-idle-alarm-off')==='1'}catch(e){idleAlarmMuted=false}
@@ -3600,7 +3609,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const visibleCompleted=jobs.filter(j=>j.status==='Completed'&&j.archived!==true);renderCards('completedList',visibleCompleted);const archiveAllBtn=document.getElementById('archiveAllCompletedBtn');if(archiveAllBtn){archiveAllBtn.disabled=!visibleCompleted.length;archiveAllBtn.title=visibleCompleted.length?`Archive all ${visibleCompleted.length} visible completed job${visibleCompleted.length===1?'':'s'}`:'No completed jobs to archive'}
         if(document.getElementById('jobSearchModalBackdrop')&&document.getElementById('jobSearchModalBackdrop').classList.contains('open'))renderJobSearchResults();
       }
-      function setBackendStatus(ok,text){document.getElementById('backendText').textContent=text;document.getElementById('backendDot').style.background=ok?'#1f7a4d':'#b42318'}
+      function setBackendStatus(ok,text){const label=document.getElementById('backendText');const dot=document.getElementById('backendDot');const btn=document.getElementById('sheetStatusBtn');if(label)label.textContent=ok?'Connected':'Disconnected';if(btn){btn.title=(text?String(text)+' · ':'')+'Open Google Sheet';btn.setAttribute('aria-label',(ok?'Connected to Google Sheets':'Disconnected from Google Sheets')+'. Open Google Sheet.')}if(dot){const color=ok?'#1f7a4d':'#b42318';dot.style.background=color;dot.style.boxShadow=ok?'0 0 0 3px rgba(31,122,77,.14)':'0 0 0 3px rgba(180,35,24,.14)'}}
       let motivatorCurrentLevel='GO';
       let motivatorSelectInterval=null;
       let motivatorSelectSeconds=0;
@@ -4630,7 +4639,6 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('hourlyWorkReminderContinueBtn').addEventListener('click',()=>closeHourlyWorkReminder());
       document.getElementById('hourlyWorkReminderStopBtn').addEventListener('click',async()=>{if(!activeWorkSession||!activeWorkSession.sessionId){closeHourlyWorkReminder();return}const btn=document.getElementById('hourlyWorkReminderStopBtn');const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');if(!key){closeHourlyWorkReminder();return}const original=btn.innerHTML;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Stopping…</span>';try{const stopped=await pauseTimer(key);if(stopped)closeHourlyWorkReminder()}finally{if(document.body.contains(btn)){btn.disabled=false;btn.innerHTML=original}}});
       document.getElementById('acknowledgeIdleBtn').addEventListener('click',()=>clearIdleWarning(true));
-      document.getElementById('idleAlarmOffToggle').addEventListener('change',e=>setIdleAlarmMuted(e.currentTarget.checked));
       document.addEventListener('click',e=>{if(!e.target.closest('#job-priority-app .job-details-due-wrap'))closeJobDetailsDuePopovers()});
       document.addEventListener('keydown',e=>{if(e.key==='Escape')closeJobDetailsDuePopovers()});
       document.getElementById('cancelDueDateBtn').addEventListener('click',()=>{dueDateEditTicket='';document.getElementById('dueDateModalBackdrop').classList.remove('open')});
@@ -4672,7 +4680,13 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       });
       document.getElementById('activeJobDetailsBtn').addEventListener('click',openActiveJobDetails);
       document.getElementById('activeJobStopBtn').addEventListener('click',stopActiveJobFromBar);
-      document.getElementById('autoWorkdayToggle').addEventListener('change',e=>setAutoWorkdayEnabled(e.currentTarget.checked,e.currentTarget));
+      const closeToolbarDropdowns=(except='')=>{[['autoWorkdayBtn','autoWorkdayMenu'],['idleAlarmBtn','idleAlarmMenu']].forEach(([btnId,menuId])=>{if(menuId===except)return;const btn=document.getElementById(btnId),menu=document.getElementById(menuId);if(menu){menu.classList.remove('open');if(btn)btn.setAttribute('aria-expanded','false')}})};
+      document.getElementById('autoWorkdayBtn').addEventListener('click',e=>{e.stopPropagation();const menu=document.getElementById('autoWorkdayMenu');const opening=!menu.classList.contains('open');closeToolbarDropdowns();menu.classList.toggle('open',opening);e.currentTarget.setAttribute('aria-expanded',opening?'true':'false')});
+      document.getElementById('idleAlarmBtn').addEventListener('click',e=>{e.stopPropagation();const menu=document.getElementById('idleAlarmMenu');const opening=!menu.classList.contains('open');closeToolbarDropdowns();menu.classList.toggle('open',opening);e.currentTarget.setAttribute('aria-expanded',opening?'true':'false')});
+      document.querySelectorAll('[data-auto-workday]').forEach(btn=>btn.addEventListener('click',async e=>{e.stopPropagation();const enabled=e.currentTarget.dataset.autoWorkday==='on';closeToolbarDropdowns();if(enabled!==!!autoWorkdayConfig.enabled)await setAutoWorkdayEnabled(enabled,e.currentTarget)}));
+      document.querySelectorAll('[data-idle-alarm]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const muted=e.currentTarget.dataset.idleAlarm==='off';setIdleAlarmMuted(muted);closeToolbarDropdowns()}));
+      document.addEventListener('click',()=>closeToolbarDropdowns());
+      document.getElementById('sheetStatusBtn').addEventListener('click',()=>window.open('https://docs.google.com/spreadsheets/d/11PBs4KyIzJFDdBXQAWEXuKaxWxCrQJtmUhB7-PYmp14/edit','_blank','noopener,noreferrer'));
       document.getElementById('workdayPunchInBtn').addEventListener('click',e=>addWorkdayPunch('PUNCH_IN',e.currentTarget));
       document.getElementById('lunchOutBtn').addEventListener('click',e=>addWorkdayPunch('LUNCH_OUT',e.currentTarget));
       document.getElementById('lunchInBtn').addEventListener('click',e=>addWorkdayPunch('LUNCH_IN',e.currentTarget));
