@@ -963,20 +963,53 @@
     #job-priority-app .compact-financial-dashboard .financial-dashboard-value{font-size:11px}
     #job-priority-app .compact-financial-dashboard .overhead-inline-btn{min-height:23px;padding:3px 7px;font-size:8px;margin-left:0}
     @media(max-width:700px){#job-priority-app .compact-top .top-controls{gap:6px}#job-priority-app .completed-kpi-bottom{align-items:flex-start;flex-direction:column}#job-priority-app .compact-financial-dashboard{justify-content:flex-start}}
+
+    /* App-style top menu + historical timesheets */
+    #job-priority-app .compact-top{padding:2px 0 5px;border-bottom:1px solid light-dark(#e4e4df,#343434)}
+    #job-priority-app .compact-top .top-controls{gap:1px;flex-wrap:wrap}
+    #job-priority-app .compact-top .top-controls>button,
+    #job-priority-app .compact-top .toolbar-dropdown-launch,
+    #job-priority-app .compact-top .motivator-launch{background:transparent!important;border-color:transparent!important;box-shadow:none!important;border-radius:5px;min-height:27px;padding:4px 8px;font-size:10px;font-weight:650}
+    #job-priority-app .compact-top .top-controls>button:hover,
+    #job-priority-app .compact-top .toolbar-dropdown-launch:hover,
+    #job-priority-app .compact-top .motivator-launch:hover{background:light-dark(#ecece7,#303030)!important}
+    #job-priority-app .app-title-launch{font-weight:850!important;gap:7px!important}
+    #job-priority-app .app-menu-status{display:flex;align-items:center;gap:8px;padding:7px 8px;font-size:10px;font-weight:800;opacity:.78;border-bottom:1px solid light-dark(#ededE8,#3a3a3a);margin-bottom:4px}
+    #job-priority-app .app-menu-status .sheet-status-dot{width:8px;height:8px}
+    #job-priority-app .menu-state{font-size:9px;font-weight:800;opacity:.58;margin-left:14px}
+    #job-priority-app .timesheet-picker-modal{width:min(400px,calc(100vw - 32px))}
+    #job-priority-app .timesheet-picker-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+    #job-priority-app .productivity-log-row.timesheet-row{grid-template-columns:115px minmax(0,1fr) auto;align-items:center}
+    #job-priority-app .timesheet-row-actions{display:flex;gap:5px;justify-content:flex-end}
+    #job-priority-app .timesheet-row-actions button{min-height:25px;padding:3px 7px;font-size:9px}
+    #job-priority-app .timesheet-entry-kind{font-size:8px;font-weight:850;text-transform:uppercase;letter-spacing:.04em;opacity:.55;margin-bottom:2px}
+    #job-priority-app .timesheet-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 8px}
+    #job-priority-app .timesheet-nav button{min-height:27px;padding:4px 8px;font-size:9px}
+    #job-priority-app .timesheet-edit-modal{width:min(470px,calc(100vw - 32px))}
+    #job-priority-app .timesheet-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    #job-priority-app .timesheet-edit-grid .full{grid-column:1/-1}
+    @media(max-width:700px){#job-priority-app .productivity-log-row.timesheet-row{grid-template-columns:88px minmax(0,1fr) auto;gap:7px}#job-priority-app .timesheet-row-actions button{padding:3px 6px}#job-priority-app .timesheet-edit-grid{grid-template-columns:1fr}}
 </style>
   <div class="wrap">
     <div class="top compact-top">
       <div class="top-controls">
-        <button class="secondary sheet-status-btn" id="sheetStatusBtn" type="button" title="Open Google Sheet"><span class="sheet-status-dot" id="backendDot" aria-hidden="true"></span><span id="backendText">Disconnected</span></button>
-        <button class="secondary" id="jobSearchBtn" type="button">Search Jobs</button>
-        <button class="secondary" id="clientsBtn" type="button">Clients</button>
-        <div class="toolbar-dropdown" id="autoWorkdayControl">
-          <button class="secondary toolbar-dropdown-launch" id="autoWorkdayBtn" type="button" aria-haspopup="menu" aria-expanded="false"><span id="autoWorkdayStateLabel">Auto Workday Off</span><span class="toolbar-dropdown-caret">▾</span></button>
-          <div class="toolbar-dropdown-menu" id="autoWorkdayMenu" role="menu" aria-label="Auto Workday setting">
-            <button type="button" role="menuitem" data-auto-workday="on">On · Mon–Fri · 8:30 AM–10:00 PM</button>
-            <button type="button" role="menuitem" data-auto-workday="off">Off</button>
+        <div class="toolbar-dropdown" id="appMenuControl">
+          <button class="secondary toolbar-dropdown-launch app-title-launch" id="appMenuBtn" type="button" aria-haspopup="menu" aria-expanded="false"><span class="sheet-status-dot" id="backendDot" aria-hidden="true"></span><span>Job Ticket Prioritizer</span><span class="toolbar-dropdown-caret">▾</span></button>
+          <div class="toolbar-dropdown-menu" id="appMenu" role="menu" aria-label="Job Ticket Prioritizer menu">
+            <div class="app-menu-status" role="status"><span class="sheet-status-dot" id="backendMenuDot" aria-hidden="true"></span><span id="backendText">Disconnected</span></div>
+            <button type="button" role="menuitem" id="openGoogleSheetMenuBtn">Open Google Sheets</button>
           </div>
         </div>
+        <div class="toolbar-dropdown" id="timeMenuControl">
+          <button class="secondary toolbar-dropdown-launch" id="timeMenuBtn" type="button" aria-haspopup="menu" aria-expanded="false">Time <span class="toolbar-dropdown-caret">▾</span></button>
+          <div class="toolbar-dropdown-menu" id="timeMenu" role="menu" aria-label="Time menu">
+            <button type="button" role="menuitem" id="timeAutoWorkdayBtn"><span>Auto Workday</span><span class="menu-state" id="timeAutoWorkdayState">Off</span></button>
+            <button type="button" role="menuitem" id="viewTodayTimesheetBtn">View Today's Timesheet</button>
+            <button type="button" role="menuitem" id="viewPastTimesheetsBtn">View Past Timesheets</button>
+          </div>
+        </div>
+        <button class="secondary" id="jobSearchBtn" type="button">Search Jobs</button>
+        <button class="secondary" id="clientsBtn" type="button">Clients</button>
         <div class="toolbar-dropdown" id="idleAlarmControl">
           <button class="secondary toolbar-dropdown-launch" id="idleAlarmBtn" type="button" aria-haspopup="menu" aria-expanded="false"><span id="idleAlarmStateLabel">Idle Alert On</span><span class="toolbar-dropdown-caret">▾</span></button>
           <div class="toolbar-dropdown-menu" id="idleAlarmMenu" role="menu" aria-label="Idle Alert setting">
@@ -1273,8 +1306,8 @@
     </div>
     <div class="timer-modal-backdrop" id="productivityModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="productivityModalTitle">
       <div class="timer-modal productivity-modal">
-        <h3 id="productivityModalTitle">Today's Productivity</h3>
-        <p class="muted" id="productivityModalDate"></p>
+        <h3 id="productivityModalTitle">Timesheet</h3>
+        <div class="timesheet-nav"><button class="secondary" id="timesheetPrevDayBtn" type="button">‹ Previous Day</button><p class="muted" id="productivityModalDate"></p><button class="secondary" id="timesheetNextDayBtn" type="button">Next Day ›</button></div>
         <div class="productivity-summary-grid">
           <div class="productivity-summary-card"><div class="productivity-summary-label">Clocked Time</div><div class="productivity-summary-value" id="productivityClockedValue">0m</div></div>
           <div class="productivity-summary-card"><div class="productivity-summary-label">Client Work</div><div class="productivity-summary-value" id="productivityClientValue">0m</div></div>
@@ -1285,6 +1318,24 @@
         <div class="kpi-comparison" id="productivityUnassignedValue" style="margin-top:7px">Unassigned: 0m</div>
         <div class="productivity-log" id="productivityActivityLog"></div>
         <div class="actions"><button class="secondary" id="closeProductivityModalBtn" type="button">Close</button></div>
+      </div>
+    </div>
+    <div class="timer-modal-backdrop" id="pastTimesheetPickerBackdrop" role="dialog" aria-modal="true" aria-labelledby="pastTimesheetPickerTitle">
+      <div class="timer-modal timesheet-picker-modal">
+        <h3 id="pastTimesheetPickerTitle">View Past Timesheet</h3>
+        <p class="muted">Choose the workday you want to review.</p>
+        <label for="pastTimesheetDateInput" style="margin-top:12px">Date</label>
+        <input id="pastTimesheetDateInput" type="date">
+        <div class="timesheet-picker-actions"><button class="secondary" id="cancelPastTimesheetBtn" type="button">Cancel</button><button class="primary" id="openPastTimesheetBtn" type="button">View Timesheet</button></div>
+      </div>
+    </div>
+    <div class="timer-modal-backdrop" id="timesheetEntryEditBackdrop" role="dialog" aria-modal="true" aria-labelledby="timesheetEntryEditTitle">
+      <div class="timer-modal timesheet-edit-modal">
+        <h3 id="timesheetEntryEditTitle">Edit Timesheet Entry</h3>
+        <p class="muted" id="timesheetEntryEditLabel"></p>
+        <div class="timesheet-edit-grid" id="timesheetEntryEditFields" style="margin-top:12px"></div>
+        <p class="time-record-edit-note" style="margin-top:10px">Changes are recorded in the timesheet edit history. Client-session edits also recalculate the job's Time Accrued.</p>
+        <div class="actions"><button class="primary" id="saveTimesheetEntryEditBtn" type="button">Save</button><button class="secondary" id="cancelTimesheetEntryEditBtn" type="button">Cancel</button></div>
       </div>
     </div>
     <div class="timer-modal-backdrop" id="blockGapRecoveryBackdrop" role="dialog" aria-modal="true" aria-labelledby="blockGapRecoveryTitle">
@@ -1658,6 +1709,8 @@
       let workSets=[];
       let workdayPunches=[];
       let autoWorkdayConfig={enabled:false,startHour:8,startMinute:30,endHour:22,endMinute:0,weekdaysOnly:true,triggerInstalled:false};
+      let timesheetSelectedDateKey='';
+      let timesheetEditTarget=null;
       let adminSessions=[];
       let activeAdminSession=null;
       let jobFinancials=[];
@@ -1934,30 +1987,34 @@
         return total;
       }
       function productivityDateKey(value){const d=value instanceof Date?value:new Date(value);if(Number.isNaN(d.getTime()))return '';return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-      function todayWorkdayPunches(){const key=workdayKey();return (workdayPunches||[]).filter(p=>productivityDateKey(p.timestamp)===key).slice().sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp))}
+      function dateFromProductivityKey(key){const parts=String(key||'').split('-').map(Number);if(parts.length!==3||!parts[0]||!parts[1]||!parts[2])return new Date();return new Date(parts[0],parts[1]-1,parts[2],12,0,0,0)}
+      function shiftProductivityDateKey(key,days){const d=dateFromProductivityKey(key);d.setDate(d.getDate()+Number(days||0));return productivityDateKey(d)}
+      function workdayPunchesForDate(key){return (workdayPunches||[]).filter(p=>productivityDateKey(p.timestamp)===String(key||'')).slice().sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp))}
+      function todayWorkdayPunches(){return workdayPunchesForDate(workdayKey())}
       function currentWorkdayState(){let state='OFF';todayWorkdayPunches().forEach(p=>{if(p.eventType==='PUNCH_IN'&&state==='OFF')state='WORKING';else if(p.eventType==='LUNCH_OUT'&&state==='WORKING')state='LUNCH';else if(p.eventType==='LUNCH_IN'&&state==='LUNCH')state='WORKING';else if(p.eventType==='PUNCH_OUT'&&state==='WORKING')state='OFF'});return state}
       function isWeekendClient(d=new Date()){const day=d.getDay();return day===0||day===6}
       function isWithinAutoWorkdayWindowClient(d=new Date()){if(!autoWorkdayConfig.enabled||isWeekendClient(d))return false;const mins=d.getHours()*60+d.getMinutes();const start=Number(autoWorkdayConfig.startHour||8)*60+Number(autoWorkdayConfig.startMinute||30);const end=Number(autoWorkdayConfig.endHour||22)*60+Number(autoWorkdayConfig.endMinute||0);return mins>=start&&mins<end}
       function isAutoWorkdayFreeTime(d=new Date()){if(isWeekendClient(d))return true;return !!autoWorkdayConfig.enabled&&!isWithinAutoWorkdayWindowClient(d)}
-      function todayClockedIntervals(now=new Date()){
-        const result=[];let state='OFF';let start=null;
-        todayWorkdayPunches().forEach(p=>{const t=new Date(p.timestamp);if(Number.isNaN(t.getTime()))return;if(p.eventType==='PUNCH_IN'&&state==='OFF'){state='WORKING';start=t}else if(p.eventType==='LUNCH_OUT'&&state==='WORKING'){if(start&&t>start)result.push([start,t]);state='LUNCH';start=null}else if(p.eventType==='LUNCH_IN'&&state==='LUNCH'){state='WORKING';start=t}else if(p.eventType==='PUNCH_OUT'&&state==='WORKING'){if(start&&t>start)result.push([start,t]);state='OFF';start=null}});
-        if(state==='WORKING'&&start&&now>start)result.push([start,now]);return result
+      function clockedIntervalsForDate(key,now=new Date()){
+        const result=[];let state='OFF';let start=null;const isToday=String(key||'')===workdayKey(now);
+        workdayPunchesForDate(key).forEach(p=>{const t=new Date(p.timestamp);if(Number.isNaN(t.getTime()))return;if(p.eventType==='PUNCH_IN'&&state==='OFF'){state='WORKING';start=t}else if(p.eventType==='LUNCH_OUT'&&state==='WORKING'){if(start&&t>start)result.push([start,t]);state='LUNCH';start=null}else if(p.eventType==='LUNCH_IN'&&state==='LUNCH'){state='WORKING';start=t}else if(p.eventType==='PUNCH_OUT'&&state==='WORKING'){if(start&&t>start)result.push([start,t]);state='OFF';start=null}});
+        if(isToday&&state==='WORKING'&&start&&now>start)result.push([start,now]);return result
       }
+      function todayClockedIntervals(now=new Date()){return clockedIntervalsForDate(workdayKey(now),now)}
       function intervalSeconds(intervals){return intervals.reduce((sum,[a,b])=>sum+Math.max(0,(b-a)/1000),0)}
       function overlapSeconds(start,end,intervals){if(!start||!end)return 0;const a=new Date(start),b=end==='NOW'?new Date():new Date(end);if(Number.isNaN(a.getTime())||Number.isNaN(b.getTime())||b<=a)return 0;return intervals.reduce((sum,[x,y])=>sum+Math.max(0,(Math.min(b,y)-Math.max(a,x))/1000),0)}
-      function productivitySnapshot(now=new Date()){
-        const clockIntervals=todayClockedIntervals(now);const clocked=intervalSeconds(clockIntervals);const key=workdayKey(now);
-        let client=0;let admin=0;
-        (workSessions||[]).forEach(s=>{if(!s.punchIn||productivityDateKey(s.punchIn)!==key)return;client+=overlapSeconds(s.punchIn,s.punchOut||'NOW',clockIntervals)});
-        (adminSessions||[]).forEach(s=>{if(!s.punchIn||productivityDateKey(s.punchIn)!==key)return;admin+=overlapSeconds(s.punchIn,s.punchOut||'NOW',clockIntervals)});
+      function productivitySnapshotForDate(key,now=new Date()){
+        const clockIntervals=clockedIntervalsForDate(key,now);const clocked=intervalSeconds(clockIntervals);const isToday=String(key)===workdayKey(now);let client=0;let admin=0;
+        (workSessions||[]).forEach(s=>{if(!s.punchIn||productivityDateKey(s.punchIn)!==key)return;client+=overlapSeconds(s.punchIn,s.punchOut||(isToday?'NOW':''),clockIntervals)});
+        (adminSessions||[]).forEach(s=>{if(!s.punchIn||productivityDateKey(s.punchIn)!==key)return;admin+=overlapSeconds(s.punchIn,s.punchOut||(isToday?'NOW':''),clockIntervals)});
         client=Math.min(client,clocked);admin=Math.min(admin,Math.max(0,clocked-client));const productive=Math.min(clocked,client+admin);const unassigned=Math.max(0,clocked-productive);const utilization=clocked>0?(productive/clocked)*100:null;
-        let currentUnassigned=0;const state=currentWorkdayState();if(state==='WORKING'&&!activeWorkSession&&!activeAdminSession&&clockIntervals.length){const currentStart=clockIntervals[clockIntervals.length-1][0];let lastProductiveEnd=currentStart;const consider=(s)=>{if(!s.punchIn)return;const a=new Date(s.punchIn);const b=s.punchOut?new Date(s.punchOut):now;if(Number.isNaN(a.getTime())||Number.isNaN(b.getTime()))return;if(b>lastProductiveEnd&&b<=now&&b>=currentStart)lastProductiveEnd=b};(workSessions||[]).filter(s=>productivityDateKey(s.punchIn)===key).forEach(consider);(adminSessions||[]).filter(s=>productivityDateKey(s.punchIn)===key).forEach(consider);currentUnassigned=Math.max(0,(now-lastProductiveEnd)/1000)}
+        let currentUnassigned=0;let state='OFF';if(isToday){state=currentWorkdayState();if(state==='WORKING'&&!activeWorkSession&&!activeAdminSession&&clockIntervals.length){const currentStart=clockIntervals[clockIntervals.length-1][0];let lastProductiveEnd=currentStart;const consider=(session)=>{if(!session.punchIn)return;const a=new Date(session.punchIn);const b=session.punchOut?new Date(session.punchOut):now;if(Number.isNaN(a.getTime())||Number.isNaN(b.getTime()))return;if(b>lastProductiveEnd&&b<=now&&b>=currentStart)lastProductiveEnd=b};(workSessions||[]).filter(s=>productivityDateKey(s.punchIn)===key).forEach(consider);(adminSessions||[]).filter(s=>productivityDateKey(s.punchIn)===key).forEach(consider);currentUnassigned=Math.max(0,(now-lastProductiveEnd)/1000)}}
         return {clocked,client,admin,productive,unassigned,utilization,currentUnassigned,state,clockIntervals}
       }
+      function productivitySnapshot(now=new Date()){return productivitySnapshotForDate(workdayKey(now),now)}
       function formatProductivityDuration(seconds){const mins=Math.max(0,Math.round(Number(seconds||0)/60));const h=Math.floor(mins/60);const m=mins%60;if(!h)return `${m}m`;return `${h}h ${m}m`}
       function formatProductivityPercent(value){return value===null||!Number.isFinite(value)?'—':`${Math.round(value)}%`}
-      function renderWorkdayBar(){const bar=document.getElementById('workdayBar');if(!bar)return;const snap=productivitySnapshot();const state=snap.state;const isClient=state==='WORKING'&&!!activeWorkSession;const isAdmin=state==='WORKING'&&!!activeAdminSession&&!isClient;const isUnassigned=state==='WORKING'&&!isClient&&!isAdmin;bar.classList.remove('working','lunch','workday-unassigned','workday-admin','workday-client','workday-lunch');if(isClient)bar.classList.add('workday-client');else if(isAdmin)bar.classList.add('workday-admin');else if(isUnassigned)bar.classList.add('workday-unassigned');else if(state==='LUNCH')bar.classList.add('workday-lunch');const status=document.getElementById('workdayStatusText');const meta=document.getElementById('workdayMetaText');const inBtn=document.getElementById('workdayPunchInBtn');const adminBtn=document.getElementById('adminWorkBtn');const lunchOut=document.getElementById('lunchOutBtn');const lunchIn=document.getElementById('lunchInBtn');const outBtn=document.getElementById('workdayPunchOutBtn');const autoLabel=document.getElementById('autoWorkdayStateLabel');if(autoLabel)autoLabel.textContent=autoWorkdayConfig.enabled?'Auto Workday On':'Auto Workday Off';document.querySelectorAll('[data-auto-workday]').forEach(btn=>btn.classList.toggle('is-selected',(btn.dataset.autoWorkday==='on')===!!autoWorkdayConfig.enabled));const weekend=isWeekendClient();if(weekend&&inBtn){inBtn.disabled=true;inBtn.title='Workday clock stays off on weekends. Job punches are still available.';}
+      function renderWorkdayBar(){const bar=document.getElementById('workdayBar');if(!bar)return;const snap=productivitySnapshot();const state=snap.state;const isClient=state==='WORKING'&&!!activeWorkSession;const isAdmin=state==='WORKING'&&!!activeAdminSession&&!isClient;const isUnassigned=state==='WORKING'&&!isClient&&!isAdmin;bar.classList.remove('working','lunch','workday-unassigned','workday-admin','workday-client','workday-lunch');if(isClient)bar.classList.add('workday-client');else if(isAdmin)bar.classList.add('workday-admin');else if(isUnassigned)bar.classList.add('workday-unassigned');else if(state==='LUNCH')bar.classList.add('workday-lunch');const status=document.getElementById('workdayStatusText');const meta=document.getElementById('workdayMetaText');const inBtn=document.getElementById('workdayPunchInBtn');const adminBtn=document.getElementById('adminWorkBtn');const lunchOut=document.getElementById('lunchOutBtn');const lunchIn=document.getElementById('lunchInBtn');const outBtn=document.getElementById('workdayPunchOutBtn');const timeState=document.getElementById('timeAutoWorkdayState');if(timeState)timeState.textContent=autoWorkdayConfig.enabled?'On':'Off';const weekend=isWeekendClient();if(weekend&&inBtn){inBtn.disabled=true;inBtn.title='Workday clock stays off on weekends. Job punches are still available.';}else if(inBtn){inBtn.disabled=false;inBtn.title=''}
         inBtn.style.display=state==='OFF'?'inline-flex':'none';lunchIn.style.display=state==='LUNCH'?'inline-flex':'none';adminBtn.style.display=state==='WORKING'?'inline-flex':'none';lunchOut.style.display=state==='WORKING'?'inline-flex':'none';outBtn.style.display=state==='WORKING'?'inline-flex':'none';
         if(state==='OFF'){status.textContent=todayWorkdayPunches().length?'Punched Out':'Not Punched In';meta.textContent=todayWorkdayPunches().length?`Today's clocked time: ${formatProductivityDuration(snap.clocked)}`:'Punch in when your workday begins.'}
         else if(state==='LUNCH'){status.textContent='On Lunch';meta.textContent=`Today's clocked time: ${formatProductivityDuration(snap.clocked)} · lunch is excluded from utilization.`}
@@ -1968,8 +2025,36 @@
       }
       function renderWorkUtilization(){const snap=productivitySnapshot();const value=document.getElementById('workUtilizationCurrent');if(!value)return;value.textContent=formatProductivityPercent(snap.utilization);const clientPct=snap.clocked?Math.min(100,(snap.client/snap.clocked)*100):0;const adminPct=snap.clocked?Math.min(100-clientPct,(snap.admin/snap.clocked)*100):0;document.getElementById('utilizationClientSegment').style.width=`${clientPct}%`;document.getElementById('utilizationAdminSegment').style.width=`${adminPct}%`;document.getElementById('workUtilizationSummary').textContent=snap.clocked?`${formatProductivityDuration(snap.client)} Client · ${formatProductivityDuration(snap.admin)} Admin · ${formatProductivityDuration(snap.unassigned)} Unassigned`:'Punch in to begin tracking today\'s productivity.';const current=document.getElementById('workUtilizationCurrentState');current.classList.toggle('unassigned-warning',snap.currentUnassigned>=900);current.textContent=snap.state==='LUNCH'?'Currently on lunch':snap.state==='WORKING'&&!activeWorkSession&&!activeAdminSession?`Currently unassigned · ${formatProductivityDuration(snap.currentUnassigned)}`:activeAdminSession?`Currently Admin · ${activeAdminSession.category}`:activeWorkSession?'Currently on a client job':'';renderWorkdayBar()}
       function productivityTimeLabel(start,end){const fmt=d=>new Date(d).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});return end?`${fmt(start)}–${fmt(end)}`:`${fmt(start)}–Now`}
-      function renderProductivityModal(){const snap=productivitySnapshot();document.getElementById('productivityModalDate').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});document.getElementById('productivityClockedValue').textContent=formatProductivityDuration(snap.clocked);document.getElementById('productivityClientValue').textContent=formatProductivityDuration(snap.client);document.getElementById('productivityAdminValue').textContent=formatProductivityDuration(snap.admin);document.getElementById('productivityUtilizationValue').textContent=formatProductivityPercent(snap.utilization);document.getElementById('productivityUnassignedValue').textContent=`Unassigned: ${formatProductivityDuration(snap.unassigned)}`;const clientPct=snap.clocked?Math.min(100,(snap.client/snap.clocked)*100):0;const adminPct=snap.clocked?Math.min(100-clientPct,(snap.admin/snap.clocked)*100):0;document.getElementById('productivityClientSegment').style.width=`${clientPct}%`;document.getElementById('productivityAdminSegment').style.width=`${adminPct}%`;const key=workdayKey();const rows=[];todayWorkdayPunches().forEach(p=>{const labels={PUNCH_IN:'Punch In',LUNCH_OUT:'Lunch Out',LUNCH_IN:'Lunch In',PUNCH_OUT:'Punch Out'};rows.push({at:new Date(p.timestamp).getTime(),time:new Date(p.timestamp).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}),label:labels[p.eventType]||p.eventType})});(workSessions||[]).filter(s=>s.punchIn&&productivityDateKey(s.punchIn)===key).forEach(s=>{const job=jobs.find(j=>Number(j.ticketNumber)===Number(s.ticketNumber));const title=job?(job.title||job.displayTitle||`Ticket ${s.ticketNumber}`):`Ticket ${s.ticketNumber}`;rows.push({at:new Date(s.punchIn).getTime()+1,time:productivityTimeLabel(s.punchIn,s.punchOut),label:`Client · ${title}`})});(adminSessions||[]).filter(s=>s.punchIn&&productivityDateKey(s.punchIn)===key).forEach(s=>rows.push({at:new Date(s.punchIn).getTime()+2,time:productivityTimeLabel(s.punchIn,s.punchOut),label:`Admin · ${s.category}${s.description?` — ${s.description}`:''}`}));rows.sort((a,b)=>a.at-b.at);const log=document.getElementById('productivityActivityLog');log.innerHTML=rows.length?rows.map(r=>`<div class="productivity-log-row"><div class="productivity-log-time">${escapeHtml(r.time)}</div><div class="productivity-log-label">${escapeHtml(r.label)}</div></div>`).join(''):'<div class="completed-metrics-empty">No workday activity recorded yet.</div>'}
-      function openProductivityModal(){renderProductivityModal();document.getElementById('productivityModalBackdrop').classList.add('open')}
+      function timesheetRowEditButton(type,id,disabled=false){return disabled?'':`<button class="secondary" type="button" data-timesheet-edit-type="${escapeHtml(type)}" data-timesheet-edit-id="${escapeHtml(String(id||''))}">Edit</button>`}
+      function renderProductivityModal(){
+        const key=timesheetSelectedDateKey||workdayKey();timesheetSelectedDateKey=key;const date=dateFromProductivityKey(key);const snap=productivitySnapshotForDate(key);const todayKey=workdayKey();
+        document.getElementById('productivityModalTitle').textContent=key===todayKey?"Today's Timesheet":'Timesheet';document.getElementById('productivityModalDate').textContent=date.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});document.getElementById('timesheetNextDayBtn').disabled=key>=todayKey;
+        document.getElementById('productivityClockedValue').textContent=formatProductivityDuration(snap.clocked);document.getElementById('productivityClientValue').textContent=formatProductivityDuration(snap.client);document.getElementById('productivityAdminValue').textContent=formatProductivityDuration(snap.admin);document.getElementById('productivityUtilizationValue').textContent=formatProductivityPercent(snap.utilization);document.getElementById('productivityUnassignedValue').textContent=`Unassigned: ${formatProductivityDuration(snap.unassigned)}`;const clientPct=snap.clocked?Math.min(100,(snap.client/snap.clocked)*100):0;const adminPct=snap.clocked?Math.min(100-clientPct,(snap.admin/snap.clocked)*100):0;document.getElementById('productivityClientSegment').style.width=`${clientPct}%`;document.getElementById('productivityAdminSegment').style.width=`${adminPct}%`;
+        const rows=[];const labels={PUNCH_IN:'Punch In',LUNCH_OUT:'Lunch Out',LUNCH_IN:'Lunch In',PUNCH_OUT:'Punch Out'};
+        workdayPunchesForDate(key).forEach(p=>rows.push({at:new Date(p.timestamp).getTime(),time:new Date(p.timestamp).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}),kind:'Workday',label:labels[p.eventType]||p.eventType,type:'workday',id:p.punchId,active:false}));
+        (workSessions||[]).filter(s=>s.punchIn&&productivityDateKey(s.punchIn)===key).forEach(s=>{const job=jobs.find(j=>Number(j.ticketNumber)===Number(s.ticketNumber));const title=job?(job.title||job.displayTitle||`Ticket ${s.ticketNumber}`):`Ticket ${s.ticketNumber}`;const set=workSets.find(item=>String(item.workSetId||'')===String(s.workSetId||''));const detail=set?workSetLabel(set):(s.workSetType==='Change Order'?`Change Order #${Number(s.changeOrderNumber||0)}`:'Initial Request');rows.push({at:new Date(s.punchIn).getTime()+1,time:productivityTimeLabel(s.punchIn,s.punchOut),kind:'Client',label:`${title} · ${detail}`,type:'client',id:s.sessionId,active:!s.punchOut})});
+        (adminSessions||[]).filter(s=>s.punchIn&&productivityDateKey(s.punchIn)===key).forEach(s=>rows.push({at:new Date(s.punchIn).getTime()+2,time:productivityTimeLabel(s.punchIn,s.punchOut),kind:'Admin',label:`${s.category}${s.description?` — ${s.description}`:''}`,type:'admin',id:s.adminSessionId,active:!s.punchOut}));
+        rows.sort((a,b)=>a.at-b.at);const log=document.getElementById('productivityActivityLog');log.innerHTML=rows.length?rows.map(r=>`<div class="productivity-log-row timesheet-row"><div class="productivity-log-time">${escapeHtml(r.time)}</div><div class="productivity-log-label"><div class="timesheet-entry-kind">${escapeHtml(r.kind)}</div>${escapeHtml(r.label)}</div><div class="timesheet-row-actions">${timesheetRowEditButton(r.type,r.id,r.active)}</div></div>`).join(''):'<div class="completed-metrics-empty">No workday activity recorded for this date.</div>';
+        log.querySelectorAll('[data-timesheet-edit-type]').forEach(btn=>btn.addEventListener('click',()=>openTimesheetEntryEditor(btn.dataset.timesheetEditType,btn.dataset.timesheetEditId)))
+      }
+      function openProductivityModal(dateKey=workdayKey()){timesheetSelectedDateKey=String(dateKey||workdayKey());renderProductivityModal();document.getElementById('productivityModalBackdrop').classList.add('open')}
+      function openPastTimesheetPicker(){const d=new Date();d.setDate(d.getDate()-1);document.getElementById('pastTimesheetDateInput').value=productivityDateKey(d);document.getElementById('pastTimesheetDateInput').max=workdayKey();document.getElementById('pastTimesheetPickerBackdrop').classList.add('open')}
+      function openTimesheetEntryEditor(type,id){
+        timesheetEditTarget={type:String(type||''),id:String(id||'')};const fields=document.getElementById('timesheetEntryEditFields');const label=document.getElementById('timesheetEntryEditLabel');
+        if(type==='workday'){const p=workdayPunches.find(item=>String(item.punchId)===String(id));if(!p)return;const names={PUNCH_IN:'Punch In',LUNCH_OUT:'Lunch Out',LUNCH_IN:'Lunch In',PUNCH_OUT:'Punch Out'};label.textContent=`Workday · ${names[p.eventType]||p.eventType}`;fields.innerHTML=`<div class="full"><label for="timesheetWorkdayTime">Time</label><input id="timesheetWorkdayTime" type="datetime-local" step="1" value="${escapeHtml(toDateTimeLocalValue(p.timestamp))}"></div>`}
+        else if(type==='client'){const session=workSessions.find(item=>String(item.sessionId)===String(id));if(!session)return;if(!session.punchOut){alert('Active client punches cannot be edited. Punch out first.');return}const job=jobs.find(j=>Number(j.ticketNumber)===Number(session.ticketNumber));label.textContent=`Client · ${job?(job.title||job.displayTitle||''):('Ticket '+session.ticketNumber)}`;fields.innerHTML=`<div><label for="timesheetClientIn">Punch In</label><input id="timesheetClientIn" type="datetime-local" step="1" value="${escapeHtml(toDateTimeLocalValue(session.punchIn))}"></div><div><label for="timesheetClientOut">Punch Out</label><input id="timesheetClientOut" type="datetime-local" step="1" value="${escapeHtml(toDateTimeLocalValue(session.punchOut))}"></div>`}
+        else if(type==='admin'){const session=adminSessions.find(item=>String(item.adminSessionId)===String(id));if(!session)return;if(!session.punchOut){alert('Active Admin Work cannot be edited. Stop Admin Work first.');return}label.textContent=`Admin · ${session.category||'Admin Work'}`;const categories=['Invoicing','Bookkeeping / Banking','Email / Client Communication','Business Development','JTP / Internal Development','File / Office Management','Other Admin'];fields.innerHTML=`<div><label for="timesheetAdminIn">Punch In</label><input id="timesheetAdminIn" type="datetime-local" step="1" value="${escapeHtml(toDateTimeLocalValue(session.punchIn))}"></div><div><label for="timesheetAdminOut">Punch Out</label><input id="timesheetAdminOut" type="datetime-local" step="1" value="${escapeHtml(toDateTimeLocalValue(session.punchOut))}"></div><div class="full"><label for="timesheetAdminCategory">Category</label><select id="timesheetAdminCategory">${categories.map(c=>`<option${c===session.category?' selected':''}>${escapeHtml(c)}</option>`).join('')}</select></div><div class="full"><label for="timesheetAdminDescription">Description</label><input id="timesheetAdminDescription" type="text" value="${escapeHtml(session.description||'')}"></div>`}
+        else return;document.getElementById('timesheetEntryEditBackdrop').classList.add('open')
+      }
+      async function saveTimesheetEntryEdit(){
+        if(!timesheetEditTarget)return;const {type,id}=timesheetEditTarget;const btn=document.getElementById('saveTimesheetEntryEditBtn');btn.disabled=true;btn.textContent='Saving…';
+        try{
+          if(type==='workday'){const input=document.getElementById('timesheetWorkdayTime');const d=new Date(input.value);if(!input.value||Number.isNaN(d.getTime()))throw new Error('Enter a valid time.');const data=await apiPost({action:'editWorkdayPunch',punchId:id,timestampMs:d.getTime()});if(!data.success)throw new Error(data.error||'Unable to edit workday punch');const idx=workdayPunches.findIndex(p=>String(p.punchId)===id);if(idx>=0)workdayPunches[idx]=data.punch}
+          else if(type==='client'){const inEl=document.getElementById('timesheetClientIn'),outEl=document.getElementById('timesheetClientOut');const pin=new Date(inEl.value),pout=new Date(outEl.value);if(!inEl.value||!outEl.value||Number.isNaN(pin.getTime())||Number.isNaN(pout.getTime())||pout<=pin)throw new Error('Enter valid Punch In and Punch Out times, with Punch Out later than Punch In.');const data=await apiPost({action:'editWorkSession',sessionId:id,punchInMs:pin.getTime(),punchOutMs:pout.getTime()});if(!data.success)throw new Error(data.error||'Unable to edit client punch');const idx=workSessions.findIndex(s=>String(s.sessionId)===id);if(idx>=0)workSessions[idx]={...workSessions[idx],...data.session};const job=jobs.find(j=>Number(j.ticketNumber)===Number(data.session.ticketNumber));if(job&&data.timeAccruedHours!==undefined)setTimeAccruedHours(job,Number(data.timeAccruedHours||0))}
+          else if(type==='admin'){const inEl=document.getElementById('timesheetAdminIn'),outEl=document.getElementById('timesheetAdminOut');const pin=new Date(inEl.value),pout=new Date(outEl.value);if(!inEl.value||!outEl.value||Number.isNaN(pin.getTime())||Number.isNaN(pout.getTime())||pout<=pin)throw new Error('Enter valid Punch In and Punch Out times, with Punch Out later than Punch In.');const data=await apiPost({action:'editAdminSession',adminSessionId:id,punchInMs:pin.getTime(),punchOutMs:pout.getTime(),category:document.getElementById('timesheetAdminCategory').value,description:document.getElementById('timesheetAdminDescription').value.trim()});if(!data.success)throw new Error(data.error||'Unable to edit Admin Work');const idx=adminSessions.findIndex(s=>String(s.adminSessionId)===id);if(idx>=0)adminSessions[idx]=data.session}
+          document.getElementById('timesheetEntryEditBackdrop').classList.remove('open');timesheetEditTarget=null;renderProductivityModal();renderWorkUtilization();renderQueue();renderBoard()
+        }catch(err){alert('Timesheet edit could not be saved: '+err.message)}finally{btn.disabled=false;btn.textContent='Save'}
+      }
       async function endActiveAdminSession(){if(!activeAdminSession||!activeAdminSession.adminSessionId)return true;try{const data=await apiPost({action:'endAdminSession',adminSessionId:activeAdminSession.adminSessionId});if(!data.success)throw new Error(data.error||'Unable to stop Admin Work');const idx=adminSessions.findIndex(s=>s.adminSessionId===activeAdminSession.adminSessionId);if(idx>=0)adminSessions[idx]=data.session;activeAdminSession=null;renderWorkUtilization();return true}catch(err){alert('Admin Work could not be stopped: '+err.message);return false}}
       async function stopActiveProductivityForClockChange(){if(activeWorkSession&&activeWorkSession.sessionId){if(!confirm('A client job is currently running. Stop that job timer before changing your workday clock?'))return false;const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');if(!await pauseTimer(key))return false}if(activeAdminSession){if(!confirm('Admin Work is currently running. Stop the admin session before changing your workday clock?'))return false;if(!await endActiveAdminSession())return false}return true}
       async function addWorkdayPunch(eventType,button){if((eventType==='LUNCH_OUT'||eventType==='PUNCH_OUT')&&!await stopActiveProductivityForClockChange())return;const old=button.innerHTML;button.disabled=true;button.classList.add('is-loading');button.innerHTML=PUNCH_LOADING_ICON+'<span>Saving…</span>';try{const data=await apiPost({action:'addWorkdayPunch',eventType});if(!data.success)throw new Error(data.error||'Unable to save workday punch');workdayPunches.push(data.punch);if(eventType==='PUNCH_IN')setMotivatorBankServer({active:true,shiftStartMs:new Date(data.punch.timestamp).getTime(),spentSeconds:0});else if(eventType==='PUNCH_OUT')setMotivatorBankServer({active:false,spentSeconds:0});renderWorkUtilization();refreshMotivatorMenuGateLabels()}catch(err){alert('Workday punch could not be saved: '+err.message)}finally{button.disabled=false;button.classList.remove('is-loading');button.innerHTML=old}}
@@ -3655,7 +3740,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const visibleCompleted=jobs.filter(j=>j.status==='Completed'&&j.archived!==true);renderCards('completedList',visibleCompleted);const archiveAllBtn=document.getElementById('archiveAllCompletedBtn');if(archiveAllBtn){archiveAllBtn.disabled=!visibleCompleted.length;archiveAllBtn.title=visibleCompleted.length?`Archive all ${visibleCompleted.length} visible completed job${visibleCompleted.length===1?'':'s'}`:'No completed jobs to archive'}
         if(document.getElementById('jobSearchModalBackdrop')&&document.getElementById('jobSearchModalBackdrop').classList.contains('open'))renderJobSearchResults();
       }
-      function setBackendStatus(ok,text){const label=document.getElementById('backendText');const dot=document.getElementById('backendDot');const btn=document.getElementById('sheetStatusBtn');if(label)label.textContent=ok?'Connected':'Disconnected';if(btn){btn.title=(text?String(text)+' · ':'')+'Open Google Sheet';btn.setAttribute('aria-label',(ok?'Connected to Google Sheets':'Disconnected from Google Sheets')+'. Open Google Sheet.')}if(dot){const color=ok?'#1f7a4d':'#b42318';dot.style.background=color;dot.style.boxShadow=ok?'0 0 0 3px rgba(31,122,77,.14)':'0 0 0 3px rgba(180,35,24,.14)'}}
+      function setBackendStatus(ok,text){const label=document.getElementById('backendText');const dots=[document.getElementById('backendDot'),document.getElementById('backendMenuDot')].filter(Boolean);const btn=document.getElementById('appMenuBtn');if(label)label.textContent=ok?'Connected':'Disconnected';if(btn){btn.title=text?String(text):'';btn.setAttribute('aria-label','Job Ticket Prioritizer. '+(ok?'Connected to Google Sheets.':'Disconnected from Google Sheets.'))}dots.forEach(dot=>{const color=ok?'#1f7a4d':'#b42318';dot.style.background=color;dot.style.boxShadow=ok?'0 0 0 3px rgba(31,122,77,.14)':'0 0 0 3px rgba(180,35,24,.14)'})}
       let motivatorCurrentLevel='GO';
       let motivatorSelectInterval=null;
       let motivatorSelectSeconds=0;
@@ -4746,13 +4831,15 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       });
       document.getElementById('activeJobDetailsBtn').addEventListener('click',openActiveJobDetails);
       document.getElementById('activeJobStopBtn').addEventListener('click',stopActiveJobFromBar);
-      const closeTopToolbarMenus=(except='')=>{[['autoWorkdayBtn','autoWorkdayMenu'],['idleAlarmBtn','idleAlarmMenu'],['motivatorBtn','motivatorMenu']].forEach(([btnId,menuId])=>{if(menuId===except)return;const btn=document.getElementById(btnId),menu=document.getElementById(menuId);if(menu){menu.classList.remove('open');if(btn)btn.setAttribute('aria-expanded','false')}})};
-      document.getElementById('autoWorkdayBtn').addEventListener('click',e=>{e.stopPropagation();const menu=document.getElementById('autoWorkdayMenu');const opening=!menu.classList.contains('open');closeTopToolbarMenus('autoWorkdayMenu');menu.classList.toggle('open',opening);e.currentTarget.setAttribute('aria-expanded',opening?'true':'false')});
-      document.getElementById('idleAlarmBtn').addEventListener('click',e=>{e.stopPropagation();const menu=document.getElementById('idleAlarmMenu');const opening=!menu.classList.contains('open');closeTopToolbarMenus('idleAlarmMenu');menu.classList.toggle('open',opening);e.currentTarget.setAttribute('aria-expanded',opening?'true':'false')});
-      document.querySelectorAll('[data-auto-workday]').forEach(btn=>btn.addEventListener('click',async e=>{e.stopPropagation();const enabled=e.currentTarget.dataset.autoWorkday==='on';closeTopToolbarMenus();if(enabled!==!!autoWorkdayConfig.enabled)await setAutoWorkdayEnabled(enabled,e.currentTarget)}));
+      const closeTopToolbarMenus=(except='')=>{[['appMenuBtn','appMenu'],['timeMenuBtn','timeMenu'],['idleAlarmBtn','idleAlarmMenu'],['motivatorBtn','motivatorMenu']].forEach(([btnId,menuId])=>{if(menuId===except)return;const btn=document.getElementById(btnId),menu=document.getElementById(menuId);if(menu){menu.classList.remove('open');if(btn)btn.setAttribute('aria-expanded','false')}})};
+      const wireToolbarDropdown=(btnId,menuId)=>{const btn=document.getElementById(btnId),menu=document.getElementById(menuId);if(!btn||!menu)return;btn.addEventListener('click',e=>{e.stopPropagation();const opening=!menu.classList.contains('open');closeTopToolbarMenus(menuId);menu.classList.toggle('open',opening);btn.setAttribute('aria-expanded',opening?'true':'false')})};
+      wireToolbarDropdown('appMenuBtn','appMenu');wireToolbarDropdown('timeMenuBtn','timeMenu');wireToolbarDropdown('idleAlarmBtn','idleAlarmMenu');
       document.querySelectorAll('[data-idle-alarm]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const muted=e.currentTarget.dataset.idleAlarm==='off';setIdleAlarmMuted(muted);closeTopToolbarMenus()}));
+      document.getElementById('timeAutoWorkdayBtn').addEventListener('click',async e=>{e.stopPropagation();const enabled=!autoWorkdayConfig.enabled;closeTopToolbarMenus();await setAutoWorkdayEnabled(enabled,e.currentTarget)});
+      document.getElementById('viewTodayTimesheetBtn').addEventListener('click',e=>{e.stopPropagation();closeTopToolbarMenus();openProductivityModal(workdayKey())});
+      document.getElementById('viewPastTimesheetsBtn').addEventListener('click',e=>{e.stopPropagation();closeTopToolbarMenus();openPastTimesheetPicker()});
+      document.getElementById('openGoogleSheetMenuBtn').addEventListener('click',e=>{e.stopPropagation();closeTopToolbarMenus();window.open('https://docs.google.com/spreadsheets/d/11PBs4KyIzJFDdBXQAWEXuKaxWxCrQJtmUhB7-PYmp14/edit','_blank','noopener,noreferrer')});
       document.addEventListener('click',()=>closeTopToolbarMenus());
-      document.getElementById('sheetStatusBtn').addEventListener('click',()=>window.open('https://docs.google.com/spreadsheets/d/11PBs4KyIzJFDdBXQAWEXuKaxWxCrQJtmUhB7-PYmp14/edit','_blank','noopener,noreferrer'));
       document.getElementById('workdayPunchInBtn').addEventListener('click',e=>addWorkdayPunch('PUNCH_IN',e.currentTarget));
       document.getElementById('lunchOutBtn').addEventListener('click',e=>addWorkdayPunch('LUNCH_OUT',e.currentTarget));
       document.getElementById('lunchInBtn').addEventListener('click',e=>addWorkdayPunch('LUNCH_IN',e.currentTarget));
@@ -4760,9 +4847,15 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('adminWorkBtn').addEventListener('click',openAdminWork);
       document.getElementById('startAdminWorkBtn').addEventListener('click',startAdminWork);
       document.getElementById('cancelAdminWorkBtn').addEventListener('click',()=>document.getElementById('adminWorkModalBackdrop').classList.remove('open'));
-      document.getElementById('workUtilizationKpiBtn').addEventListener('click',openProductivityModal);
-      document.getElementById('workUtilizationKpiBtn').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openProductivityModal()}});
+      document.getElementById('workUtilizationKpiBtn').addEventListener('click',()=>openProductivityModal(workdayKey()));
+      document.getElementById('workUtilizationKpiBtn').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openProductivityModal(workdayKey())}});
       document.getElementById('closeProductivityModalBtn').addEventListener('click',()=>document.getElementById('productivityModalBackdrop').classList.remove('open'));
+      document.getElementById('cancelPastTimesheetBtn').addEventListener('click',()=>document.getElementById('pastTimesheetPickerBackdrop').classList.remove('open'));
+      document.getElementById('openPastTimesheetBtn').addEventListener('click',()=>{const key=document.getElementById('pastTimesheetDateInput').value;if(!key){alert('Choose a date.');return}document.getElementById('pastTimesheetPickerBackdrop').classList.remove('open');openProductivityModal(key)});
+      document.getElementById('timesheetPrevDayBtn').addEventListener('click',()=>{timesheetSelectedDateKey=shiftProductivityDateKey(timesheetSelectedDateKey||workdayKey(),-1);renderProductivityModal()});
+      document.getElementById('timesheetNextDayBtn').addEventListener('click',()=>{const next=shiftProductivityDateKey(timesheetSelectedDateKey||workdayKey(),1);timesheetSelectedDateKey=next>workdayKey()?workdayKey():next;renderProductivityModal()});
+      document.getElementById('cancelTimesheetEntryEditBtn').addEventListener('click',()=>{timesheetEditTarget=null;document.getElementById('timesheetEntryEditBackdrop').classList.remove('open')});
+      document.getElementById('saveTimesheetEntryEditBtn').addEventListener('click',saveTimesheetEntryEdit);
       document.getElementById('punchInWorkType').addEventListener('change',updatePunchInFields);
       document.getElementById('punchInWorkSet').addEventListener('change',updatePunchInFields);
       document.getElementById('punchInWorkDescription').addEventListener('input',updatePunchInSubmitState);
@@ -4882,7 +4975,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           if(!data.success)throw new Error(data.error||'Unable to edit punch');
           session.punchIn=data.session.punchIn;session.punchOut=data.session.punchOut;session.durationMinutes=Number(data.session.durationMinutes||0);
           const job=jobs.find(j=>Number(j.ticketNumber)===Number(session.ticketNumber));if(job&&data.timeAccruedHours!==undefined)setTimeAccruedHours(job,Number(data.timeAccruedHours||0));
-          document.getElementById('editPunchModalBackdrop').classList.remove('open');editPunchSessionId='';if(jobDetailsTicket)renderJobDetailsModal();else renderTimeRecordModal();renderQueue();renderBoard();
+          document.getElementById('editPunchModalBackdrop').classList.remove('open');editPunchSessionId='';if(jobDetailsTicket)renderJobDetailsModal();else if(document.getElementById('timeRecordModalBackdrop').classList.contains('open'))renderTimeRecordModal();if(document.getElementById('productivityModalBackdrop').classList.contains('open'))renderProductivityModal();renderQueue();renderBoard();renderWorkUtilization();
         }catch(err){alert('Punch edit could not be saved: '+err.message)}finally{saveBtn.disabled=false;saveBtn.textContent='Save'}
       });
       document.getElementById('cancelDeletePunchBtn').addEventListener('click',()=>{deletePunchSessionId='';document.getElementById('deletePunchModalBackdrop').classList.remove('open')});
