@@ -2596,7 +2596,7 @@
       function sessionRecoveryKey(session){return String(session&&session.ticketNumber||'')}
       function orphanOpenSessions(){
         const activeId=activeWorkSession&&activeWorkSession.sessionId?String(activeWorkSession.sessionId):'';
-        return workSessions.filter(session=>!session.punchOut&&String(session.sessionId||'')!==activeId);
+        return workSessions.filter(session=>!session.punchOut&&!wasWorkSessionRecentlyClosed(session.sessionId)&&String(session.sessionId||'')!==activeId);
       }
       function orphanSessionForTicket(ticket){return orphanOpenSessions().find(session=>String(session.ticketNumber||'')===String(ticket))||null}
       function jobDetailsButton(ticket){
@@ -3363,7 +3363,7 @@
       async function handleJobDetailsPunchControl(){
         const job=jobs.find(item=>String(item.ticketNumber||'')===String(jobDetailsTicket));if(!job)return;const btn=document.getElementById('jobDetailsPunchBtn');if(!btn)return;
         const thisJobActive=activeWorkSession&&activeWorkSession.sessionId&&String(activeWorkSession.ticketNumber||'')===String(job.ticketNumber||'');
-        if(thisJobActive){const key=activeWorkSession.timerKey||activeTimerKey||timerKeyFor(job);const originalHtml=btn.innerHTML;btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Punching Out…</span>';try{const stopped=await pauseTimer(key);if(stopped&&jobDetailsTicket)renderJobDetailsModal()}finally{if(document.body.contains(btn)){btn.disabled=false;btn.classList.remove('is-loading');btn.innerHTML=originalHtml}}return}
+        if(thisJobActive){const key=activeWorkSession.timerKey||activeTimerKey||timerKeyFor(job);btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Punching Out…</span>';try{const stopped=await pauseTimer(key);if(stopped&&jobDetailsTicket)renderJobDetailsModal()}finally{const currentBtn=document.getElementById('jobDetailsPunchBtn');if(currentBtn){currentBtn.classList.remove('is-loading');renderJobDetailsPunchControl(job)}}return}
         if(activeWorkSession&&activeWorkSession.sessionId){alert(`Ticket ${activeWorkSession.ticketNumber} already has an active punch. Punch out before starting another job.`);return}
         const target=currentJobDetailsTarget(job);if(!target)return;openJobDetailsPunchIn(job,target.kind,target.number||0)
       }
