@@ -1007,6 +1007,7 @@
           <div class="toolbar-dropdown-menu" id="appMenu" role="menu" aria-label="Job Ticket Prioritizer menu">
             <div class="app-menu-status" role="status"><span class="sheet-status-dot" id="backendMenuDot" aria-hidden="true"></span><span id="backendText">Disconnected</span></div>
             <button type="button" role="menuitem" id="openGoogleSheetMenuBtn">Open Google Sheets</button>
+            <button type="button" role="menuitem" id="reloadBtn">Sync Data</button>
           </div>
         </div>
         <div class="toolbar-dropdown" id="timeMenuControl">
@@ -1026,7 +1027,13 @@
             <button type="button" role="menuitem" id="viewPastTimesheetsBtn">View Past Timesheets</button>
           </div>
         </div>
-        <button class="secondary" id="jobSearchBtn" type="button">Search Jobs</button>
+        <div class="toolbar-dropdown" id="jobsMenuControl">
+          <button class="secondary toolbar-dropdown-launch" id="jobsMenuBtn" type="button" aria-haspopup="menu" aria-expanded="false">Jobs <span class="toolbar-dropdown-caret">▾</span></button>
+          <div class="toolbar-dropdown-menu" id="jobsMenu" role="menu" aria-label="Jobs menu">
+            <button type="button" role="menuitem" id="jobSearchBtn">Search Jobs</button>
+            <button type="button" role="menuitem" id="archivedJobsBtn">Archived Jobs</button>
+          </div>
+        </div>
         <button class="secondary" id="clientsBtn" type="button">Clients</button>
         <div class="toolbar-dropdown" id="idleAlarmControl">
           <button class="secondary toolbar-dropdown-launch" id="idleAlarmBtn" type="button" aria-haspopup="menu" aria-expanded="false"><span id="idleAlarmStateLabel">Idle Alert On</span><span class="toolbar-dropdown-caret">▾</span></button>
@@ -1043,8 +1050,6 @@
             <button type="button" role="menuitem" data-motivator-vault><span>Motivator Vault</span><span class="motivator-menu-lock">🔒</span></button>
           </div>
         </div>
-        <button class="secondary" id="reloadBtn" type="button">Sync Data</button>
-        <button class="secondary" id="archivedJobsBtn" type="button">Archived Jobs</button>
       </div>
     </div>
 
@@ -4638,10 +4643,10 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           btn.textContent='Saved ✓';setTimeout(()=>{btn.textContent='Save Overhead'},900);
         }catch(err){alert(err.message)}finally{btn.disabled=false;if(btn.textContent==='Saving…')btn.textContent='Save Overhead'}
       });
-      document.getElementById('reloadBtn').addEventListener('click',loadBackend);
-      document.getElementById('jobSearchBtn').addEventListener('click',openJobSearch);
+      document.getElementById('reloadBtn').addEventListener('click',e=>{e.stopPropagation();closeTopToolbarMenus();loadBackend()});
+      document.getElementById('jobSearchBtn').addEventListener('click',e=>{e.stopPropagation();closeTopToolbarMenus();openJobSearch()});
       document.getElementById('closeJobSearchBtn').addEventListener('click',closeJobSearch);
-      document.getElementById('archivedJobsBtn').addEventListener('click',openArchivedJobs);
+      document.getElementById('archivedJobsBtn').addEventListener('click',e=>{e.stopPropagation();closeTopToolbarMenus();openArchivedJobs()});
       document.getElementById('closeArchivedJobsBtn').addEventListener('click',closeArchivedJobs);
       document.getElementById('archivedJobsModalBackdrop').addEventListener('click',e=>{if(e.target===e.currentTarget)closeArchivedJobs()});
       document.getElementById('jobSearchInput').addEventListener('input',renderJobSearchResults);
@@ -4862,9 +4867,9 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       });
       document.getElementById('activeJobDetailsBtn').addEventListener('click',openActiveJobDetails);
       document.getElementById('activeJobStopBtn').addEventListener('click',stopActiveJobFromBar);
-      const closeTopToolbarMenus=(except='')=>{[['appMenuBtn','appMenu'],['timeMenuBtn','timeMenu'],['idleAlarmBtn','idleAlarmMenu'],['motivatorBtn','motivatorMenu']].forEach(([btnId,menuId])=>{if(menuId===except)return;const btn=document.getElementById(btnId),menu=document.getElementById(menuId);if(menu){menu.classList.remove('open');if(btn)btn.setAttribute('aria-expanded','false')}});if(except!=='timeMenu'){const sub=document.getElementById('autoWorkdaySubmenu'),subBtn=document.getElementById('timeAutoWorkdayBtn');if(sub)sub.classList.remove('open');if(subBtn)subBtn.setAttribute('aria-expanded','false')}};
+      const closeTopToolbarMenus=(except='')=>{[['appMenuBtn','appMenu'],['timeMenuBtn','timeMenu'],['jobsMenuBtn','jobsMenu'],['idleAlarmBtn','idleAlarmMenu'],['motivatorBtn','motivatorMenu']].forEach(([btnId,menuId])=>{if(menuId===except)return;const btn=document.getElementById(btnId),menu=document.getElementById(menuId);if(menu){menu.classList.remove('open');if(btn)btn.setAttribute('aria-expanded','false')}});if(except!=='timeMenu'){const sub=document.getElementById('autoWorkdaySubmenu'),subBtn=document.getElementById('timeAutoWorkdayBtn');if(sub)sub.classList.remove('open');if(subBtn)subBtn.setAttribute('aria-expanded','false')}};
       const wireToolbarDropdown=(btnId,menuId)=>{const btn=document.getElementById(btnId),menu=document.getElementById(menuId);if(!btn||!menu)return;btn.addEventListener('click',e=>{e.stopPropagation();const opening=!menu.classList.contains('open');closeTopToolbarMenus(menuId);menu.classList.toggle('open',opening);btn.setAttribute('aria-expanded',opening?'true':'false')})};
-      wireToolbarDropdown('appMenuBtn','appMenu');wireToolbarDropdown('timeMenuBtn','timeMenu');wireToolbarDropdown('idleAlarmBtn','idleAlarmMenu');
+      wireToolbarDropdown('appMenuBtn','appMenu');wireToolbarDropdown('timeMenuBtn','timeMenu');wireToolbarDropdown('jobsMenuBtn','jobsMenu');wireToolbarDropdown('idleAlarmBtn','idleAlarmMenu');
       document.querySelectorAll('[data-idle-alarm]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const muted=e.currentTarget.dataset.idleAlarm==='off';setIdleAlarmMuted(muted);closeTopToolbarMenus()}));
       document.getElementById('timeAutoWorkdayBtn').addEventListener('click',e=>{e.stopPropagation();const submenu=document.getElementById('autoWorkdaySubmenu');const opening=!submenu.classList.contains('open');submenu.classList.toggle('open',opening);e.currentTarget.setAttribute('aria-expanded',opening?'true':'false')});
       document.getElementById('autoWorkdayOnBtn').addEventListener('click',async e=>{e.stopPropagation();document.getElementById('autoWorkdaySubmenu').classList.remove('open');closeTopToolbarMenus();await setAutoWorkdayEnabled(true,e.currentTarget)});
