@@ -695,7 +695,7 @@
     #job-priority-app .motivator-control{position:relative;display:inline-flex;align-items:center}
     #job-priority-app .motivator-launch{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
     #job-priority-app .motivator-launch-caret{font-size:9px;opacity:.68}
-    #job-priority-app .motivator-menu{position:absolute;top:calc(100% + 5px);right:0;z-index:80;display:none;min-width:150px;padding:5px;background:light-dark(#fff,#252525);border:1px solid light-dark(#d8d8d4,#444);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,0,.2)}
+    #job-priority-app .motivator-menu{position:absolute;top:calc(100% + 5px);right:0;z-index:1010;display:none;min-width:150px;padding:5px;background:light-dark(#fff,#252525);border:1px solid light-dark(#d8d8d4,#444);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,0,.2)}
     #job-priority-app .motivator-menu.open{display:block}
     #job-priority-app .motivator-menu button{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:30px;padding:6px 8px;background:transparent;color:inherit;text-align:left;font-size:10px}
     #job-priority-app .motivator-menu button:hover{background:light-dark(#f0f0ec,#303030)}
@@ -952,7 +952,7 @@
     @media(max-width:620px){#job-priority-app .hourly-work-modal{padding:28px 20px}#job-priority-app .hourly-work-title{font-size:24px}#job-priority-app .hourly-work-countdown{font-size:48px}}
 
     /* Compact dashboard header */
-    #job-priority-app .compact-top{justify-content:flex-start;align-items:center;margin-bottom:8px;gap:8px}
+    #job-priority-app .compact-top{justify-content:flex-start;align-items:center;margin-bottom:8px;gap:8px;position:relative;z-index:1000}
     #job-priority-app .compact-top .top-controls{justify-content:flex-start;gap:7px;width:100%}
     #job-priority-app .compact-top .top-controls>button,#job-priority-app .compact-top .motivator-launch{min-height:31px;padding:5px 10px;font-size:10px}
     #job-priority-app .workday-bar{padding:8px 11px;margin-bottom:9px}
@@ -964,7 +964,7 @@
     #job-priority-app .sheet-status-dot{width:8px;height:8px;border-radius:999px;background:#8b8b85;flex:0 0 auto;box-shadow:0 0 0 3px rgba(139,139,133,.12)}
     #job-priority-app .toolbar-dropdown{position:relative;display:inline-flex;align-items:center}
     #job-priority-app .toolbar-dropdown-launch{min-height:31px;padding:5px 10px;font-size:10px;display:inline-flex;align-items:center;gap:5px}
-    #job-priority-app .toolbar-dropdown-menu{position:absolute;top:calc(100% + 5px);left:0;z-index:90;display:none;min-width:180px;padding:5px;background:light-dark(#fff,#252525);border:1px solid light-dark(#d8d8d4,#444);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,0,.2)}
+    #job-priority-app .toolbar-dropdown-menu{position:absolute;top:calc(100% + 5px);left:0;z-index:1010;display:none;min-width:180px;padding:5px;background:light-dark(#fff,#252525);border:1px solid light-dark(#d8d8d4,#444);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,0,.2)}
     #job-priority-app .toolbar-dropdown-menu.open{display:block}
     #job-priority-app .toolbar-dropdown-menu button{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:30px;padding:6px 8px;background:transparent;color:inherit;text-align:left;font-size:10px}
     #job-priority-app .toolbar-dropdown-menu button:hover{background:light-dark(#f0f0ec,#303030)}
