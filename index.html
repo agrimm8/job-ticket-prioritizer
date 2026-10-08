@@ -3264,7 +3264,9 @@
       }
       function changeOrderIntakesForJob(job){return (Array.isArray(changeOrderIntakes)?changeOrderIntakes:[]).filter(item=>Number(item.ticketNumber)===Number(job&&job.ticketNumber||0)).sort((a,b)=>Number(a.changeOrderNumber)-Number(b.changeOrderNumber))}
       function pendingChangeOrderIntakeForJob(job){return changeOrderIntakesForJob(job).find(item=>item.status==='Pending')||null}
-      function combinedChangeOrderNotes(intake){if(!intake)return '';const parts=[];const manual=String(intake.manualNotes||'').trim();if(manual)parts.push(manual);changeOrderEmailSourcesForIntake(intake).forEach((source,index)=>{const body=String(source.body||'').trim();if(body)parts.push(`Email ${index+1}${source.receivedAt?' · '+source.receivedAt:''}:\n${body}`)});return parts.join('\n\n--------------------\n\n')}
+      function normalizeEmailRequestText(value){return String(value||'').replace(/\r\n?/g,'\n').split('\n').map(line=>line.trim()).join('\n').replace(/\n{3,}/g,'\n\n').replace(/[ \t]+/g,' ').trim()}
+      function notesDuplicateEmailSource(notes,sources){const normalized=normalizeEmailRequestText(notes);if(!normalized)return false;return (sources||[]).some(source=>normalizeEmailRequestText(source&&source.body)===normalized)}
+      function combinedChangeOrderNotes(intake){if(!intake)return '';const parts=[];const manual=String(intake.manualNotes||'').trim();if(manual)parts.push(manual);const sources=changeOrderEmailSourcesForIntake(intake);sources.forEach((source,index)=>{const body=String(source.body||'').trim();const emailNumber=sources.length-index;if(body)parts.push(`Email ${emailNumber}${source.receivedAt?' · '+source.receivedAt:''}:\n${body}`)});return parts.join('\n\n--------------------\n\n')}
       function changeOrderEmailSourcesForIntake(intake){return changeOrderEmailSources.filter(source=>String(source.changeOrderIntakeId||'')===String(intake&&intake.changeOrderIntakeId||'')).sort((a,b)=>String(b.receivedAt||'').localeCompare(String(a.receivedAt||'')))}
       function changeOrderMenuButton(job){if(!job||job.status==='Completed')return '';const pending=pendingChangeOrderIntakeForJob(job);if(job.status==='Client Review'&&!pending)return '';return `<button type="button" data-change-order-ticket="${escapeHtml(String(job.ticketNumber||''))}">${pending?'View Pending Change Order':'Create Change Order'}</button>`}
       function changeOrderSourceAvailable(source){if(!source||source.sourceDeletedAt||source.available===false)return false;if(source.deleteAfter){const expires=new Date(source.deleteAfter).getTime();if(Number.isFinite(expires)&&expires<=Date.now())return false}return true}
@@ -3332,10 +3334,11 @@
         const sourceAvailable=(!source.sourceDeletedAt)&&source.available!==false&&(!source.deleteAfter||new Date(source.deleteAfter).getTime()>Date.now());const linkAvailable=sourceAvailable&&!!source.gmailPermalink;
         const subject=source.cleanSubject||source.subject||'Source email';const senderParts=[];if(source.originalSenderName)senderParts.push(source.originalSenderName);if(!hideEmail&&source.originalSenderEmail)senderParts.push(source.originalSenderEmail);const sender=senderParts.join(' · ');
         const attachmentHtml=sourceAvailable?jobDetailsAttachmentMarkup(source):'';
-        const linkLabel=total>1?`View Source Email ${index+1}`:'View Source Email';
+        const emailNumber=Math.max(1,Number(total||1)-Number(index||0));
+        const linkLabel=total>1?`View Source Email ${emailNumber}`:'View Source Email';
         const meta=[sender,source.receivedAt||''].filter(Boolean).map(escapeHtml).join(' · ');
         const body=String(source.body||'').trim();
-        return `<div class="job-details-source"><div class="job-details-source-head"><div class="change-order-source-title">${escapeHtml(total>1?`Email ${index+1} · ${subject}`:subject)}</div>${linkAvailable?`<a class="job-details-source-email-link" href="${escapeHtml(source.gmailPermalink)}" target="_blank" rel="noopener noreferrer">${escapeHtml(linkLabel)}</a>`:(sourceAvailable?'':'<span class="job-details-source-expired">Source Email Expired</span>')}</div>${meta?`<div class="job-details-source-meta">${meta}</div>`:''}${body?`<div class="job-details-source-body">${escapeHtml(body)}</div>`:''}${attachmentHtml}</div>`;
+        return `<div class="job-details-source"><div class="job-details-source-head"><div class="change-order-source-title">${escapeHtml(total>1?`Email ${emailNumber} · ${subject}`:subject)}</div>${linkAvailable?`<a class="job-details-source-email-link" href="${escapeHtml(source.gmailPermalink)}" target="_blank" rel="noopener noreferrer">${escapeHtml(linkLabel)}</a>`:(sourceAvailable?'':'<span class="job-details-source-expired">Source Email Expired</span>')}</div>${meta?`<div class="job-details-source-meta">${meta}</div>`:''}${body?`<div class="job-details-source-body">${escapeHtml(body)}</div>`:''}${attachmentHtml}</div>`;
       }
       function workloadScoreForJobDetailsSection(job,kind,number=0){
         if(!job)return 0;
@@ -3380,10 +3383,11 @@
           set=(Array.isArray(workSets)?workSets:[]).find(item=>Number(item.ticketNumber)===ticket&&item.workSetType==='Change Order'&&Number(item.changeOrderNumber||0)===Number(number))||null;
           title=`Change Order ${Number(number)}`;status=record?String(record.status||''):'';sources=record?changeOrderEmailSourcesForIntake(record):[];
           notes=record?String(record.manualNotes||''):(set&&String(set.workDescription||'').trim()?String(set.workDescription||''):'');
+          if(sources.length&&notesDuplicateEmailSource(notes,sources))notes='';
           actionItems=record?String(record.actionItems||''):'';
         }else{
           set=(Array.isArray(workSets)?workSets:[]).find(item=>Number(item.ticketNumber)===ticket&&item.workSetType==='Initial Draft')||null;sources=emailSourcesForJob(job);
-          if(sources.length===1&&String(notes||'').trim()===String(sources[0].body||'').trim())notes='';
+          if(sources.length&&notesDuplicateEmailSource(notes,sources))notes='';
         }
         const key=kind==='change-order'?`co-${number}`:'initial';
         const editable=kind==='initial'||!!record;
