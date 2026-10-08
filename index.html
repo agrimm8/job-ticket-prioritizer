@@ -263,8 +263,8 @@
     #job-priority-app .focus-countdown-main-actions button{min-height:48px;border-radius:9px;font-size:13px;font-weight:900}
     #job-priority-app .focus-countdown-stop{background:#8f1d15;color:#fff;border-color:#b92b1f}
     #job-priority-app .focus-countdown-reset{background:#292321;color:#e3d8d3;border-color:#4b3d39}
-    #job-priority-app .focus-countdown-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:11px 18px 10px;background:#151110}
-    #job-priority-app .focus-countdown-presets button{min-height:38px;padding:6px 4px;border:1px solid #443733;border-radius:7px;background:#211b19;color:#cfc1bb;font-size:10px;font-weight:800;white-space:nowrap}
+    #job-priority-app .focus-countdown-presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:11px 18px 10px;background:#151110}
+    #job-priority-app .focus-countdown-presets button{min-height:44px;padding:7px 8px;border:1px solid #443733;border-radius:7px;background:#211b19;color:#cfc1bb;font-size:10px;font-weight:850;white-space:normal;line-height:1.25}
     #job-priority-app .focus-countdown-presets button:hover{background:#312522;color:#fff}
     #job-priority-app .focus-countdown-custom{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:7px;align-items:end;padding:2px 18px 16px;background:#151110}
     #job-priority-app .focus-countdown-custom-field{min-width:0}
@@ -969,6 +969,10 @@
     #job-priority-app .toolbar-dropdown-menu button{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:30px;padding:6px 8px;background:transparent;color:inherit;text-align:left;font-size:10px}
     #job-priority-app .toolbar-dropdown-menu button:hover{background:light-dark(#f0f0ec,#303030)}
     #job-priority-app .toolbar-dropdown-menu button.is-selected{font-weight:850;background:light-dark(#f2f2ee,#303030)}
+    #job-priority-app .toolbar-submenu{position:relative}
+    #job-priority-app .toolbar-submenu-panel{position:absolute;top:-5px;left:calc(100% + 5px);z-index:1020;display:none;min-width:190px;padding:5px;background:light-dark(#fff,#252525);border:1px solid light-dark(#d8d8d4,#444);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,0,.2)}
+    #job-priority-app .toolbar-submenu.open>.toolbar-submenu-panel{display:block}
+    #job-priority-app .toolbar-submenu-caret{margin-left:auto;opacity:.68}
     #job-priority-app .toolbar-dropdown-caret{font-size:9px;opacity:.65}
     #job-priority-app .kpi-card{padding:10px 12px}
     #job-priority-app .completed-kpi-bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:5px;flex-wrap:wrap}
@@ -1113,19 +1117,20 @@
           <button class="secondary toolbar-dropdown-launch" id="toolsMenuBtn" type="button" aria-haspopup="menu" aria-expanded="false">Tools <span class="toolbar-dropdown-caret">▾</span></button>
           <div class="toolbar-dropdown-menu" id="toolsMenu" role="menu" aria-label="Tools menu">
             <button type="button" role="menuitem" id="toolsNotesBtn">Notes</button>
+            <div class="menu-separator"></div>
+            <div class="toolbar-submenu" id="idleAlarmSubmenu">
+              <button type="button" role="menuitem" id="toolsIdleAlarmBtn" aria-haspopup="menu" aria-expanded="false"><span id="idleAlarmStateLabel">Idle Alert On</span><span class="toolbar-submenu-caret">▸</span></button>
+              <div class="toolbar-submenu-panel" id="idleAlarmMenu" role="menu" aria-label="Idle Alert setting">
+                <button type="button" role="menuitem" data-idle-alarm="on">On · Show alert + sound</button>
+                <button type="button" role="menuitem" data-idle-alarm="off">Off · Show alert silently</button>
+              </div>
+            </div>
           </div>
         </div>
         <div class="toolbar-dropdown" id="revenueMenuControl">
           <button class="secondary toolbar-dropdown-launch" id="revenueMenuBtn" type="button" aria-haspopup="menu" aria-expanded="false">Revenue <span class="toolbar-dropdown-caret">▾</span></button>
           <div class="toolbar-dropdown-menu" id="revenueMenu" role="menu" aria-label="Revenue menu">
             <button type="button" role="menuitem" id="overheadBtn">Overhead</button>
-          </div>
-        </div>
-        <div class="toolbar-dropdown" id="idleAlarmControl">
-          <button class="secondary toolbar-dropdown-launch" id="idleAlarmBtn" type="button" aria-haspopup="menu" aria-expanded="false"><span id="idleAlarmStateLabel">Idle Alert On</span><span class="toolbar-dropdown-caret">▾</span></button>
-          <div class="toolbar-dropdown-menu" id="idleAlarmMenu" role="menu" aria-label="Idle Alert setting">
-            <button type="button" role="menuitem" data-idle-alarm="on">On · Show alert + sound</button>
-            <button type="button" role="menuitem" data-idle-alarm="off">Off · Show alert silently</button>
           </div>
         </div>
         <div class="motivator-control" id="motivatorControl" aria-label="Motivator controls">
@@ -1192,15 +1197,9 @@
           <button class="focus-countdown-stop" id="focusCountdownStopBtn" type="button">Stop</button>
           <button class="focus-countdown-reset" id="focusCountdownResetBtn" type="button">Reset</button>
         </div>
-        <div class="focus-countdown-presets" aria-label="Quick countdown times">
-          <button type="button" data-focus-preset="900">15 Minutes</button>
-          <button type="button" data-focus-preset="1800">30 Minutes</button>
-          <button type="button" data-focus-preset="3600">1 Hour</button>
-          <button type="button" data-focus-preset="5400">1.5 Hours</button>
-          <button type="button" data-focus-preset="7200">2 Hours</button>
-          <button type="button" data-focus-preset="10800">3 Hours</button>
-          <button type="button" data-focus-preset="14400">4 Hours</button>
-          <button type="button" data-focus-preset="18000">5 Hours</button>
+        <div class="focus-countdown-presets" aria-label="Workload Score countdown times">
+          <button type="button" id="focusCountdownLowBtn" data-focus-range="low">Low Range</button>
+          <button type="button" id="focusCountdownHighBtn" data-focus-range="high">High Range</button>
         </div>
         <div class="focus-countdown-custom" aria-label="Custom countdown time">
           <div class="focus-countdown-custom-field"><label for="focusCountdownHours">Hours</label><input id="focusCountdownHours" type="number" min="0" max="99" step="1" inputmode="numeric" value="1"></div>
@@ -2390,10 +2389,16 @@
       function loadFocusCountdownView(){try{const raw=localStorage.getItem(focusCountdownViewStorageKey());if(raw){const parsed=JSON.parse(raw);focusCountdownView.mode=['full','compact','mini'].includes(parsed.mode)?parsed.mode:'full';focusCountdownView.left=Number.isFinite(Number(parsed.left))?Number(parsed.left):null;focusCountdownView.top=Number.isFinite(Number(parsed.top))?Number(parsed.top):null}}catch(e){}}
       function saveFocusCountdownView(){try{localStorage.setItem(focusCountdownViewStorageKey(),JSON.stringify(focusCountdownView))}catch(e){}}
       function saveFocusCountdownState(){try{localStorage.setItem(focusCountdownStorageKey(),JSON.stringify(focusCountdownState))}catch(e){}}
+      function focusCountdownRangeForScore(score){const ranges={1:{low:600,high:1800},2:{low:1800,high:3600},3:{low:3600,high:10800},4:{low:10800,high:18000},5:{low:18000,high:28800}};return ranges[normalizeWorkloadScore(score)]||{low:1800,high:3600}}
+      function focusCountdownActiveScore(){const job=activeWorkSession&&jobs.find(j=>String(j.ticketNumber||'')===String(activeWorkSession.ticketNumber||''));return workloadScoreForJob(job)||0}
+      function focusCountdownRange(){return focusCountdownRangeForScore(focusCountdownActiveScore())}
+      function formatFocusRangeLabel(seconds){const total=Math.max(0,Number(seconds)||0);const mins=Math.round(total/60);if(mins<60)return `${mins} min`;const h=mins/60;return Number.isInteger(h)?`${h} hr${h===1?'':'s'}`:`${h.toFixed(1)} hrs`}
+      function setFocusCountdownRange(which){const range=focusCountdownRange();const seconds=which==='high'?range.high:range.low;setFocusCountdownDuration(seconds)}
+      function updateFocusCountdownRangeButtons(){const range=focusCountdownRange(),score=focusCountdownActiveScore();const low=document.getElementById('focusCountdownLowBtn'),high=document.getElementById('focusCountdownHighBtn');if(low)low.textContent=`Low${score?` · WLS ${score}`:''} · ${formatFocusRangeLabel(range.low)}`;if(high)high.textContent=`High${score?` · WLS ${score}`:''} · ${formatFocusRangeLabel(range.high)}`}
       function restoreFocusCountdownStateForSession(sessionId){
         let restored=null;try{const raw=localStorage.getItem(focusCountdownStorageKey());if(raw){const parsed=JSON.parse(raw);if(String(parsed.sessionId||'')===String(sessionId||''))restored=parsed}}catch(e){}
         if(restored){focusCountdownState={sessionId:String(sessionId||''),selectedSeconds:Math.max(0,Number(restored.selectedSeconds)||0),remainingSeconds:Math.max(0,Number(restored.remainingSeconds)||0),targetAt:Math.max(0,Number(restored.targetAt)||0),running:!!restored.running,alarmed:!!restored.alarmed}}
-        else{const defaultSeconds=3600;focusCountdownState={sessionId:String(sessionId||''),selectedSeconds:defaultSeconds,remainingSeconds:defaultSeconds,targetAt:Date.now()+defaultSeconds*1000,running:true,alarmed:false};saveFocusCountdownState()}
+        else{const defaultSeconds=focusCountdownRange().low;focusCountdownState={sessionId:String(sessionId||''),selectedSeconds:defaultSeconds,remainingSeconds:defaultSeconds,targetAt:Date.now()+defaultSeconds*1000,running:true,alarmed:false};saveFocusCountdownState()}
       }
       function focusCountdownSecondsRemaining(){if(!focusCountdownState.running)return Math.max(0,Math.ceil(Number(focusCountdownState.remainingSeconds)||0));return Math.max(0,Math.ceil((Number(focusCountdownState.targetAt||0)-Date.now())/1000))}
       function formatFocusCountdown(seconds){const total=Math.max(0,Math.ceil(Number(seconds)||0));const h=Math.floor(total/3600);const m=Math.floor((total%3600)/60);const s=total%60;return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
@@ -2413,7 +2418,7 @@
         const text=formatFocusCountdown(remaining);['focusCountdownDigits','focusCountdownCompactDigits','focusCountdownMiniBtn'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=text});
         const hasDuration=focusCountdownState.selectedSeconds>0;const expired=hasDuration&&remaining<=0&&focusCountdownState.alarmed;widget.classList.toggle('urgent',remaining>60&&remaining<=300);widget.classList.toggle('final-minute',remaining>0&&remaining<=60);widget.classList.toggle('expired',expired);
         const status=document.getElementById('focusCountdownStatus');if(status)status.textContent=expired?'TIME\'S UP':(!hasDuration?'CHOOSE A TIME':(focusCountdownState.running?(remaining<=60?'FINAL MINUTE':remaining<=300?'FIVE MINUTES OR LESS':'COUNTING DOWN'):'STOPPED'));
-        syncFocusCountdownCustomInputs();const stop=document.getElementById('focusCountdownStopBtn');if(stop)stop.textContent=focusCountdownState.running?'Stop':'Start';const compactStop=document.getElementById('focusCountdownCompactStopBtn');if(compactStop){compactStop.textContent=focusCountdownState.running?'■':'▶';compactStop.title=focusCountdownState.running?'Stop countdown':'Start countdown'}
+        updateFocusCountdownRangeButtons();syncFocusCountdownCustomInputs();const stop=document.getElementById('focusCountdownStopBtn');if(stop)stop.textContent=focusCountdownState.running?'Stop':'Start';const compactStop=document.getElementById('focusCountdownCompactStopBtn');if(compactStop){compactStop.textContent=focusCountdownState.running?'■':'▶';compactStop.title=focusCountdownState.running?'Stop countdown':'Start countdown'}
       }
       function applyFocusCountdownPosition(){const widget=document.getElementById('focusCountdown');if(!widget||focusCountdownView.mode!=='full')return;if(Number.isFinite(focusCountdownView.left)&&Number.isFinite(focusCountdownView.top)){const maxLeft=Math.max(6,window.innerWidth-widget.offsetWidth-6);const maxTop=Math.max(6,window.innerHeight-widget.offsetHeight-6);const left=Math.min(Math.max(6,focusCountdownView.left),maxLeft);const top=Math.min(Math.max(6,focusCountdownView.top),maxTop);widget.style.left=`${left}px`;widget.style.top=`${top}px`;widget.style.right='auto';widget.style.bottom='auto';focusCountdownView.left=left;focusCountdownView.top=top}else{widget.style.left='';widget.style.top='150px';widget.style.right='24px';widget.style.bottom='auto'}}
       function renderFocusCountdown(){
@@ -2425,7 +2430,7 @@
       function moveFocusCountdownDrag(event){if(!focusCountdownDrag||event.pointerId!==focusCountdownDrag.pointerId)return;const widget=document.getElementById('focusCountdown');if(!widget)return;const maxLeft=Math.max(6,window.innerWidth-widget.offsetWidth-6);const maxTop=Math.max(6,window.innerHeight-widget.offsetHeight-6);const left=Math.min(Math.max(6,event.clientX-focusCountdownDrag.offsetX),maxLeft);const top=Math.min(Math.max(6,event.clientY-focusCountdownDrag.offsetY),maxTop);widget.style.left=`${left}px`;widget.style.top=`${top}px`;widget.style.right='auto';widget.style.bottom='auto';focusCountdownView.left=left;focusCountdownView.top=top}
       function endFocusCountdownDrag(event){if(!focusCountdownDrag||event.pointerId!==focusCountdownDrag.pointerId)return;const widget=document.getElementById('focusCountdown');if(widget)widget.classList.remove('dragging');focusCountdownDrag=null;saveFocusCountdownView()}
       function initializeFocusCountdown(){
-        loadFocusCountdownView();const widget=document.getElementById('focusCountdown');if(!widget)return;widget.addEventListener('click',event=>{const preset=event.target.closest('[data-focus-preset]');if(preset){setFocusCountdownDuration(Number(preset.getAttribute('data-focus-preset')));return}const view=event.target.closest('[data-focus-view]');if(view){setFocusCountdownView(view.getAttribute('data-focus-view'));return}});document.getElementById('focusCountdownStopBtn').addEventListener('click',toggleFocusCountdownRunning);document.getElementById('focusCountdownCompactStopBtn').addEventListener('click',toggleFocusCountdownRunning);document.getElementById('focusCountdownResetBtn').addEventListener('click',resetFocusCountdown);document.getElementById('focusCountdownCustomStartBtn').addEventListener('click',startCustomFocusCountdown);['focusCountdownHours','focusCountdownMinutes','focusCountdownSeconds'].forEach(id=>{const input=document.getElementById(id);if(input)input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();startCustomFocusCountdown()}})});document.getElementById('focusCountdownMiniBtn').addEventListener('click',()=>setFocusCountdownView('compact'));document.getElementById('focusCountdownDragHandle').addEventListener('pointerdown',beginFocusCountdownDrag);window.addEventListener('pointermove',moveFocusCountdownDrag);window.addEventListener('pointerup',endFocusCountdownDrag);window.addEventListener('pointercancel',endFocusCountdownDrag);window.addEventListener('resize',()=>{if(focusCountdownView.mode==='full')applyFocusCountdownPosition()});renderFocusCountdown()
+        loadFocusCountdownView();const widget=document.getElementById('focusCountdown');if(!widget)return;widget.addEventListener('click',event=>{const rangeBtn=event.target.closest('[data-focus-range]');if(rangeBtn){setFocusCountdownRange(rangeBtn.getAttribute('data-focus-range'));return}const preset=event.target.closest('[data-focus-preset]');if(preset){setFocusCountdownDuration(Number(preset.getAttribute('data-focus-preset')));return}const view=event.target.closest('[data-focus-view]');if(view){setFocusCountdownView(view.getAttribute('data-focus-view'));return}});document.getElementById('focusCountdownStopBtn').addEventListener('click',toggleFocusCountdownRunning);document.getElementById('focusCountdownCompactStopBtn').addEventListener('click',toggleFocusCountdownRunning);document.getElementById('focusCountdownResetBtn').addEventListener('click',resetFocusCountdown);document.getElementById('focusCountdownCustomStartBtn').addEventListener('click',startCustomFocusCountdown);['focusCountdownHours','focusCountdownMinutes','focusCountdownSeconds'].forEach(id=>{const input=document.getElementById(id);if(input)input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();startCustomFocusCountdown()}})});document.getElementById('focusCountdownMiniBtn').addEventListener('click',()=>setFocusCountdownView('compact'));document.getElementById('focusCountdownDragHandle').addEventListener('pointerdown',beginFocusCountdownDrag);window.addEventListener('pointermove',moveFocusCountdownDrag);window.addEventListener('pointerup',endFocusCountdownDrag);window.addEventListener('pointercancel',endFocusCountdownDrag);window.addEventListener('resize',()=>{if(focusCountdownView.mode==='full')applyFocusCountdownPosition()});renderFocusCountdown()
       }
       function playIdleAlarmBurst(){
         if(idleAlarmMuted||!activeWorkSession||!activeWorkSession.sessionId)return;
@@ -5137,7 +5142,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('activeJobDetailsBtn').addEventListener('click',openActiveJobDetails);
       document.getElementById('activeJobStopBtn').addEventListener('click',stopActiveJobFromBar);
 
-      document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.shiftKey&&String(e.key||'').toLowerCase()==='l'){e.preventDefault();toggleMotivatorSecurity();return}if(e.key==='Enter'&&motivatorContentMode==='break-chooser'&&document.getElementById('motivatorModalBackdrop').classList.contains('open')&&!['TEXTAREA','SELECT','BUTTON'].includes((e.target&&e.target.tagName)||'')&&!((e.target&&e.target.tagName)==='INPUT'&&String(e.target.type||'').toLowerCase()!=='radio')){e.preventDefault();continueMotivatorBreak()}});
+      document.addEventListener('keydown',e=>{const hotKey=String(e.key||'').toLowerCase();if((e.ctrlKey||e.metaKey)&&e.shiftKey&&hotKey==='e'){e.preventDefault();closeTopToolbarMenus();openToolsNotes();return}if((e.ctrlKey||e.metaKey)&&e.shiftKey&&hotKey==='l'){e.preventDefault();toggleMotivatorSecurity();return}if(e.key==='Enter'&&motivatorContentMode==='break-chooser'&&document.getElementById('motivatorModalBackdrop').classList.contains('open')&&!['TEXTAREA','SELECT','BUTTON'].includes((e.target&&e.target.tagName)||'')&&!((e.target&&e.target.tagName)==='INPUT'&&String(e.target.type||'').toLowerCase()!=='radio')){e.preventDefault();continueMotivatorBreak()}});
       const motivatorTopBtn=document.getElementById('motivatorBtn');
       if(motivatorTopBtn){
         const cancelLongPress=()=>{if(motivatorLongPressTimer){clearTimeout(motivatorLongPressTimer);motivatorLongPressTimer=null}};
@@ -5147,9 +5152,10 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       }
       updateMotivatorTrustIndicator();
 
-      const closeTopToolbarMenus=(except='')=>{[['appMenuBtn','appMenu'],['timeMenuBtn','timeMenu'],['jobsMenuBtn','jobsMenu'],['toolsMenuBtn','toolsMenu'],['revenueMenuBtn','revenueMenu'],['idleAlarmBtn','idleAlarmMenu'],['motivatorBtn','motivatorMenu']].forEach(([btnId,menuId])=>{if(menuId===except)return;const btn=document.getElementById(btnId),menu=document.getElementById(menuId);if(menu){menu.classList.remove('open');if(btn)btn.setAttribute('aria-expanded','false')}})};
+      const closeTopToolbarMenus=(except='')=>{[['appMenuBtn','appMenu'],['timeMenuBtn','timeMenu'],['jobsMenuBtn','jobsMenu'],['toolsMenuBtn','toolsMenu'],['revenueMenuBtn','revenueMenu'],['motivatorBtn','motivatorMenu']].forEach(([btnId,menuId])=>{if(menuId===except)return;const btn=document.getElementById(btnId),menu=document.getElementById(menuId);if(menu){menu.classList.remove('open');if(btn)btn.setAttribute('aria-expanded','false')}});const idleSub=document.getElementById('idleAlarmSubmenu'),idleBtn=document.getElementById('toolsIdleAlarmBtn');if(idleSub){idleSub.classList.remove('open');if(idleBtn)idleBtn.setAttribute('aria-expanded','false')}};
       const wireToolbarDropdown=(btnId,menuId)=>{const btn=document.getElementById(btnId),menu=document.getElementById(menuId);if(!btn||!menu)return;btn.addEventListener('click',e=>{e.stopPropagation();const opening=!menu.classList.contains('open');closeTopToolbarMenus(menuId);menu.classList.toggle('open',opening);btn.setAttribute('aria-expanded',opening?'true':'false')})};
-      wireToolbarDropdown('appMenuBtn','appMenu');wireToolbarDropdown('timeMenuBtn','timeMenu');wireToolbarDropdown('jobsMenuBtn','jobsMenu');wireToolbarDropdown('toolsMenuBtn','toolsMenu');wireToolbarDropdown('revenueMenuBtn','revenueMenu');wireToolbarDropdown('idleAlarmBtn','idleAlarmMenu');
+      wireToolbarDropdown('appMenuBtn','appMenu');wireToolbarDropdown('timeMenuBtn','timeMenu');wireToolbarDropdown('jobsMenuBtn','jobsMenu');wireToolbarDropdown('toolsMenuBtn','toolsMenu');wireToolbarDropdown('revenueMenuBtn','revenueMenu');
+      const toolsIdleAlarmBtn=document.getElementById('toolsIdleAlarmBtn'),idleAlarmSubmenu=document.getElementById('idleAlarmSubmenu');if(toolsIdleAlarmBtn&&idleAlarmSubmenu){toolsIdleAlarmBtn.addEventListener('click',e=>{e.stopPropagation();const opening=!idleAlarmSubmenu.classList.contains('open');idleAlarmSubmenu.classList.toggle('open',opening);toolsIdleAlarmBtn.setAttribute('aria-expanded',opening?'true':'false')})}
       document.querySelectorAll('[data-idle-alarm]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const muted=e.currentTarget.dataset.idleAlarm==='off';setIdleAlarmMuted(muted);closeTopToolbarMenus()}));
       document.getElementById('timeAutoWorkdayBtn').addEventListener('click',async e=>{e.stopPropagation();const enabled=!autoWorkdayConfig.enabled;closeTopToolbarMenus();await setAutoWorkdayEnabled(enabled,e.currentTarget)});
       document.getElementById('viewTodayTimesheetBtn').addEventListener('click',e=>{e.stopPropagation();closeTopToolbarMenus();openProductivityModal(workdayKey())});
