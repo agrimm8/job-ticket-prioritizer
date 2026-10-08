@@ -967,6 +967,8 @@
     #job-priority-app .toolbar-dropdown-menu{position:absolute;top:calc(100% + 5px);left:0;z-index:1010;display:none;min-width:180px;padding:5px;background:light-dark(#fff,#252525);border:1px solid light-dark(#d8d8d4,#444);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,0,.2)}
     #job-priority-app .toolbar-dropdown-menu.open{display:block}
     #job-priority-app .toolbar-dropdown-menu button{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:30px;padding:6px 8px;background:transparent;color:inherit;text-align:left;font-size:10px}
+    #job-priority-app .toolbar-dropdown-menu button.menu-item-with-shortcut{display:flex;align-items:center;justify-content:space-between;gap:18px}
+    #job-priority-app .menu-shortcut-label{margin-left:auto;font-size:9px;font-weight:650;letter-spacing:.01em;opacity:.55;white-space:nowrap}
     #job-priority-app .toolbar-dropdown-menu button:hover{background:light-dark(#f0f0ec,#303030)}
     #job-priority-app .toolbar-dropdown-menu button.is-selected{font-weight:850;background:light-dark(#f2f2ee,#303030)}
     #job-priority-app .toolbar-submenu{position:relative}
@@ -1108,7 +1110,7 @@
         <div class="toolbar-dropdown" id="jobsMenuControl">
           <button class="secondary toolbar-dropdown-launch" id="jobsMenuBtn" type="button" aria-haspopup="menu" aria-expanded="false">Jobs <span class="toolbar-dropdown-caret">▾</span></button>
           <div class="toolbar-dropdown-menu" id="jobsMenu" role="menu" aria-label="Jobs menu">
-            <button type="button" role="menuitem" id="jobSearchBtn">Search Jobs</button>
+            <button type="button" role="menuitem" id="jobSearchBtn" class="menu-item-with-shortcut"><span>Search Jobs</span><span class="menu-shortcut-label" data-shortcut-mac="⇧⌘F" data-shortcut-other="Ctrl+Shift+F">⇧⌘F</span></button>
             <button type="button" role="menuitem" id="archivedJobsBtn">Archived Jobs</button>
           </div>
         </div>
@@ -1116,7 +1118,7 @@
         <div class="toolbar-dropdown" id="toolsMenuControl">
           <button class="secondary toolbar-dropdown-launch" id="toolsMenuBtn" type="button" aria-haspopup="menu" aria-expanded="false">Tools <span class="toolbar-dropdown-caret">▾</span></button>
           <div class="toolbar-dropdown-menu" id="toolsMenu" role="menu" aria-label="Tools menu">
-            <button type="button" role="menuitem" id="toolsNotesBtn">Notes</button>
+            <button type="button" role="menuitem" id="toolsNotesBtn" class="menu-item-with-shortcut"><span>Notes</span><span class="menu-shortcut-label" data-shortcut-mac="⇧⌘E" data-shortcut-other="Ctrl+Shift+E">⇧⌘E</span></button>
             <div class="menu-separator"></div>
             <div class="toolbar-submenu" id="idleAlarmSubmenu">
               <button type="button" role="menuitem" id="toolsIdleAlarmBtn" aria-haspopup="menu" aria-expanded="false"><span id="idleAlarmStateLabel">Idle Alert On</span><span class="toolbar-submenu-caret">▸</span></button>
@@ -5142,6 +5144,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('activeJobDetailsBtn').addEventListener('click',openActiveJobDetails);
       document.getElementById('activeJobStopBtn').addEventListener('click',stopActiveJobFromBar);
 
+      const isMacShortcutPlatform=/Mac|iPhone|iPad|iPod/i.test(navigator.platform||navigator.userAgent||'');document.querySelectorAll('[data-shortcut-mac][data-shortcut-other]').forEach(el=>{el.textContent=isMacShortcutPlatform?el.getAttribute('data-shortcut-mac'):el.getAttribute('data-shortcut-other')});
       document.addEventListener('keydown',e=>{const hotKey=String(e.key||'').toLowerCase();if((e.ctrlKey||e.metaKey)&&e.shiftKey&&hotKey==='e'){e.preventDefault();closeTopToolbarMenus();openToolsNotes();return}if((e.ctrlKey||e.metaKey)&&e.shiftKey&&hotKey==='l'){e.preventDefault();toggleMotivatorSecurity();return}if(e.key==='Enter'&&motivatorContentMode==='break-chooser'&&document.getElementById('motivatorModalBackdrop').classList.contains('open')&&!['TEXTAREA','SELECT','BUTTON'].includes((e.target&&e.target.tagName)||'')&&!((e.target&&e.target.tagName)==='INPUT'&&String(e.target.type||'').toLowerCase()!=='radio')){e.preventDefault();continueMotivatorBreak()}});
       const motivatorTopBtn=document.getElementById('motivatorBtn');
       if(motivatorTopBtn){
