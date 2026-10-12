@@ -1098,6 +1098,20 @@
     #job-priority-app .auto-workday-hours-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
     #job-priority-app .auto-workday-hours-grid input{width:100%}
     @media(max-width:520px){#job-priority-app .auto-workday-hours-grid{grid-template-columns:1fr}}
+    #job-priority-app .client-tabs{display:flex;gap:6px;margin:8px 0 14px;border-bottom:1px solid var(--border,#d9d9d9);padding-bottom:7px}
+    #job-priority-app .client-tab{border:0;background:transparent;padding:7px 11px;border-radius:7px;font-weight:800;color:var(--muted,#666);cursor:pointer}
+    #job-priority-app .client-tab.active{background:light-dark(#eef4ff,#17243b);color:light-dark(#174ea6,#9cc2ff)}
+    #job-priority-app .client-tab-panel{display:none}
+    #job-priority-app .client-tab-panel.active{display:block}
+    #job-priority-app .client-utilities-card{border:1px solid light-dark(#d7dde8,#39414f);border-radius:10px;padding:14px;background:light-dark(#fafbfc,#171a1f)}
+    #job-priority-app .client-utilities-card h4{margin:0 0 5px;font-size:13px}
+    #job-priority-app .client-directory-status{margin:10px 0;padding:10px 11px;border:1px solid light-dark(#dde2ea,#343c48);border-radius:8px;background:light-dark(#fff,#101216)}
+    #job-priority-app .client-directory-name{font-weight:800;word-break:break-word}
+    #job-priority-app .client-directory-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+    #job-priority-app .client-directory-clear{color:#a61b13;border-color:#d9aaa6;background:light-dark(#fff7f6,#2a1716)}
+    #job-priority-app .add-client-quick-modal{width:min(430px,94vw)}
+    #job-priority-app .add-client-quick-grid{display:grid;grid-template-columns:1fr 120px;gap:12px;margin-top:12px}
+    @media(max-width:520px){#job-priority-app .add-client-quick-grid{grid-template-columns:1fr}}
 
 </style>
   <div class="wrap">
@@ -1127,7 +1141,13 @@
             <button type="button" role="menuitem" id="archivedJobsBtn">Archived Jobs</button>
           </div>
         </div>
-        <button class="secondary" id="clientsBtn" type="button">Clients</button>
+        <div class="toolbar-dropdown" id="clientsMenuControl">
+          <button class="secondary toolbar-dropdown-launch" id="clientsMenuBtn" type="button" aria-haspopup="menu" aria-expanded="false">Clients <span class="toolbar-dropdown-caret">▾</span></button>
+          <div class="toolbar-dropdown-menu" id="clientsMenu" role="menu" aria-label="Clients menu">
+            <button type="button" role="menuitem" id="clientsBtn">Client Directory</button>
+            <button type="button" role="menuitem" id="addClientMenuBtn">Add Client</button>
+          </div>
+        </div>
         <div class="toolbar-dropdown" id="toolsMenuControl">
           <button class="secondary toolbar-dropdown-launch" id="toolsMenuBtn" type="button" aria-haspopup="menu" aria-expanded="false">Tools <span class="toolbar-dropdown-caret">▾</span></button>
           <div class="toolbar-dropdown-menu" id="toolsMenu" role="menu" aria-label="Tools menu">
@@ -1597,21 +1617,33 @@
     </div>
     <div class="timer-modal-backdrop" id="clientNotesModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="clientNotesModalTitle">
       <div class="timer-modal client-notes-modal">
-        <h3 id="clientNotesModalTitle">Client Notes</h3>
-        <p id="clientNotesModalClient" style="margin-bottom:10px"></p>
-        <div class="client-notes-section">
-          <label class="client-notes-label" for="clientNotesTextarea">General Notes</label>
-          <textarea id="clientNotesTextarea" class="notes-box" style="min-height:145px" placeholder="No general client notes yet."></textarea>
+        <h3 id="clientNotesModalTitle">Client</h3>
+        <p id="clientNotesModalClient" style="margin-bottom:6px"></p>
+        <div class="client-tabs" role="tablist" aria-label="Client sections">
+          <button class="client-tab active" id="clientNotesTabBtn" type="button" role="tab" aria-selected="true" data-client-tab="notes">Notes</button>
+          <button class="client-tab" id="clientUtilitiesTabBtn" type="button" role="tab" aria-selected="false" data-client-tab="utilities">Utilities</button>
         </div>
-        <div class="client-notes-section">
-          <label class="client-notes-label" for="clientPricingNotesTextarea">Pricing Notes <span class="client-pricing-hint">Special rates, discounts, fees, or billing instructions</span></label>
-          <textarea id="clientPricingNotesTextarea" class="notes-box" style="min-height:125px" placeholder="No pricing notes yet."></textarea>
+        <div class="client-tab-panel active" id="clientNotesTabPanel" data-client-tab-panel="notes">
+          <div class="client-notes-section"><label class="client-notes-label" for="clientNotesTextarea">General Notes</label><textarea id="clientNotesTextarea" class="notes-box" style="min-height:145px" placeholder="No general client notes yet."></textarea></div>
+          <div class="client-notes-section"><label class="client-notes-label" for="clientPricingNotesTextarea">Pricing Notes <span class="client-pricing-hint">Special rates, discounts, fees, or billing instructions</span></label><textarea id="clientPricingNotesTextarea" class="notes-box" style="min-height:125px" placeholder="No pricing notes yet."></textarea></div>
+          <div class="client-notes-section"><label class="client-notes-label" for="clientAssociatedEmailsTextarea">Associated Emails <span class="client-pricing-hint">Used to match forwarded emails to this client</span></label><textarea id="clientAssociatedEmailsTextarea" class="notes-box" style="min-height:105px" placeholder="One email address per line, e.g. client@example.com"></textarea></div>
         </div>
-        <div class="client-notes-section">
-          <label class="client-notes-label" for="clientAssociatedEmailsTextarea">Associated Emails <span class="client-pricing-hint">Used to match forwarded emails to this client</span></label>
-          <textarea id="clientAssociatedEmailsTextarea" class="notes-box" style="min-height:105px" placeholder="One email address per line, e.g. client@example.com"></textarea>
+        <div class="client-tab-panel" id="clientUtilitiesTabPanel" data-client-tab-panel="utilities">
+          <div class="client-utilities-card">
+            <h4>Preferred Job Directory</h4>
+            <p class="muted">JTP can remember the parent folder to use when creating new job folders for this client on this browser/device.</p>
+            <div class="client-directory-status"><div class="muted" style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">Current Directory</div><div class="client-directory-name" id="clientPreferredDirectoryName">Not defined</div><div class="muted" id="clientPreferredDirectoryPermission" style="margin-top:3px"></div></div>
+            <div class="client-directory-actions"><button class="primary" id="setClientPreferredDirectoryBtn" type="button">Choose Directory</button><button class="secondary client-directory-clear" id="clearClientPreferredDirectoryBtn" type="button" disabled>Clear Definition</button></div>
+          </div>
         </div>
         <div class="actions"><button class="primary notes-save-btn" id="doneClientNotesBtn" type="button" disabled>Save</button><button class="secondary" id="editClientNameBtn" type="button">Edit Client Name</button><button class="secondary" id="closeClientNotesBtn" type="button">Close</button></div>
+      </div>
+    </div>
+    <div class="timer-modal-backdrop" id="addClientQuickModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="addClientQuickModalTitle">
+      <div class="timer-modal add-client-quick-modal">
+        <div class="job-search-head"><div><h3 id="addClientQuickModalTitle">Add Client</h3><p class="meta">Add a primary client with a name and three-letter ID.</p></div><button class="job-search-close" id="closeAddClientQuickBtn" type="button" aria-label="Close Add Client" title="Close">×</button></div>
+        <div class="add-client-quick-grid"><div><label for="addClientQuickName">Client Name</label><input id="addClientQuickName" type="text" placeholder="e.g. Sari Ward"></div><div><label for="addClientQuickId">3-Letter ID</label><input id="addClientQuickId" type="text" maxlength="3" placeholder="SWD"><div id="addClientQuickIdAlert" class="meta" style="display:none;color:#b42318;font-weight:700"></div></div></div>
+        <div class="actions"><button class="primary" id="saveAddClientQuickBtn" type="button">Add Client</button><button class="secondary" id="cancelAddClientQuickBtn" type="button">Cancel</button></div>
       </div>
     </div>
     <div class="timer-modal-backdrop" id="editClientNameModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="editClientNameModalTitle">
@@ -3245,6 +3277,13 @@
       function closeArchivedJobs(){document.getElementById('archivedJobsModalBackdrop').classList.remove('open')}
       function openTimeEditModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;timeEditTicket=String(ticket);document.getElementById('timeEditModalJob').textContent=job.title||job.displayTitle||'';document.getElementById('estimatedRemainingInput').value=String(workloadScoreForJob(job)||'');document.getElementById('timeEditModalBackdrop').classList.add('open');document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'))}
       function clientNotesKey(primaryClientId,secondaryClientId=''){return secondaryClientId?`secondary:${primaryClientId}:${secondaryClientId}`:`primary:${primaryClientId}`}
+      function clientPreferredDirectoryStorageKey(primaryClientId,secondaryClientId=''){return 'clientParent:'+clientNotesKey(primaryClientId,secondaryClientId)}
+      async function loadClientPreferredDirectory(primaryClientId,secondaryClientId=''){if(!jobFolderApiSupported()||!primaryClientId)return null;try{const db=await openJobFolderDb();const handle=await new Promise((resolve,reject)=>{const tx=db.transaction('handles','readonly');const req=tx.objectStore('handles').get(clientPreferredDirectoryStorageKey(primaryClientId,secondaryClientId));req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error)});db.close();return handle}catch(err){return null}}
+      async function rememberClientPreferredDirectory(primaryClientId,secondaryClientId,handle){if(!jobFolderApiSupported()||!primaryClientId||!handle)return false;const db=await openJobFolderDb();await new Promise((resolve,reject)=>{const tx=db.transaction('handles','readwrite');tx.objectStore('handles').put(handle,clientPreferredDirectoryStorageKey(primaryClientId,secondaryClientId));tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)});db.close();return true}
+      async function clearClientPreferredDirectory(primaryClientId,secondaryClientId=''){if(!jobFolderApiSupported()||!primaryClientId)return false;const db=await openJobFolderDb();await new Promise((resolve,reject)=>{const tx=db.transaction('handles','readwrite');tx.objectStore('handles').delete(clientPreferredDirectoryStorageKey(primaryClientId,secondaryClientId));tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)});db.close();return true}
+      function setClientDetailTab(tab){const selected=tab==='utilities'?'utilities':'notes';document.querySelectorAll('#clientNotesModalBackdrop [data-client-tab]').forEach(btn=>{const on=btn.dataset.clientTab===selected;btn.classList.toggle('active',on);btn.setAttribute('aria-selected',on?'true':'false')});document.querySelectorAll('#clientNotesModalBackdrop [data-client-tab-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.clientTabPanel===selected));const save=document.getElementById('doneClientNotesBtn');if(save)save.style.display=selected==='notes'?'inline-flex':'none'}
+      async function refreshClientPreferredDirectoryUI(){const name=document.getElementById('clientPreferredDirectoryName'),meta=document.getElementById('clientPreferredDirectoryPermission'),clear=document.getElementById('clearClientPreferredDirectoryBtn'),setBtn=document.getElementById('setClientPreferredDirectoryBtn');if(!name||!clientNotesTarget)return;if(!jobFolderApiSupported()){name.textContent='Not available in this browser';if(meta)meta.textContent='Use Chrome or Edge over HTTPS to remember local/shared-drive folder locations.';if(clear)clear.disabled=true;if(setBtn)setBtn.disabled=true;return}const handle=await loadClientPreferredDirectory(clientNotesTarget.primaryClientId,clientNotesTarget.secondaryClientId||'');name.textContent=handle?handle.name:'Not defined';if(clear)clear.disabled=!handle;if(setBtn){setBtn.disabled=false;setBtn.textContent=handle?'Change Directory':'Choose Directory'};if(meta){if(!handle)meta.textContent='';else{let permission='prompt';try{if(typeof handle.queryPermission==='function')permission=await handle.queryPermission({mode:'readwrite'})}catch(e){}meta.textContent=permission==='granted'?'Access ready':'JTP may ask you to re-authorize access when it creates the next folder.'}}}
+      async function chooseClientPreferredDirectory(){if(!clientNotesTarget)return;if(!jobFolderApiSupported()){alert('Remembering client directories requires Google Chrome or Microsoft Edge over HTTPS.');return}const current=await loadClientPreferredDirectory(clientNotesTarget.primaryClientId,clientNotesTarget.secondaryClientId||'');let handle=null;const opts={mode:'readwrite'};if(current)opts.startIn=current;try{handle=await window.showDirectoryPicker(opts)}catch(err){if(err&&err.name==='AbortError')return;if(current&&err&&err.name==='TypeError'){try{handle=await window.showDirectoryPicker({mode:'readwrite'})}catch(retry){if(retry&&retry.name==='AbortError')return;throw retry}}else throw err}if(!handle)return;await rememberClientPreferredDirectory(clientNotesTarget.primaryClientId,clientNotesTarget.secondaryClientId||'',handle);await rememberJobFolderParent(handle);await refreshClientPreferredDirectoryUI();showJobFolderToast('Preferred client directory saved')}
       function pricingNotesForClient(primaryClientId,secondaryClientId=''){return String(clientPricingNotes[clientNotesKey(primaryClientId,secondaryClientId)]||'')}
       function updateJobFinancialsClientNotesLink(job){
         const link=document.getElementById('jobFinancialsNotesLink');if(!link)return;
@@ -3310,7 +3349,7 @@
         associatedEmailsTextarea.value=clientAssociatedEmails[key]||'';
         textarea.dataset.initialValue=textarea.value;pricingTextarea.dataset.initialValue=pricingTextarea.value;associatedEmailsTextarea.dataset.initialValue=associatedEmailsTextarea.value;
         document.getElementById('doneClientNotesBtn').disabled=true;
-        document.getElementById('clientNotesModalBackdrop').classList.add('open')
+        setClientDetailTab('notes');document.getElementById('clientNotesModalBackdrop').classList.add('open');refreshClientPreferredDirectoryUI().catch(()=>{})
       }
       function openClientNameEditModal(){
         if(!clientNotesTarget)return;
@@ -4804,11 +4843,13 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         try{if(typeof handle.queryPermission==='function'&&(await handle.queryPermission(opts))==='granted')return true;if(requestIfNeeded&&typeof handle.requestPermission==='function'&&(await handle.requestPermission(opts))==='granted')return true}catch(err){}
         return false
       }
+      function clientIdsForPendingJobFolder(){const job=jobs.find(item=>String(item.ticketNumber||'')===String(pendingJobFolderTicket||''));if(!job)return {primaryClientId:'',secondaryClientId:''};return jobDetailsClientIds(job)}
+      async function loadPendingJobPreferredDirectory(){const ids=clientIdsForPendingJobFolder();if(!ids.primaryClientId)return null;const exact=await loadClientPreferredDirectory(ids.primaryClientId,ids.secondaryClientId||'');if(exact)return exact;return ids.secondaryClientId?await loadClientPreferredDirectory(ids.primaryClientId,''):null}
       async function chooseJobFolderParent(){
         if(!jobFolderApiSupported())throw new Error('Creating local folders from JTP requires a supported Chromium browser such as Chrome or Edge over HTTPS.');
         let handle;
         const options={mode:'readwrite'};
-        if(lastJobFolderParentHandle)options.startIn=lastJobFolderParentHandle;
+        const preferred=await loadPendingJobPreferredDirectory();if(preferred)options.startIn=preferred;else if(lastJobFolderParentHandle)options.startIn=lastJobFolderParentHandle;
         try{handle=await window.showDirectoryPicker(options)}catch(err){
           if(err&&err.name==='AbortError')return null;
           if(lastJobFolderParentHandle&&err&&err.name==='TypeError'){try{handle=await window.showDirectoryPicker({mode:'readwrite'})}catch(retryErr){if(retryErr&&retryErr.name==='AbortError')return null;throw retryErr}}
@@ -4882,8 +4923,8 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const pieces=[`Job Folder Created · _Links: ${stats.saved} file${stats.saved===1?'':'s'} saved`];if(stats.unavailable)pieces.push(`${stats.unavailable} unavailable`);if(stats.failed)pieces.push(`${stats.failed} failed`);showJobFolderToast(pieces.join(' · '));pendingJobFolderTitle='';pendingJobFolderTicket='';return true
       }
       async function refreshJobFolderModal(){
-        const handle=await loadLastJobFolderParent();const has=!!handle;const box=document.getElementById('jobFolderLastParentBox');const name=document.getElementById('jobFolderLastParentName');const create=document.getElementById('createJobFolderLastBtn');const choose=document.getElementById('chooseJobFolderBtn');const noParent=document.getElementById('jobFolderNoParentMessage');
-        box.style.display=has?'block':'none';create.style.display=has?'inline-flex':'none';name.textContent=has?handle.name:'—';choose.textContent=has?'Choose Different Location':'Choose Location';noParent.style.display=has?'none':'block'
+        const preferred=await loadPendingJobPreferredDirectory();const fallback=preferred?null:await loadLastJobFolderParent();const handle=preferred||fallback;const has=!!handle;const box=document.getElementById('jobFolderLastParentBox');const name=document.getElementById('jobFolderLastParentName');const create=document.getElementById('createJobFolderLastBtn');const choose=document.getElementById('chooseJobFolderBtn');const noParent=document.getElementById('jobFolderNoParentMessage');
+        const label=box&&box.querySelector('.job-folder-parent-label');if(label)label.textContent=preferred?'Client Preferred Folder':'Last Parent Folder';box.style.display=has?'block':'none';create.style.display=has?'inline-flex':'none';name.textContent=has?handle.name:'—';create.textContent=preferred?'Create in Preferred Folder':'Create in Last Folder';choose.textContent=has?'Choose Different Location':'Choose Location';noParent.style.display=has?'none':'block';if(create)create.dataset.usePreferred=preferred?'1':'0'
       }
       async function openJobFolderCreator(title,ticket=''){
         const validation=validateJobFolderName(title);if(validation){alert(validation);return}
@@ -4906,7 +4947,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('newSubclientId').addEventListener('input',e=>{const id=e.currentTarget.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);e.currentTarget.value=id;const parent=document.getElementById('primaryClient').value;const alert=document.getElementById('subclientIdAlert');if(id.length===3&&subclients.some(s=>s.parentClientId===parent&&s.id===id)){alert.textContent='That 3-letter Secondary Client ID is already in use for this client.';alert.style.display='block'}else{alert.textContent='';alert.style.display='none'}});
       document.getElementById('jobDetailsCreateFolderBtn').addEventListener('click',e=>{e.stopPropagation();const btn=e.currentTarget;openJobFolderCreator(btn.getAttribute('data-folder-title')||'',btn.getAttribute('data-create-job-folder')||'')});
       document.getElementById('jobDetailsCopyTitleBtn').addEventListener('click',e=>{e.stopPropagation();const btn=e.currentTarget;copyJobTitle(btn.getAttribute('data-copy-title')||'')});
-      document.getElementById('createJobFolderLastBtn').addEventListener('click',async e=>{const btn=e.currentTarget;const original=btn.innerHTML;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Creating…</span>';try{const handle=await loadLastJobFolderParent();if(!handle){await refreshJobFolderModal();return}await createJobFolderInParent(handle)}catch(err){alert('Unable to create the job folder: '+(err&&err.message?err.message:'Unknown error'))}finally{btn.disabled=false;btn.innerHTML=original}});
+      document.getElementById('createJobFolderLastBtn').addEventListener('click',async e=>{const btn=e.currentTarget;const original=btn.innerHTML;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Creating…</span>';try{const handle=btn.dataset.usePreferred==='1'?await loadPendingJobPreferredDirectory():await loadLastJobFolderParent();if(!handle){await refreshJobFolderModal();return}await createJobFolderInParent(handle)}catch(err){alert('Unable to create the job folder: '+(err&&err.message?err.message:'Unknown error'))}finally{btn.disabled=false;btn.innerHTML=original}});
       document.getElementById('chooseJobFolderBtn').addEventListener('click',async e=>{const btn=e.currentTarget;const original=btn.innerHTML;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Opening…</span>';try{const handle=await chooseJobFolderParent();if(handle)await createJobFolderInParent(handle)}catch(err){alert('Unable to create the job folder: '+(err&&err.message?err.message:'Unknown error'))}finally{btn.disabled=false;btn.innerHTML=original}});
       document.getElementById('cancelJobFolderBtn').addEventListener('click',()=>{document.getElementById('jobFolderModalBackdrop').classList.remove('open');pendingJobFolderTitle='';pendingJobFolderTicket=''});
       document.getElementById('saveClientBtn').addEventListener('click',async()=>{
@@ -5011,7 +5052,16 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('motivatorSelectStopBtn').addEventListener('click',stopMotivatorSelect);
       updateMotivatorLockLabels();
       document.getElementById('overheadBtn').addEventListener('click',e=>{e.stopPropagation();closeTopToolbarMenus();openOverheadModal()});
-      document.getElementById('clientsBtn').addEventListener('click',openClientsModal);
+      document.getElementById('clientsBtn').addEventListener('click',e=>{e.stopPropagation();closeTopToolbarMenus();openClientsModal()});
+      function closeAddClientQuick(){document.getElementById('addClientQuickModalBackdrop').classList.remove('open');document.getElementById('addClientQuickName').value='';document.getElementById('addClientQuickId').value='';const a=document.getElementById('addClientQuickIdAlert');a.textContent='';a.style.display='none'}
+      function openAddClientQuick(){closeTopToolbarMenus();document.getElementById('addClientQuickName').value='';document.getElementById('addClientQuickId').value='';document.getElementById('addClientQuickIdAlert').style.display='none';document.getElementById('addClientQuickModalBackdrop').classList.add('open');setTimeout(()=>document.getElementById('addClientQuickName').focus(),0)}
+      document.getElementById('addClientMenuBtn').addEventListener('click',e=>{e.stopPropagation();openAddClientQuick()});
+      document.getElementById('closeAddClientQuickBtn').addEventListener('click',closeAddClientQuick);document.getElementById('cancelAddClientQuickBtn').addEventListener('click',closeAddClientQuick);document.getElementById('addClientQuickModalBackdrop').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAddClientQuick()});
+      document.getElementById('addClientQuickId').addEventListener('input',e=>{const id=e.currentTarget.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);e.currentTarget.value=id;const a=document.getElementById('addClientQuickIdAlert');if(id.length===3&&clients.some(c=>c.id===id)){a.textContent='That client ID is already in use.';a.style.display='block'}else{a.textContent='';a.style.display='none'}});
+      document.getElementById('saveAddClientQuickBtn').addEventListener('click',async e=>{const name=document.getElementById('addClientQuickName').value.trim();const id=document.getElementById('addClientQuickId').value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);if(!name||id.length!==3){alert('Enter a client name and a unique 3-letter client ID.');return}if(clients.some(c=>c.id===id)){alert('That client ID is already in use.');return}const btn=e.currentTarget;const original=btn.innerHTML;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Adding…</span>';try{const data=await apiPost({action:'addClient',clientId:id,clientName:name,clientType:'Primary Only',defaultDueRule:''});if(!data.success)throw new Error(data.error||'Unable to add client');clients.push(data.client);populateClients();closeAddClientQuick();renderClientsDirectory();showJobFolderToast('Client added')}catch(err){alert(err.message)}finally{btn.disabled=false;btn.innerHTML=original}});
+      document.querySelectorAll('#clientNotesModalBackdrop [data-client-tab]').forEach(btn=>btn.addEventListener('click',()=>{setClientDetailTab(btn.dataset.clientTab);if(btn.dataset.clientTab==='utilities')refreshClientPreferredDirectoryUI().catch(()=>{})}));
+      document.getElementById('setClientPreferredDirectoryBtn').addEventListener('click',async()=>{try{await chooseClientPreferredDirectory()}catch(err){alert('Unable to save the preferred directory: '+(err&&err.message?err.message:'Unknown error'))}});
+      document.getElementById('clearClientPreferredDirectoryBtn').addEventListener('click',async()=>{if(!clientNotesTarget)return;if(!confirm('Clear the preferred job directory for this client? JTP will stop automatically using this location for new job folders.'))return;try{await clearClientPreferredDirectory(clientNotesTarget.primaryClientId,clientNotesTarget.secondaryClientId||'');await refreshClientPreferredDirectoryUI();showJobFolderToast('Preferred client directory cleared')}catch(err){alert('Unable to clear the preferred directory: '+(err&&err.message?err.message:'Unknown error'))}});
       document.getElementById('closeClientsBtn').addEventListener('click',()=>document.getElementById('clientsModalBackdrop').classList.remove('open'));
       document.getElementById('clientsModalBackdrop').addEventListener('click',e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove('open')});
       document.getElementById('cancelOverheadBtn').addEventListener('click',()=>document.getElementById('overheadModalBackdrop').classList.remove('open'));
@@ -5266,7 +5316,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('activeJobStopBtn').addEventListener('click',stopActiveJobFromBar);
 
       const isMacShortcutPlatform=/Mac|iPhone|iPad|iPod/i.test(navigator.platform||navigator.userAgent||'');document.querySelectorAll('[data-shortcut-mac][data-shortcut-other]').forEach(el=>{el.textContent=isMacShortcutPlatform?el.getAttribute('data-shortcut-mac'):el.getAttribute('data-shortcut-other')});
-      document.addEventListener('keydown',e=>{const hotKey=String(e.key||'').toLowerCase();if((e.ctrlKey||e.metaKey)&&e.shiftKey&&hotKey==='e'){e.preventDefault();closeTopToolbarMenus();openToolsNotes();return}if((e.ctrlKey||e.metaKey)&&e.shiftKey&&hotKey==='l'){e.preventDefault();toggleMotivatorSecurity();return}if(e.key==='Enter'&&motivatorContentMode==='break-chooser'&&document.getElementById('motivatorModalBackdrop').classList.contains('open')&&!['INPUT','TEXTAREA','SELECT','BUTTON'].includes((e.target&&e.target.tagName)||'')){e.preventDefault();continueMotivatorBreak()}});
+      document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('addClientQuickModalBackdrop').classList.contains('open')){e.preventDefault();closeAddClientQuick();return}const hotKey=String(e.key||'').toLowerCase();if((e.ctrlKey||e.metaKey)&&e.shiftKey&&hotKey==='e'){e.preventDefault();closeTopToolbarMenus();openToolsNotes();return}if((e.ctrlKey||e.metaKey)&&e.shiftKey&&hotKey==='l'){e.preventDefault();toggleMotivatorSecurity();return}if(e.key==='Enter'&&motivatorContentMode==='break-chooser'&&document.getElementById('motivatorModalBackdrop').classList.contains('open')&&!['INPUT','TEXTAREA','SELECT','BUTTON'].includes((e.target&&e.target.tagName)||'')){e.preventDefault();continueMotivatorBreak()}});
       const motivatorTopBtn=document.getElementById('motivatorBtn');
       if(motivatorTopBtn){
         const cancelLongPress=()=>{if(motivatorLongPressTimer){clearTimeout(motivatorLongPressTimer);motivatorLongPressTimer=null}};
@@ -5276,9 +5326,9 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       }
       updateMotivatorTrustIndicator();
 
-      const closeTopToolbarMenus=(except='')=>{[['appMenuBtn','appMenu'],['timeMenuBtn','timeMenu'],['jobsMenuBtn','jobsMenu'],['toolsMenuBtn','toolsMenu'],['revenueMenuBtn','revenueMenu'],['motivatorBtn','motivatorMenu']].forEach(([btnId,menuId])=>{if(menuId===except)return;const btn=document.getElementById(btnId),menu=document.getElementById(menuId);if(menu){menu.classList.remove('open');if(btn)btn.setAttribute('aria-expanded','false')}});const idleSub=document.getElementById('idleAlarmSubmenu'),idleBtn=document.getElementById('toolsIdleAlarmBtn');if(idleSub){idleSub.classList.remove('open');if(idleBtn)idleBtn.setAttribute('aria-expanded','false')}};
+      const closeTopToolbarMenus=(except='')=>{[['appMenuBtn','appMenu'],['timeMenuBtn','timeMenu'],['jobsMenuBtn','jobsMenu'],['clientsMenuBtn','clientsMenu'],['toolsMenuBtn','toolsMenu'],['revenueMenuBtn','revenueMenu'],['motivatorBtn','motivatorMenu']].forEach(([btnId,menuId])=>{if(menuId===except)return;const btn=document.getElementById(btnId),menu=document.getElementById(menuId);if(menu){menu.classList.remove('open');if(btn)btn.setAttribute('aria-expanded','false')}});const idleSub=document.getElementById('idleAlarmSubmenu'),idleBtn=document.getElementById('toolsIdleAlarmBtn');if(idleSub){idleSub.classList.remove('open');if(idleBtn)idleBtn.setAttribute('aria-expanded','false')}};
       const wireToolbarDropdown=(btnId,menuId)=>{const btn=document.getElementById(btnId),menu=document.getElementById(menuId);if(!btn||!menu)return;btn.addEventListener('click',e=>{e.stopPropagation();const opening=!menu.classList.contains('open');closeTopToolbarMenus(menuId);menu.classList.toggle('open',opening);btn.setAttribute('aria-expanded',opening?'true':'false')})};
-      wireToolbarDropdown('appMenuBtn','appMenu');wireToolbarDropdown('timeMenuBtn','timeMenu');wireToolbarDropdown('jobsMenuBtn','jobsMenu');wireToolbarDropdown('toolsMenuBtn','toolsMenu');wireToolbarDropdown('revenueMenuBtn','revenueMenu');
+      wireToolbarDropdown('appMenuBtn','appMenu');wireToolbarDropdown('timeMenuBtn','timeMenu');wireToolbarDropdown('jobsMenuBtn','jobsMenu');wireToolbarDropdown('clientsMenuBtn','clientsMenu');wireToolbarDropdown('toolsMenuBtn','toolsMenu');wireToolbarDropdown('revenueMenuBtn','revenueMenu');
       const toolsIdleAlarmBtn=document.getElementById('toolsIdleAlarmBtn'),idleAlarmSubmenu=document.getElementById('idleAlarmSubmenu');if(toolsIdleAlarmBtn&&idleAlarmSubmenu){toolsIdleAlarmBtn.addEventListener('click',e=>{e.stopPropagation();const opening=!idleAlarmSubmenu.classList.contains('open');idleAlarmSubmenu.classList.toggle('open',opening);toolsIdleAlarmBtn.setAttribute('aria-expanded',opening?'true':'false')})}
       document.querySelectorAll('[data-idle-alarm]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const muted=e.currentTarget.dataset.idleAlarm==='off';setIdleAlarmMuted(muted);closeTopToolbarMenus()}));
       document.getElementById('timeAutoWorkdayBtn').addEventListener('click',async e=>{e.stopPropagation();const enabled=!autoWorkdayConfig.enabled;closeTopToolbarMenus();await setAutoWorkdayEnabled(enabled,e.currentTarget)});
