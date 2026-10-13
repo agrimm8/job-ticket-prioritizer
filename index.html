@@ -1901,6 +1901,7 @@
       let workSessions=[];
       let workSets=[];
       let workdayPunches=[];
+      let d1FastPath={enabled:false,apiUrl:'',token:'',expiresAt:''};
       let autoWorkdayConfig={enabled:false,startHour:8,startMinute:30,endHour:22,endMinute:0,weekdaysOnly:true,triggerInstalled:false};
       let timesheetSelectedDateKey='';
       let timesheetEditTarget=null;
@@ -2674,7 +2675,7 @@
         try{
           const localSession={...activeWorkSession};
           const payload={action:'endWorkSession',sessionId:localSession.sessionId};if(punchOutAt)payload.punchOutAt=punchOutAt;
-          const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch out');
+          const data=await punchApiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch out');
           const closedAt=String(data.punchOut||punchOutAt||new Date().toISOString());
           const closedMinutes=Number(data.durationMinutes||0);
           let matched=false;
@@ -2699,7 +2700,7 @@
       function setJobDetailsPunchPending(ticket,pending,label='Saving…'){const btn=document.getElementById('jobDetailsPunchBtn');if(!btn||String(jobDetailsTicket||'')!==String(ticket||''))return;if(pending){btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>'+escapeHtml(label)+'</span>'}else{const job=jobs.find(item=>String(item.ticketNumber||'')===String(ticket||''));if(job){btn.classList.remove('is-loading');renderJobDetailsPunchControl(job)}}}
       async function beginWorkSessionForKey(key,workType,workDescription,workSetId='',punchInAt='',workloadScore=0){
         const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return false;const workdayState=currentWorkdayState();if(workdayState!=='WORKING'&&!isAutoWorkdayFreeTime()){alert(workdayState==='LUNCH'?'Lunch is active. Punch back in from lunch before starting a job.':'Punch in to your workday before starting a job.');return false}if(activeAdminSession&&!await endActiveAdminSession())return false;
-        setJobDetailsPunchPending(job.ticketNumber,true,'Punching In…');try{const payload={action:'beginWorkSession',ticketNumber:job.ticketNumber,workType,workDescription,workSetId};if(punchInAt)payload.punchInAt=punchInAt;if(workType==='New Change Order'&&normalizeWorkloadScore(workloadScore))payload.workloadScore=normalizeWorkloadScore(workloadScore);const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch in');const session=data.session;if(data.workSet&&!workSets.some(set=>set.workSetId===data.workSet.workSetId))workSets.push(data.workSet);if(data.pendingChangeOrderNotes!==undefined)job.pendingChangeOrderNotes=String(data.pendingChangeOrderNotes||'');if(data.changeOrderIntake){const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===data.changeOrderIntake.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=data.changeOrderIntake;else changeOrderIntakes.push(data.changeOrderIntake)}workSessions.push(session);applyWorkSessionContext(session,key);saveActiveWorkSession({...session,timerKey:key});renderActiveJobBar();renderWorkUtilization();return true}catch(err){alert('Punch In could not be saved: '+err.message);return false}finally{setJobDetailsPunchPending(job.ticketNumber,false)}
+        setJobDetailsPunchPending(job.ticketNumber,true,'Punching In…');try{const payload={action:'beginWorkSession',ticketNumber:job.ticketNumber,workType,workDescription,workSetId,jobWorkloadScore:normalizeWorkloadScore(job.workloadScore)||0};if(punchInAt)payload.punchInAt=punchInAt;if(workType==='New Change Order'){if(normalizeWorkloadScore(workloadScore))payload.workloadScore=normalizeWorkloadScore(workloadScore);const pending=pendingChangeOrderIntakeForJob(job);if(pending){payload.changeOrderIntakeId=String(pending.changeOrderIntakeId||'');payload.changeOrderNumber=Number(pending.changeOrderNumber||0)}}const data=await punchApiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch in');const session=data.session;if(data.workSet&&!workSets.some(set=>set.workSetId===data.workSet.workSetId))workSets.push(data.workSet);if(data.pendingChangeOrderNotes!==undefined)job.pendingChangeOrderNotes=String(data.pendingChangeOrderNotes||'');if(data.changeOrderIntake){const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===data.changeOrderIntake.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=data.changeOrderIntake;else changeOrderIntakes.push(data.changeOrderIntake)}workSessions.push(session);applyWorkSessionContext(session,key);saveActiveWorkSession({...session,timerKey:key});renderActiveJobBar();renderWorkUtilization();return true}catch(err){alert('Punch In could not be saved: '+err.message);return false}finally{setJobDetailsPunchPending(job.ticketNumber,false)}
       }
       async function resumeWorkSessionForKey(key,punchInAt=''){const context=workContextByKey[key];if(!context||!context.workSetId)return false;return beginWorkSessionForKey(key,context.workType,context.workDescription,context.workSetId,punchInAt)}
       async function requestStartTimer(key){
@@ -4681,6 +4682,35 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const originalHtml=btn.innerHTML;const originalDisabled=btn.disabled;btn.dataset.autoBusy='1';btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>'+escapeHtml(automaticBusyLabel(btn,payload))+'</span>';
         return ()=>{if(!document.body.contains(btn))return;delete btn.dataset.autoBusy;btn.disabled=originalDisabled;btn.classList.remove('is-loading');btn.innerHTML=originalHtml};
       }
+      function d1FastPathReady(){return !!(d1FastPath&&d1FastPath.enabled&&d1FastPath.apiUrl&&d1FastPath.token)}
+      async function d1FastPunchFetch(path,payload){
+        const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+path;
+        const options={method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)};
+        let lastError=null;
+        for(let attempt=0;attempt<2;attempt++){
+          try{
+            const res=await fetch(url,options);
+            let data={};
+            try{data=await res.json()}catch(ignore){}
+            if(res.ok&&data&&data.success)return data;
+            if(data&&data.fallbackToGoogle===true)return apiPost(payload);
+            if(res.status===401||res.status===403)return apiPost(payload);
+            throw new Error((data&&data.error)||('D1 request failed ('+res.status+')'));
+          }catch(err){
+            lastError=err;
+            if(attempt===0)continue;
+          }
+        }
+        throw lastError||new Error('Unable to reach the D1 punch service.');
+      }
+      async function punchApiPost(payload){
+        if(!payload||!d1FastPathReady()||!['beginWorkSession','endWorkSession'].includes(payload.action))return apiPost(payload);
+        if(payload.action==='beginWorkSession'){
+          if(!payload.sessionId&&window.crypto&&typeof window.crypto.randomUUID==='function')payload.sessionId=window.crypto.randomUUID();
+          return d1FastPunchFetch('/punch/in',payload);
+        }
+        return d1FastPunchFetch('/punch/out',payload);
+      }
       async function apiGet(){if(PREVIEW_MODE)throw new Error('Live backend access is disabled in Preview Mode.');const res=await fetch(API_URL+'?action=bootstrap',{method:'GET'});if(!res.ok)throw new Error('Unable to reach backend');return res.json()}
       async function apiPost(payload){if(PREVIEW_MODE)throw new Error('Live backend access is disabled in Preview Mode.');const restore=beginAutomaticButtonFeedback(payload);try{const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});if(!res.ok)throw new Error('Backend request failed');return await res.json()}finally{if(restore)restore()}}
       function changeOrderRefreshSignatureForTicket(ticket){
@@ -4747,7 +4777,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         setBackendStatus(false,'Connecting to Google Sheets…');
         try{
           const data=await apiGet(); if(!data.success)throw new Error(data.error||'Backend error');
-          clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[]; statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; workSets=data.workSets||[]; workdayPunches=data.workdayPunches||[]; autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig; adminSessions=data.adminSessions||[]; activeAdminSession=data.openAdminSession||null; motivatorBankReady=false; motivatorBankServer={active:false,shiftStart:'',shiftStartMs:0,clientWorkSeconds:0,earnedSeconds:0,spentSeconds:0,availableSeconds:0}; holidayCalendar=data.holidayCalendar||[]; jobFinancials=data.jobFinancials||[]; overheadTemplates=data.overheadTemplates||[]; currentMonthlyOverhead=data.currentMonthlyOverhead||{month:currentMonthKey(),entries:[],total:0}; emailQueue=data.emailQueue||[];recentEmailSources=data.recentEmailSources||[];changeOrderIntakes=data.changeOrderIntakes||[];changeOrderEmailSources=data.changeOrderEmailSources||[];emailIntakeConfigured=data.emailIntakeConfigured===true; await reconcileOpenWorkSession(data.openWorkSession||null);
+          d1FastPath=data.d1FastPath||d1FastPath; clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[]; statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; workSets=data.workSets||[]; workdayPunches=data.workdayPunches||[]; autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig; adminSessions=data.adminSessions||[]; activeAdminSession=data.openAdminSession||null; motivatorBankReady=false; motivatorBankServer={active:false,shiftStart:'',shiftStartMs:0,clientWorkSeconds:0,earnedSeconds:0,spentSeconds:0,availableSeconds:0}; holidayCalendar=data.holidayCalendar||[]; jobFinancials=data.jobFinancials||[]; overheadTemplates=data.overheadTemplates||[]; currentMonthlyOverhead=data.currentMonthlyOverhead||{month:currentMonthKey(),entries:[],total:0}; emailQueue=data.emailQueue||[];recentEmailSources=data.recentEmailSources||[];changeOrderIntakes=data.changeOrderIntakes||[];changeOrderEmailSources=data.changeOrderEmailSources||[];emailIntakeConfigured=data.emailIntakeConfigured===true; await reconcileOpenWorkSession(data.openWorkSession||null);
           Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);
           Object.keys(clientPricingNotes).forEach(k=>delete clientPricingNotes[k]);
           Object.keys(clientAssociatedEmails).forEach(k=>delete clientAssociatedEmails[k]);
