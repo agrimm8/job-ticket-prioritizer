@@ -2661,8 +2661,14 @@
         if(Date.now()-at>5000){recentlyClosedWorkSessions.delete(id);return false}
         return true;
       }
+      let punchOutRequestInFlight=false;
       async function closeActiveWorkSession(punchOutAt){
         clearIdleWarning(true);closeHourlyWorkReminder();if(!activeWorkSession||!activeWorkSession.sessionId)return true;
+        if(punchOutRequestInFlight)return false;
+        punchOutRequestInFlight=true;
+        const stopBtn=document.getElementById('activeJobStopBtn');
+        const originalStopText=stopBtn?stopBtn.textContent:'';
+        if(stopBtn){stopBtn.disabled=true;stopBtn.textContent='Punching Out…';stopBtn.setAttribute('aria-busy','true')}
         try{
           const localSession={...activeWorkSession};
           const payload={action:'endWorkSession',sessionId:localSession.sessionId};if(punchOutAt)payload.punchOutAt=punchOutAt;
@@ -2681,6 +2687,11 @@
           setTimeout(()=>{checkForOrphanPunch().then(()=>renderNotificationTray()).catch(()=>{})},1200);
           return true
         }catch(err){alert('Punch Out could not be saved: '+err.message);return false}
+        finally{
+          punchOutRequestInFlight=false;
+          const currentStopBtn=document.getElementById('activeJobStopBtn');
+          if(currentStopBtn){currentStopBtn.removeAttribute('aria-busy');if(activeWorkSession&&activeWorkSession.sessionId){currentStopBtn.disabled=false;currentStopBtn.textContent=originalStopText||'Stop Timer'}}
+        }
       }
       function setJobDetailsPunchPending(ticket,pending,label='Saving…'){const btn=document.getElementById('jobDetailsPunchBtn');if(!btn||String(jobDetailsTicket||'')!==String(ticket||''))return;if(pending){btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>'+escapeHtml(label)+'</span>'}else{const job=jobs.find(item=>String(item.ticketNumber||'')===String(ticket||''));if(job){btn.classList.remove('is-loading');renderJobDetailsPunchControl(job)}}}
       async function beginWorkSessionForKey(key,workType,workDescription,workSetId='',punchInAt='',workloadScore=0){
