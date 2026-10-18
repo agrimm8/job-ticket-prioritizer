@@ -3031,7 +3031,7 @@
         const elapsed=Math.max(0,sessionElapsed-alreadyCommitted);if(elapsed<=0)return;
         const newAccrued=getTimeAccruedHours(job)+(elapsed/3600);
         setTimeAccruedHours(job,newAccrued);state.committedSeconds=alreadyCommitted+elapsed;
-        try{const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,timeAccruedHours:newAccrued});if(!data.success)throw new Error(data.error||'Unable to save elapsed time')}catch(err){alert(err.message)}
+        try{const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,timeAccruedHours:newAccrued});if(!data.success)throw new Error(data.error||'Unable to save elapsed time')}catch(err){alert(err.message)}
       }
       function renderNotificationTray(){
         const tray=document.getElementById('notificationTray');if(!tray)return;
@@ -4252,10 +4252,44 @@
         }
       }
       async function changeJobStatusFromMenu(button){
-        const ticket=button.getAttribute('data-move-ticket'); const oldStatus=button.getAttribute('data-old-status'); const newStatus=button.getAttribute('data-new-status'); const job=jobs.find(j=>String(j.ticketNumber||'')===ticket); if(!job)return;
+        const ticket=button.getAttribute('data-move-ticket');
+        const requestedOldStatus=button.getAttribute('data-old-status');
+        const newStatus=button.getAttribute('data-new-status');
+        const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));
+        if(!job)return false;
+        const oldStatus=String(job.status||requestedOldStatus||'');
         if(newStatus===oldStatus)return true;
-        let newDue=job.due||job.dueDate||'';
-        const newFollowUp=newStatus==='Client Review'&&oldStatus!=='Client Review'?defaultFollowUpDate():newStatus==='In Production / Awaiting Vendor'&&oldStatus!=='In Production / Awaiting Vendor'?defaultProductionFollowUpDate():(job.followUpDate||'');
+
+        const snapshot={
+          status:job.status,dueDate:job.dueDate,due:job.due,dueAt:job.dueAt,
+          dateReceived:job.dateReceived,workloadScore:job.workloadScore,
+          followUpDate:job.followUpDate,completedAt:job.completedAt,archived:job.archived
+        };
+        const newFollowUp=newStatus==='Client Review'&&oldStatus!=='Client Review'
+          ?defaultFollowUpDate()
+          :newStatus==='In Production / Awaiting Vendor'&&oldStatus!=='In Production / Awaiting Vendor'
+            ?defaultProductionFollowUpDate()
+            :(job.followUpDate||'');
+        const moveScore=workloadScoreForJob(job);
+        const clientTimestamp=new Date().toISOString();
+        const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'
+          ?window.crypto.randomUUID()
+          :'status-'+Date.now()+'-'+Math.random().toString(36).slice(2);
+
+        // Move the card immediately; restore this snapshot if persistence fails.
+        job.status=newStatus;
+        job.followUpDate=newFollowUp;
+        job.archived=false;
+        if(newStatus==='To Be Invoiced')job.workloadScore=1;
+        if(newStatus==='Completed')job.completedAt=job.completedAt||clientTimestamp;
+        else if(oldStatus==='Completed')job.completedAt='';
+        renderQueue();renderBoard();
+        if(jobDetailsTicket&&String(jobDetailsTicket)===String(ticket))renderJobDetailsModal();
+
+        const legacyPayload={action:'updateJob',ticketNumber:ticket,status:newStatus,followUpDate:newFollowUp};
+        if(newStatus==='To Do'&&moveScore)legacyPayload.workloadScore=moveScore;
+        if(newStatus==='To Be Invoiced')legacyPayload.workloadScore=1;
+
         try{
           if(!['To Do','In Progress'].includes(newStatus)){
             const key=timerKeyFor(job);
@@ -4264,18 +4298,46 @@
               await pauseTimer(key);
             }
           }
-          const payload={action:'updateJob',ticketNumber:ticket,status:newStatus,followUpDate:newFollowUp};const moveScore=workloadScoreForJob(job);if(newStatus==='To Do'&&moveScore)payload.workloadScore=moveScore;const data=await apiPost(payload);
+
+          const data=await d1FastStatusPost({
+            operationId,
+            ticketNumber:Number(ticket),
+            oldStatus,
+            newStatus,
+            followUpDate:newFollowUp,
+            workloadScore:newStatus==='To Do'?moveScore:(newStatus==='To Be Invoiced'?1:undefined),
+            clientTimestamp
+          },legacyPayload);
           if(!data.success)throw new Error(data.error||'Unable to update job');
-          const savedDue=data.dueDate||newDue;
-          job.status=newStatus;job.dueDate=savedDue;job.due=savedDue;job.dueAt=data.dueAt!==undefined?data.dueAt:job.dueAt;job.dateReceived=data.dateReceived!==undefined?data.dateReceived:job.dateReceived;if(data.workloadScore)job.workloadScore=data.workloadScore;else if(newStatus==='To Be Invoiced')job.workloadScore=1;if(data.invoiceNotes!==undefined)job.invoiceNotes=data.invoiceNotes;job.followUpDate=data.followUpDate!==undefined?data.followUpDate:newFollowUp;if(newStatus!==oldStatus)job.archived=false;
+
+          const saved=data.job||data;
+          const savedDue=saved.dueDate||job.due||job.dueDate||'';
+          job.status=saved.status||newStatus;
+          job.dueDate=savedDue;job.due=savedDue;
+          if(saved.dueAt!==undefined)job.dueAt=saved.dueAt;
+          if(saved.dateReceived!==undefined)job.dateReceived=saved.dateReceived;
+          if(saved.workloadScore)job.workloadScore=saved.workloadScore;
+          else if(newStatus==='To Be Invoiced')job.workloadScore=1;
+          job.followUpDate=saved.followUpDate!==undefined?saved.followUpDate:newFollowUp;
+          job.archived=saved.archived!==undefined?saved.archived:false;
+          if(newStatus==='Completed')job.completedAt=saved.completedAt||data.completedAt||job.completedAt||clientTimestamp;
+          else if(oldStatus==='Completed')job.completedAt='';
+
           if(newStatus==='Client Review'){
             const state=ensureTimerState(job);
             state.running=false;state.remaining=0;state.overtime=0;state.blockStartRemaining=0;state.blockStartOvertime=0;state.committedSeconds=0;
             if(activeTimerKey===timerKeyFor(job))activeTimerKey='';
           }
-          if(newStatus==='Completed')job.completedAt=(data.job&&data.job.completedAt)||new Date().toISOString();else if(oldStatus==='Completed')job.completedAt='';
-          renderQueue();renderBoard();if(jobDetailsTicket&&String(jobDetailsTicket)===String(ticket))renderJobDetailsModal();return true
-        }catch(err){alert(err.message);return false}
+          renderQueue();renderBoard();
+          if(jobDetailsTicket&&String(jobDetailsTicket)===String(ticket))renderJobDetailsModal();
+          return true;
+        }catch(err){
+          Object.assign(job,snapshot);
+          renderQueue();renderBoard();
+          if(jobDetailsTicket&&String(jobDetailsTicket)===String(ticket))renderJobDetailsModal();
+          alert(err.message);
+          return false;
+        }
       }
       async function archiveCompletedJob(ticket,button=null){
         const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket||''));if(!job||job.status!=='Completed'||job.archived===true)return;
@@ -4976,6 +5038,28 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           }
         }
         throw lastError||new Error('Unable to reach the D1 punch service.');
+      }
+      async function d1FastStatusPost(payload,legacyPayload){
+        if(!d1FastPathReady())return apiPost(legacyPayload);
+        const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/job/status';
+        const options={method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)};
+        for(let attempt=0;attempt<2;attempt++){
+          let response;
+          try{
+            response=await fetch(url,options);
+          }catch(err){
+            if(attempt===0)continue;
+            throw new Error('Unable to reach the fast status service. The card was restored; try again.');
+          }
+          let data={};try{data=await response.json()}catch(ignore){}
+          if(response.ok&&data&&data.success)return data;
+          if(data&&data.fallbackToGoogle===true)return apiPost(legacyPayload);
+          if(response.status===401||response.status===403)return apiPost(legacyPayload);
+          const error=new Error((data&&data.error)||('Fast status update failed ('+response.status+')'));
+          if(response.status>=500&&attempt===0)continue;
+          throw error;
+        }
+        throw new Error('Unable to reach the fast status service. The card was restored; try again.');
       }
       async function punchApiPost(payload){
         if(!payload||!d1FastPathReady()||!['beginWorkSession','endWorkSession'].includes(payload.action))return apiPost(payload);
