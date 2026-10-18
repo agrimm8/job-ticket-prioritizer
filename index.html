@@ -2176,6 +2176,7 @@
       let focusCountdownDrag=null;
       let pendingPunchTimerKey='';
       const pendingPunchKeys=new Set();
+      const punchOutPendingKeys=new Set();
       const workContextByKey={};
       let activeTimerKey='';
       let activeTimerInterval=null;
@@ -2928,6 +2929,8 @@
         if(punchOutRequestInFlight)return false;
         punchOutRequestInFlight=true;
         const pendingTicket=String(activeWorkSession.ticketNumber||'');
+        const pendingSessionKey=activeWorkSession.timerKey||pendingTicket;
+        punchOutPendingKeys.add(pendingSessionKey);
         const stopBtn=document.getElementById('activeJobStopBtn');
         const originalStopText=stopBtn?stopBtn.textContent:'';
         if(stopBtn){stopBtn.disabled=true;stopBtn.textContent='Punching Out…';stopBtn.setAttribute('aria-busy','true')}
@@ -2951,10 +2954,12 @@
           return true
         }catch(err){scheduleOrphanPunchCheck();alert('Punch Out could not be saved: '+err.message);return false}
         finally{
+          punchOutPendingKeys.delete(pendingSessionKey);
           punchOutRequestInFlight=false;
           const currentStopBtn=document.getElementById('activeJobStopBtn');
           if(currentStopBtn){currentStopBtn.removeAttribute('aria-busy');if(activeWorkSession&&activeWorkSession.sessionId){currentStopBtn.disabled=false;currentStopBtn.textContent=originalStopText||'Stop Timer'}}
           if(activeWorkSession&&activeWorkSession.sessionId)setJobDetailsPunchPending(pendingTicket,false);
+          renderActiveJobBar();
         }
       }
       function setJobDetailsPunchPending(ticket,pending,label='Saving…'){const btn=document.getElementById('jobDetailsPunchBtn');if(!btn||String(jobDetailsTicket||'')!==String(ticket||''))return;if(pending){btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>'+escapeHtml(label)+'</span>'}else{const job=jobs.find(item=>String(item.ticketNumber||'')===String(ticket||''));if(job){btn.classList.remove('is-loading');renderJobDetailsPunchControl(job)}}}
@@ -3110,7 +3115,7 @@
       function activeWorkSectionLabel(session){if(!session)return '';if(session.workSetType==='Change Order')return `Change Order ${Number(session.changeOrderNumber||0)||''}`.trim();return 'Initial Request'}
       function updateActiveJobBarTimers(){if(activeWorkSession){const elapsed=formatActiveSessionElapsed();document.querySelectorAll('[data-active-job-session-time]').forEach(el=>{el.textContent=elapsed});checkHourlyWorkReminder()}updateJobDetailsAccumulatedTime()}
       function jobDetailsActiveJobBarMarkup(job){if(!activeWorkSession||!activeWorkSession.sessionId||String(activeWorkSession.ticketNumber||'')!==String(job.ticketNumber||''))return '';const title=job.title||job.displayTitle||`Ticket ${activeWorkSession.ticketNumber}`;const section=activeWorkSectionLabel(activeWorkSession);const type=String(activeWorkSession.workType||'').trim();return `<div class="active-job-bar show job-details-active-job-bar" id="jobDetailsActiveJobBar" role="status" aria-live="polite"><div class="active-job-main"><span class="active-job-dot" aria-hidden="true"></span><div class="active-job-copy"><div class="active-job-kicker">Active Job</div><div class="active-job-title">${escapeHtml(title)}</div><div class="active-job-meta">${escapeHtml([section,type].filter(Boolean).join(' · '))}</div></div></div><div class="active-job-times"><div class="active-job-time"><span class="active-job-time-label">Session</span><span class="active-job-time-value" data-active-job-session-time>${formatActiveSessionElapsed()}</span></div></div></div>`}
-      function renderActiveJobBar(){const bar=document.getElementById('activeJobBar');if(!bar)return;const hasActive=!!(activeWorkSession&&activeWorkSession.sessionId);const activeKey=hasActive?(activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'')):'';const punchOutPending=!!(hasActive&&(punchOutRequestInFlight||pendingPunchKeys.has(activeKey)));const stopBtn=document.getElementById('activeJobStopBtn');if(stopBtn){stopBtn.disabled=!hasActive||punchOutPending;stopBtn.classList.toggle('is-loading',punchOutPending);if(punchOutPending){stopBtn.innerHTML=PUNCH_LOADING_ICON+'<span>Punching Out…</span>';stopBtn.setAttribute('aria-busy','true')}else{stopBtn.textContent='Stop Timer';stopBtn.removeAttribute('aria-busy')}}const detailsOpen=document.getElementById('jobDetailsModalBackdrop')?.classList.contains('open');const activeDetailsOpen=hasActive&&detailsOpen&&String(jobDetailsTicket||'')===String(activeWorkSession.ticketNumber||'');bar.classList.toggle('show',hasActive&&!activeDetailsOpen);renderFocusCountdown();if(!hasActive)return;const job=jobs.find(j=>String(j.ticketNumber||'')===String(activeWorkSession.ticketNumber||''));const title=job?(job.title||job.displayTitle||`Ticket ${activeWorkSession.ticketNumber}`):`Ticket ${activeWorkSession.ticketNumber}`;const section=activeWorkSectionLabel(activeWorkSession);const type=String(activeWorkSession.workType||'').trim();document.getElementById('activeJobTitle').textContent=title;document.getElementById('activeJobMeta').textContent=[section,type].filter(Boolean).join(' · ');updateActiveJobBarTimers()}
+      function renderActiveJobBar(){const bar=document.getElementById('activeJobBar');if(!bar)return;const hasActive=!!(activeWorkSession&&activeWorkSession.sessionId);const activeKey=hasActive?(activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'')):'';const punchOutPending=!!(hasActive&&(punchOutRequestInFlight||punchOutPendingKeys.has(activeKey)));const stopBtn=document.getElementById('activeJobStopBtn');if(stopBtn){stopBtn.disabled=!hasActive||punchOutPending;stopBtn.classList.toggle('is-loading',punchOutPending);if(punchOutPending){stopBtn.innerHTML=PUNCH_LOADING_ICON+'<span>Punching Out…</span>';stopBtn.setAttribute('aria-busy','true')}else{stopBtn.textContent='Stop Timer';stopBtn.removeAttribute('aria-busy')}}const detailsOpen=document.getElementById('jobDetailsModalBackdrop')?.classList.contains('open');const activeDetailsOpen=hasActive&&detailsOpen&&String(jobDetailsTicket||'')===String(activeWorkSession.ticketNumber||'');bar.classList.toggle('show',hasActive&&!activeDetailsOpen);renderFocusCountdown();if(!hasActive)return;const job=jobs.find(j=>String(j.ticketNumber||'')===String(activeWorkSession.ticketNumber||''));const title=job?(job.title||job.displayTitle||`Ticket ${activeWorkSession.ticketNumber}`):`Ticket ${activeWorkSession.ticketNumber}`;const section=activeWorkSectionLabel(activeWorkSession);const type=String(activeWorkSession.workType||'').trim();document.getElementById('activeJobTitle').textContent=title;document.getElementById('activeJobMeta').textContent=[section,type].filter(Boolean).join(' · ');updateActiveJobBarTimers()}
       function openActiveJobDetails(){if(!activeWorkSession)return;const ticket=String(activeWorkSession.ticketNumber||'');openJobDetailsModal(ticket);requestAnimationFrame(()=>{const key=activeWorkSession.workSetType==='Change Order'?`co-${Number(activeWorkSession.changeOrderNumber||0)}`:'initial';const section=document.querySelector(`#jobDetailsBody [data-job-details-section="${CSS.escape(key)}"]`);if(section)section.scrollIntoView({behavior:'smooth',block:'center'})})}
       async function stopActiveJobFromBar(){if(!activeWorkSession)return;const btn=document.getElementById('activeJobStopBtn');const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');if(!key||pendingPunchKeys.has(key)||punchOutRequestInFlight)return;if(btn){btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Punching Out…</span>';btn.setAttribute('aria-busy','true')}try{const stopped=await pauseTimer(key);if(stopped){renderActiveJobBar();if(jobDetailsTicket)renderJobDetailsModal()}}finally{renderActiveJobBar()}}
       async function stopActiveJobFromDetails(){if(!activeWorkSession)return;const btn=document.getElementById('jobDetailsActiveJobStopBtn');const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');if(!key||!btn||pendingPunchKeys.has(key)||punchOutRequestInFlight)return;const originalHtml=btn.innerHTML;btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Punching Out…</span>';try{const stopped=await pauseTimer(key);if(stopped){renderActiveJobBar();if(jobDetailsTicket)renderJobDetailsModal()}}finally{if(document.body.contains(btn)){btn.disabled=false;btn.classList.remove('is-loading');btn.innerHTML=originalHtml}}}
@@ -3125,6 +3130,9 @@
         const state=timerState[key];
         if(!state)return false;
         pendingPunchKeys.add(key);
+        const activeSessionKey=activeWorkSession&&activeWorkSession.sessionId?(activeWorkSession.timerKey||String(activeWorkSession.ticketNumber||'')):'';
+        const isPunchingOutActiveSession=!!activeSessionKey&&String(activeSessionKey)===String(key);
+        if(isPunchingOutActiveSession)punchOutPendingKeys.add(key);
         if(render)renderQueue();
         const wasRunning=!!state.running;
         try{
@@ -3140,6 +3148,7 @@
           return true;
         }finally{
           pendingPunchKeys.delete(key);
+          punchOutPendingKeys.delete(key);
           if(render){renderQueue();renderBoard()}
           renderActiveJobBar();
         }
@@ -3813,7 +3822,7 @@
         const btn=document.getElementById('jobDetailsPunchBtn');if(!btn||!job)return;
         const thisJobActive=activeWorkSession&&activeWorkSession.sessionId&&String(activeWorkSession.ticketNumber||'')===String(job.ticketNumber||'');
         const otherJobActive=activeWorkSession&&activeWorkSession.sessionId&&!thisJobActive;
-        if(thisJobActive){const key=timerKeyFor(job);const punchPending=pendingPunchKeys.has(key)||punchOutRequestInFlight;if(punchPending){btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Punching Out…</span>';btn.title='Saving Punch Out…';btn.setAttribute('aria-label','Punching Out…')}else{btn.disabled=false;btn.classList.remove('is-loading');btn.innerHTML=PUNCH_OUT_ICON+'<span>Punch Out</span>';btn.title='Punch out of the active work session';btn.setAttribute('aria-label','Punch Out')}return}
+        if(thisJobActive){const key=timerKeyFor(job);const punchPending=punchOutPendingKeys.has(key)||punchOutRequestInFlight;if(punchPending){btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Punching Out…</span>';btn.title='Saving Punch Out…';btn.setAttribute('aria-label','Punching Out…')}else{btn.disabled=false;btn.classList.remove('is-loading');btn.innerHTML=PUNCH_OUT_ICON+'<span>Punch Out</span>';btn.title='Punch out of the active work session';btn.setAttribute('aria-label','Punch Out')}return}
         btn.innerHTML=PUNCH_IN_ICON+'<span>Punch In</span>';
         if(otherJobActive){btn.disabled=true;btn.title=`Ticket ${activeWorkSession.ticketNumber} is currently active.`;btn.setAttribute('aria-label','Punch In unavailable while another job is active');return}
         if(String(job.status||'')==='Completed'){btn.disabled=true;btn.title='Completed jobs cannot be punched in.';btn.setAttribute('aria-label','Punch In unavailable for completed job');return}
