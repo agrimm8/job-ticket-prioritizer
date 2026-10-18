@@ -5305,6 +5305,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       });
       document.getElementById('reloadBtn').addEventListener('click',e=>{e.stopPropagation();closeTopToolbarMenus();loadBackend()});
       document.getElementById('jobSearchBtn').addEventListener('click',e=>{e.stopPropagation();closeTopToolbarMenus();openJobSearch()});
+      document.getElementById('jobSchedulerBtn').addEventListener('click',e=>{e.stopPropagation();closeTopToolbarMenus();openJobScheduler()});
       document.getElementById('closeJobSearchBtn').addEventListener('click',closeJobSearch);
       document.getElementById('archivedJobsBtn').addEventListener('click',e=>{e.stopPropagation();closeTopToolbarMenus();openArchivedJobs()});
       document.getElementById('closeArchivedJobsBtn').addEventListener('click',closeArchivedJobs);
