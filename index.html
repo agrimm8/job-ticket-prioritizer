@@ -4299,9 +4299,21 @@
             }
           }
 
+          const d1JobSnapshot=Object.assign({},job,{
+            status:oldStatus,
+            dueDate:snapshot.dueDate,
+            due:snapshot.due,
+            dueAt:snapshot.dueAt,
+            dateReceived:snapshot.dateReceived,
+            workloadScore:snapshot.workloadScore,
+            followUpDate:snapshot.followUpDate,
+            completedAt:snapshot.completedAt,
+            archived:snapshot.archived
+          });
           const data=await d1FastStatusPost({
             operationId,
             ticketNumber:Number(ticket),
+            jobSnapshot:d1JobSnapshot,
             oldStatus,
             newStatus,
             followUpDate:newFollowUp,
