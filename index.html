@@ -218,6 +218,11 @@
     #job-priority-app .job-folder-parent-name{font-size:12px;font-weight:800;word-break:break-word}
     #job-priority-app .job-folder-message{font-size:10px;line-height:1.45;opacity:.7;margin:8px 0 0}
     #job-priority-app #jobFolderModalBackdrop .actions button{display:inline-flex;align-items:center;justify-content:center;line-height:1.2}
+    #job-priority-app .job-folder-preferred-option{display:none;align-items:flex-start;gap:8px;margin:10px 0 2px;padding:9px 10px;border:1px solid light-dark(#deded8,#414141);border-radius:8px;background:light-dark(#fafaf8,#202020);font-size:11px;line-height:1.35;cursor:pointer}
+    #job-priority-app .job-folder-preferred-option.show{display:flex}
+    #job-priority-app .job-folder-preferred-option input{width:15px;height:15px;margin:1px 0 0;flex:0 0 auto}
+    #job-priority-app .job-folder-preferred-option strong{display:block;font-size:11px}
+    #job-priority-app .job-folder-preferred-option span{display:block;color:var(--muted,#666);margin-top:1px}
     #job-priority-app .copy-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(8px);z-index:10000;padding:8px 12px;border:1px solid #74b98f;border-radius:999px;background:light-dark(#e9f8ef,#173a29);color:light-dark(#17653d,#b9f3cf);font-size:11px;font-weight:800;opacity:0;pointer-events:none;transition:opacity .22s ease,transform .22s ease}
     #job-priority-app .copy-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
     #job-priority-app .client-notes-link{display:inline-block;margin-top:3px;font-size:9px;color:inherit;text-decoration:underline;cursor:pointer;opacity:.75}
@@ -1939,6 +1944,10 @@
           <p class="job-folder-message">JTP will create a new folder with the job ticket name inside this folder.</p>
         </div>
         <p class="job-folder-message" id="jobFolderNoParentMessage">Choose the parent location where this job folder should be created.</p>
+        <label class="job-folder-preferred-option" id="jobFolderPreferredOption">
+          <input id="jobFolderSetPreferredCheckbox" type="checkbox">
+          <span><strong>Save as this client's preferred path</strong><span>Use the directory I choose as the default location for this client's future job folders.</span></span>
+        </label>
         <div class="actions">
           <button class="primary" id="chooseJobFolderBtn" type="button">Choose Location</button>
           <button class="secondary" id="createJobFolderLastBtn" type="button" style="display:none">Create in Last Folder</button>
@@ -5084,6 +5093,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         return false
       }
       function clientIdsForPendingJobFolder(){const job=jobs.find(item=>String(item.ticketNumber||'')===String(pendingJobFolderTicket||''));if(!job)return {primaryClientId:'',secondaryClientId:''};return jobDetailsClientIds(job)}
+      async function loadPendingJobExactPreferredDirectory(){const ids=clientIdsForPendingJobFolder();if(!ids.primaryClientId)return null;return await loadClientPreferredDirectory(ids.primaryClientId,ids.secondaryClientId||'')}
       async function loadPendingJobPreferredDirectory(){const ids=clientIdsForPendingJobFolder();if(!ids.primaryClientId)return null;const exact=await loadClientPreferredDirectory(ids.primaryClientId,ids.secondaryClientId||'');if(exact)return exact;return ids.secondaryClientId?await loadClientPreferredDirectory(ids.primaryClientId,''):null}
       async function chooseJobFolderParent(){
         if(!jobFolderApiSupported())throw new Error('Creating local folders from JTP requires a supported Chromium browser such as Chrome or Edge over HTTPS.');
@@ -5163,13 +5173,14 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const pieces=[`Job Folder Created · _Links: ${stats.saved} file${stats.saved===1?'':'s'} saved`];if(stats.unavailable)pieces.push(`${stats.unavailable} unavailable`);if(stats.failed)pieces.push(`${stats.failed} failed`);showJobFolderToast(pieces.join(' · '));pendingJobFolderTitle='';pendingJobFolderTicket='';return true
       }
       async function refreshJobFolderModal(){
-        const preferred=await loadPendingJobPreferredDirectory();const fallback=preferred?null:await loadLastJobFolderParent();const handle=preferred||fallback;const has=!!handle;const box=document.getElementById('jobFolderLastParentBox');const name=document.getElementById('jobFolderLastParentName');const create=document.getElementById('createJobFolderLastBtn');const choose=document.getElementById('chooseJobFolderBtn');const noParent=document.getElementById('jobFolderNoParentMessage');
+        const exactPreferred=await loadPendingJobExactPreferredDirectory();const preferred=exactPreferred||await loadPendingJobPreferredDirectory();const fallback=preferred?null:await loadLastJobFolderParent();const handle=preferred||fallback;const has=!!handle;const box=document.getElementById('jobFolderLastParentBox');const name=document.getElementById('jobFolderLastParentName');const create=document.getElementById('createJobFolderLastBtn');const choose=document.getElementById('chooseJobFolderBtn');const noParent=document.getElementById('jobFolderNoParentMessage');const preferredOption=document.getElementById('jobFolderPreferredOption');const preferredCheckbox=document.getElementById('jobFolderSetPreferredCheckbox');const ids=clientIdsForPendingJobFolder();
+        const canDefinePreferred=!!ids.primaryClientId&&!exactPreferred;if(preferredOption)preferredOption.classList.toggle('show',canDefinePreferred);if(preferredCheckbox&&!canDefinePreferred)preferredCheckbox.checked=false;
         const label=box&&box.querySelector('.job-folder-parent-label');if(label)label.textContent=preferred?'Client Preferred Folder':'Last Parent Folder';box.style.display=has?'block':'none';create.style.display=has?'inline-flex':'none';name.textContent=has?handle.name:'—';create.textContent=preferred?'Create in Preferred Folder':'Create in Last Folder';choose.textContent=has?'Choose Different Location':'Choose Location';noParent.style.display=has?'none':'block';if(create)create.dataset.usePreferred=preferred?'1':'0';const actions=choose&&choose.parentElement;if(actions&&create){if(preferred){create.classList.add('primary');create.classList.remove('secondary');choose.classList.add('secondary');choose.classList.remove('primary');actions.insertBefore(create,choose)}else{choose.classList.add('primary');choose.classList.remove('secondary');create.classList.add('secondary');create.classList.remove('primary');actions.insertBefore(choose,create)}}
       }
       async function openJobFolderCreator(title,ticket=''){
         const validation=validateJobFolderName(title);if(validation){alert(validation);return}
         if(!jobFolderApiSupported()){alert('Creating folders directly from JTP requires Google Chrome or Microsoft Edge over HTTPS. This browser does not currently expose the required folder-access feature.');return}
-        pendingJobFolderTitle=String(title||'').trim();pendingJobFolderTicket=String(ticket||'');document.getElementById('jobFolderModalJob').textContent=pendingJobFolderTitle;document.getElementById('jobFolderModalBackdrop').classList.add('open');await refreshJobFolderModal()
+        pendingJobFolderTitle=String(title||'').trim();pendingJobFolderTicket=String(ticket||'');const preferredCheckbox=document.getElementById('jobFolderSetPreferredCheckbox');if(preferredCheckbox)preferredCheckbox.checked=false;document.getElementById('jobFolderModalJob').textContent=pendingJobFolderTitle;document.getElementById('jobFolderModalBackdrop').classList.add('open');await refreshJobFolderModal()
       }
       async function copyJobTitle(title){
         try{
@@ -5196,8 +5207,8 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('jobDetailsCreateFolderBtn').addEventListener('click',e=>{e.stopPropagation();const btn=e.currentTarget;openJobFolderCreator(btn.getAttribute('data-folder-title')||'',btn.getAttribute('data-create-job-folder')||'')});
       document.getElementById('jobDetailsCopyTitleBtn').addEventListener('click',e=>{e.stopPropagation();const btn=e.currentTarget;copyJobTitle(btn.getAttribute('data-copy-title')||'')});
       document.getElementById('createJobFolderLastBtn').addEventListener('click',async e=>{const btn=e.currentTarget;const original=btn.innerHTML;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Creating…</span>';try{const handle=btn.dataset.usePreferred==='1'?await loadPendingJobPreferredDirectory():await loadLastJobFolderParent();if(!handle){await refreshJobFolderModal();return}await createJobFolderInParent(handle)}catch(err){alert('Unable to create the job folder: '+(err&&err.message?err.message:'Unknown error'))}finally{btn.disabled=false;btn.innerHTML=original}});
-      document.getElementById('chooseJobFolderBtn').addEventListener('click',async e=>{const btn=e.currentTarget;const original=btn.innerHTML;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Opening…</span>';try{const handle=await chooseJobFolderParent();if(handle)await createJobFolderInParent(handle)}catch(err){alert('Unable to create the job folder: '+(err&&err.message?err.message:'Unknown error'))}finally{btn.disabled=false;btn.innerHTML=original}});
-      document.getElementById('cancelJobFolderBtn').addEventListener('click',()=>{document.getElementById('jobFolderModalBackdrop').classList.remove('open');pendingJobFolderTitle='';pendingJobFolderTicket=''});
+      document.getElementById('chooseJobFolderBtn').addEventListener('click',async e=>{const btn=e.currentTarget;const original=btn.innerHTML;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Opening…</span>';try{const savePreferred=!!document.getElementById('jobFolderSetPreferredCheckbox')?.checked;const ids=clientIdsForPendingJobFolder();const handle=await chooseJobFolderParent();if(handle&&savePreferred&&ids.primaryClientId){await rememberClientPreferredDirectory(ids.primaryClientId,ids.secondaryClientId||'',handle);showJobFolderToast('Preferred client path saved')}if(handle)await createJobFolderInParent(handle)}catch(err){alert('Unable to create the job folder: '+(err&&err.message?err.message:'Unknown error'))}finally{btn.disabled=false;btn.innerHTML=original}});
+      document.getElementById('cancelJobFolderBtn').addEventListener('click',()=>{document.getElementById('jobFolderModalBackdrop').classList.remove('open');const preferredCheckbox=document.getElementById('jobFolderSetPreferredCheckbox');if(preferredCheckbox)preferredCheckbox.checked=false;pendingJobFolderTitle='';pendingJobFolderTicket=''});
       document.getElementById('saveClientBtn').addEventListener('click',async()=>{
         const btn=document.getElementById('saveClientBtn');
         if(btn.disabled)return;
