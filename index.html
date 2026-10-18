@@ -1227,6 +1227,49 @@
     @media(max-width:1150px){#job-priority-app .top{align-items:flex-start;flex-wrap:wrap}#job-priority-app .top-controls{flex-wrap:wrap}#job-priority-app .top-right-controls{width:100%;justify-content:flex-end}#job-priority-app .board-shell{grid-template-columns:minmax(155px,.78fr) repeat(5,minmax(175px,1fr))}}
     @media(max-width:700px){#job-priority-app{height:auto;min-height:100vh;overflow:auto;padding:12px}#job-priority-app .wrap{height:auto}#job-priority-app .top-right-controls{justify-content:flex-start;flex-wrap:wrap}#job-priority-app .top-right-controls .workday-bar{width:100%;border-left:0;padding-left:0;justify-content:space-between}#job-priority-app .board-shell{display:grid;grid-template-columns:1fr;overflow:visible}#job-priority-app .kpi-strip,#job-priority-app .board-column{overflow:visible;min-height:auto}#job-priority-app .board-column-list,#job-priority-app .board-column #todoList,#job-priority-app .board-column #queue{overflow:visible;max-height:none}}
 
+
+    /* Fixed-width horizontal board refinement */
+    #job-priority-app{height:100dvh;max-height:100dvh;overflow:hidden}
+    #job-priority-app .wrap{height:100%;min-height:0;overflow:hidden}
+    #job-priority-app .top{position:relative;z-index:50;flex:0 0 auto}
+    #job-priority-app .board-shell{
+      flex:1 1 0;
+      min-height:0;
+      height:auto;
+      grid-template-columns:repeat(6,344px);
+      gap:12px;
+      overflow-x:auto;
+      overflow-y:hidden;
+      align-items:start;
+      overscroll-behavior-x:contain;
+      scrollbar-gutter:stable;
+      padding-bottom:6px;
+    }
+    #job-priority-app .kpi-strip,#job-priority-app .board-column{
+      min-height:0;
+      max-height:100%;
+      height:max-content;
+      align-self:start;
+    }
+    #job-priority-app .kpi-strip{overflow-y:auto}
+    #job-priority-app .board-column-list,#job-priority-app .board-column #todoList,#job-priority-app .board-column #queue{
+      flex:0 1 auto;
+      min-height:0;
+      max-height:calc(100dvh - 118px);
+      overflow-y:auto;
+    }
+    #job-priority-app .board-column{max-height:calc(100dvh - 68px)}
+    @media(max-width:1150px){
+      #job-priority-app .board-shell{grid-template-columns:repeat(6,344px)}
+    }
+    @media(max-width:700px){
+      #job-priority-app{height:100dvh;min-height:0;overflow:hidden;padding:12px}
+      #job-priority-app .wrap{height:100%;overflow:hidden}
+      #job-priority-app .top{flex-wrap:wrap}
+      #job-priority-app .board-shell{display:grid;grid-template-columns:repeat(6,min(82vw,344px));gap:12px;overflow-x:auto;overflow-y:hidden;min-height:0;align-items:start}
+      #job-priority-app .kpi-strip,#job-priority-app .board-column{min-height:0;max-height:100%;height:max-content;align-self:start}
+      #job-priority-app .board-column-list,#job-priority-app .board-column #todoList,#job-priority-app .board-column #queue{overflow-y:auto;max-height:calc(100dvh - 150px)}
+    }
 </style>
   <div class="wrap">
     <div class="top compact-top">
