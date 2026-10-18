@@ -1133,6 +1133,10 @@
     #job-priority-app .client-directory-name{font-weight:800;word-break:break-word}
     #job-priority-app .client-directory-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
     #job-priority-app .client-directory-clear{color:#a61b13;border-color:#d9aaa6;background:light-dark(#fff7f6,#2a1716)}
+    #job-priority-app .clients-directory-name-wrap{display:inline-flex;align-items:center;gap:6px;min-width:0}
+    #job-priority-app .clients-directory-path-icon{display:none;flex:0 0 auto;width:16px;height:16px;color:light-dark(#2f7d32,#72d578)}
+    #job-priority-app .clients-directory-btn.has-preferred-directory .clients-directory-path-icon{display:inline-flex}
+    #job-priority-app .clients-directory-path-icon svg{display:block;width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
     #job-priority-app .add-client-quick-modal{width:min(430px,94vw)}
     #job-priority-app .add-client-quick-grid{display:grid;grid-template-columns:1fr 120px;gap:12px;margin-top:12px}
     @media(max-width:520px){#job-priority-app .add-client-quick-grid{grid-template-columns:1fr}}
@@ -1729,7 +1733,7 @@
             <h4>Preferred Job Directory</h4>
             <p class="muted">JTP can remember the parent folder to use when creating new job folders for this client on this browser/device.</p>
             <div class="client-directory-status"><div class="muted" style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">Current Directory</div><div class="client-directory-name" id="clientPreferredDirectoryName">Not defined</div><div class="muted" id="clientPreferredDirectoryPermission" style="margin-top:3px"></div></div>
-            <div class="client-directory-actions"><button class="primary" id="setClientPreferredDirectoryBtn" type="button">Choose Directory</button><button class="secondary client-directory-clear" id="clearClientPreferredDirectoryBtn" type="button" disabled>Clear Definition</button></div>
+            <div class="client-directory-actions"><button class="primary" id="setClientPreferredDirectoryBtn" type="button">Choose Directory</button><button class="secondary client-directory-clear" id="clearClientPreferredDirectoryBtn" type="button" disabled>Clear Path</button></div>
           </div>
         </div>
         <div class="actions"><button class="primary notes-save-btn" id="doneClientNotesBtn" type="button" disabled>Save</button><button class="secondary" id="editClientNameBtn" type="button">Edit Client Name</button><button class="secondary" id="closeClientNotesBtn" type="button">Close</button></div>
@@ -3439,7 +3443,16 @@
         const groups={};
         entries.forEach(entry=>{const ch=(entry.name.match(/[A-Za-z]/)||['#'])[0].toUpperCase();(groups[ch]||(groups[ch]=[])).push(entry)});
         const letters=Object.keys(groups).sort((a,b)=>a==='#'?1:b==='#'?-1:a.localeCompare(b));
-        target.innerHTML=letters.map(letter=>`<section class="clients-letter-section"><div class="clients-letter-heading">${escapeHtml(letter)}</div><div class="clients-letter-buttons">${groups[letter].map(entry=>`<button class="secondary clients-directory-btn" type="button" data-client-directory-primary="${escapeHtml(entry.primaryClientId)}" data-client-directory-secondary="${escapeHtml(entry.secondaryClientId)}">${escapeHtml(entry.name)} (${escapeHtml(entry.id)})</button>`).join('')}</div></section>`).join('');
+        const pathIcon=`<span class="clients-directory-path-icon" title="Preferred path defined" aria-label="Preferred path defined"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6.5h6l2 2h9v9.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"></path><path d="m13.5 14.5 2 2 4-4"></path></svg></span>`;
+        target.innerHTML=letters.map(letter=>`<section class="clients-letter-section"><div class="clients-letter-heading">${escapeHtml(letter)}</div><div class="clients-letter-buttons">${groups[letter].map(entry=>`<button class="secondary clients-directory-btn" type="button" data-client-directory-primary="${escapeHtml(entry.primaryClientId)}" data-client-directory-secondary="${escapeHtml(entry.secondaryClientId)}"><span class="clients-directory-name-wrap"><span>${escapeHtml(entry.name)} (${escapeHtml(entry.id)})</span>${pathIcon}</span></button>`).join('')}</div></section>`).join('');
+        if(jobFolderApiSupported()){
+          target.querySelectorAll('[data-client-directory-primary]').forEach(async btn=>{
+            const primary=btn.getAttribute('data-client-directory-primary')||'';const secondary=btn.getAttribute('data-client-directory-secondary')||'';
+            const handle=await loadClientPreferredDirectory(primary,secondary);
+            if(!document.body.contains(btn))return;
+            btn.classList.toggle('has-preferred-directory',!!handle);
+          });
+        }
         target.querySelectorAll('[data-client-directory-primary]').forEach(btn=>btn.addEventListener('click',()=>{
           const primary=btn.getAttribute('data-client-directory-primary')||'';const secondary=btn.getAttribute('data-client-directory-secondary')||'';
           document.getElementById('clientsModalBackdrop').classList.remove('open');clientNotesReturnToFinancial=false;clientNotesReturnToClients=true;openClientNotesModal(primary,secondary);
