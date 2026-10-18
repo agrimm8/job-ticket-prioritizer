@@ -152,6 +152,8 @@
     #job-priority-app .move-menu.open{display:block}
     #job-priority-app .card:has(.move-menu.open),#job-priority-app .queue-item:has(.move-menu.open){position:relative;z-index:4500;overflow:visible}
     #job-priority-app .card:has(.move-menu.open) .queue-menu-wrap,#job-priority-app .queue-item:has(.move-menu.open) .queue-menu-wrap{z-index:5001}
+    #job-priority-app .board-column:has(.move-menu.open){overflow:visible!important}
+    #job-priority-app .board-column:has(.move-menu.open) .board-column-list,#job-priority-app .board-column:has(.move-menu.open) #todoList,#job-priority-app .board-column:has(.move-menu.open) #queue{overflow:visible!important;max-height:none!important}
     @media(prefers-color-scheme:dark){#job-priority-app .move-menu{background:#252525;color:#f3f3f3;border-color:#444}}
     #job-priority-app .move-menu button{display:block;width:100%;text-align:left;min-height:28px;padding:5px 7px;background:transparent;color:inherit;font-size:10px}
     #job-priority-app .move-menu button:hover{background:light-dark(#f0f0ec,#333)}
