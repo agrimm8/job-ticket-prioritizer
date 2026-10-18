@@ -1224,7 +1224,6 @@
     #job-priority-app .top-right-controls .workday-actions{gap:5px;flex-wrap:nowrap}
     #job-priority-app .top-right-controls .workday-actions button{min-height:30px;padding:5px 8px;font-size:9px;white-space:nowrap}
     #job-priority-app .orphan-punch-banner,#job-priority-app .active-job-bar{flex:0 0 auto;margin-bottom:8px}
-    #job-priority-app .board-shell.is-warming{pointer-events:none;opacity:.84}
     #job-priority-app .board-shell{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(155px,.78fr) minmax(185px,1fr) minmax(215px,1.15fr) minmax(185px,1fr) minmax(185px,1fr) minmax(185px,1fr);gap:9px;align-items:stretch;overflow-x:auto;overflow-y:hidden;padding-bottom:2px}
     #job-priority-app .kpi-strip{grid-column:auto;display:flex;flex-direction:column;gap:9px;min-width:0;min-height:0;overflow-y:auto;padding-right:2px}
     #job-priority-app .kpi-strip .utilization-kpi-card{order:1}
@@ -2163,11 +2162,6 @@
       let workSessions=[];
       let workSets=[];
       let workdayPunches=[];
-      let boardSnapshotAccruedHours=null;
-      let boardWarmRender=false;
-      let boardStartupLoadId=0;
-      let boardBootstrapDataArrived=false;
-      const D1_BOARD_SESSION_CACHE_KEY='jtp.d1.board-startup-session.v1';
       let d1FastPath={enabled:false,apiUrl:'',token:'',expiresAt:''};
       let autoWorkdayConfig={enabled:false,startHour:8,startMinute:30,endHour:22,endMinute:0,weekdaysOnly:true,triggerInstalled:false};
       let timesheetSelectedDateKey='';
@@ -2730,7 +2724,7 @@
       function recommendedWorkSeconds(j){return 3600}
       function accruedStorageKey(j){return 'jtp-accrued-'+timerKeyFor(j)}
       function getTimeAccruedHours(j){if(Number.isFinite(Number(j.timeAccruedHours)))return Math.max(0,Number(j.timeAccruedHours));try{return Math.max(0,Number(localStorage.getItem(accruedStorageKey(j))||0))}catch(e){return 0}}
-      function getRecordedTimeAccruedHours(j){const ticket=Number(j&&j.ticketNumber);if(!Number.isFinite(ticket))return getTimeAccruedHours(j);if(boardSnapshotAccruedHours){const snapshot=boardSnapshotAccruedHours[String(ticket)];if(snapshot&&Number(snapshot.sessionCount)>0)return Math.max(0,Number(snapshot.hours)||0);if(snapshot)return getTimeAccruedHours(j)}const sessions=workSessions.filter(s=>Number(s.ticketNumber)===ticket);if(!sessions.length)return getTimeAccruedHours(j);const completed=sessions.filter(s=>s.punchOut&&Number.isFinite(Number(s.durationMinutes)));return completed.reduce((sum,s)=>sum+Math.max(0,Number(s.durationMinutes)||0),0)/60}
+      function getRecordedTimeAccruedHours(j){const ticket=Number(j&&j.ticketNumber);if(!Number.isFinite(ticket))return getTimeAccruedHours(j);const sessions=workSessions.filter(s=>Number(s.ticketNumber)===ticket);if(!sessions.length)return getTimeAccruedHours(j);const completed=sessions.filter(s=>s.punchOut&&Number.isFinite(Number(s.durationMinutes)));return completed.reduce((sum,s)=>sum+Math.max(0,Number(s.durationMinutes)||0),0)/60}
       function setTimeAccruedHours(j,hours){const value=Math.max(0,Number(hours)||0);j.timeAccruedHours=value;try{localStorage.setItem(accruedStorageKey(j),String(value))}catch(e){}}
       function ensureTimerState(j){const key=timerKeyFor(j);if(!timerState[key])timerState[key]={remaining:recommendedWorkSeconds(j),running:false,overtime:0,blockStartRemaining:recommendedWorkSeconds(j),blockStartOvertime:0,committedSeconds:0};return timerState[key]}
       function formatCountdown(seconds){const s=Math.max(0,Math.ceil(seconds));const m=Math.floor(s/60);const r=s%60;return `${m}:${String(r).padStart(2,'0')}`}
@@ -3229,7 +3223,6 @@
         return `<div class="${className} job-profit ${profitClass(summary.net)}">Net Profit: ${escapeHtml(formatCurrency(summary.net))}</div>`;
       }
       function profitTag(ticket){
-        if(boardWarmRender)return '<span class="card-tag profit-zero">Net Profit: Loading…</span>';
         const summary=financialSummary(ticket);
         const net=summary.net;
         const cls=net<0?'profit-negative':(Math.abs(net)<.005?'profit-zero':'profit-positive');
@@ -5278,37 +5271,11 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         }catch(ignore){}finally{emailQueueRefreshBusy=false}
       }
 
-      function renderWarmBoardColumns(){
-        const wsiwonTickets=new Set(getWSIWONJobs().map(job=>String(job.ticketNumber||'')));
-        renderQueue(getWSIWONJobs());
-        const todo=jobs.filter(job=>(job.status==='To Do'||job.status==='In Progress'||job.status==='To Be Invoiced')&&!wsiwonTickets.has(String(job.ticketNumber||''))).sort((a,b)=>new Date(effectiveDueDate(a)+'T00:00:00Z')-new Date(effectiveDueDate(b)+'T00:00:00Z'));
-        renderTodo(todo);
-        renderCards('clientReviewList',jobs.filter(job=>job.status==='Client Review').sort((a,b)=>{const c=String(a.followUpDate||'9999-12-31').localeCompare(String(b.followUpDate||'9999-12-31'));return c||Number(a.ticketNumber||Number.MAX_SAFE_INTEGER)-Number(b.ticketNumber||Number.MAX_SAFE_INTEGER)}));
-        renderCards('productionList',jobs.filter(job=>job.status==='In Production / Awaiting Vendor').sort((a,b)=>{const c=String(a.followUpDate||'9999-12-31').localeCompare(String(b.followUpDate||'9999-12-31'));return c||Number(a.ticketNumber||Number.MAX_SAFE_INTEGER)-Number(b.ticketNumber||Number.MAX_SAFE_INTEGER)}));
-        const completed=jobs.filter(job=>job.status==='Completed'&&job.archived!==true);renderCards('completedList',completed);const archiveAllBtn=document.getElementById('archiveAllCompletedBtn');if(archiveAllBtn){archiveAllBtn.disabled=!completed.length;archiveAllBtn.title=completed.length?`Archive all ${completed.length} visible completed job${completed.length===1?'':'s'}`:'No completed jobs to archive'}
-      }
-      function readCachedD1BoardAuth(){
-        try{const cached=JSON.parse(localStorage.getItem(D1_BOARD_SESSION_CACHE_KEY)||'null');if(!cached||!cached.apiUrl||!cached.token||!cached.expiresAt||new Date(cached.expiresAt).getTime()<Date.now()+60000)return null;return cached}catch(ignore){return null}
-      }
-      function cacheD1BoardAuth(config){
-        try{if(config&&config.enabled&&config.apiUrl&&config.token&&config.expiresAt)localStorage.setItem(D1_BOARD_SESSION_CACHE_KEY,JSON.stringify({apiUrl:config.apiUrl,token:config.token,expiresAt:config.expiresAt}));else localStorage.removeItem(D1_BOARD_SESSION_CACHE_KEY)}catch(ignore){}
-      }
-      async function warmBoardFromD1(loadId){
-        if(PREVIEW_MODE||backendReady||boardBootstrapDataArrived)return false;const cached=readCachedD1BoardAuth();if(!cached)return false;
-        try{
-          const url=String(cached.apiUrl).replace(/\/+$/,'')+'/board/snapshot';const response=await fetch(url,{method:'GET',headers:{'Authorization':'Bearer '+cached.token}});if(response.status===401||response.status===403){try{localStorage.removeItem(D1_BOARD_SESSION_CACHE_KEY)}catch(ignore){}return false}if(!response.ok)return false;const data=await response.json();
-          if(!data||!data.success||!Array.isArray(data.jobs)||loadId!==boardStartupLoadId||backendReady||boardBootstrapDataArrived)return false;
-          jobs=data.jobs;boardSnapshotAccruedHours=data.accruedHoursByTicket||{};boardWarmRender=true;const board=document.getElementById('mainBoard');if(board){board.classList.add('is-warming');board.setAttribute('aria-busy','true')}
-          try{renderWarmBoardColumns()}finally{boardWarmRender=false}
-          setBackendStatus(false,'Showing the fast D1 board while live data finishes loading.');return true;
-        }catch(ignore){return false}
-      }
       async function loadBackend(){
         setBackendStatus(false,'Connecting to Google Sheets…');
-        const loadId=++boardStartupLoadId;boardBootstrapDataArrived=false;if(!backendReady)warmBoardFromD1(loadId);
         try{
-          const data=await apiGet();boardBootstrapDataArrived=true;if(!data.success)throw new Error(data.error||'Backend error');
-          d1FastPath=data.d1FastPath||d1FastPath;cacheD1BoardAuth(d1FastPath);clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[]; statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; workSets=data.workSets||[]; boardSnapshotAccruedHours=null; workdayPunches=data.workdayPunches||[]; autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig; adminSessions=data.adminSessions||[]; activeAdminSession=data.openAdminSession||null; motivatorBankReady=false; motivatorBankServer={active:false,shiftStart:'',shiftStartMs:0,clientWorkSeconds:0,earnedSeconds:0,spentSeconds:0,availableSeconds:0}; holidayCalendar=data.holidayCalendar||[]; jobFinancials=data.jobFinancials||[]; overheadTemplates=data.overheadTemplates||[]; currentMonthlyOverhead=data.currentMonthlyOverhead||{month:currentMonthKey(),entries:[],total:0}; emailQueue=data.emailQueue||[];recentEmailSources=data.recentEmailSources||[];changeOrderIntakes=data.changeOrderIntakes||[];changeOrderEmailSources=data.changeOrderEmailSources||[];emailIntakeConfigured=data.emailIntakeConfigured===true; await reconcileOpenWorkSession(data.openWorkSession||null);
+          const data=await apiGet(); if(!data.success)throw new Error(data.error||'Backend error');
+          d1FastPath=data.d1FastPath||d1FastPath; clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[]; statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; workSets=data.workSets||[]; workdayPunches=data.workdayPunches||[]; autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig; adminSessions=data.adminSessions||[]; activeAdminSession=data.openAdminSession||null; motivatorBankReady=false; motivatorBankServer={active:false,shiftStart:'',shiftStartMs:0,clientWorkSeconds:0,earnedSeconds:0,spentSeconds:0,availableSeconds:0}; holidayCalendar=data.holidayCalendar||[]; jobFinancials=data.jobFinancials||[]; overheadTemplates=data.overheadTemplates||[]; currentMonthlyOverhead=data.currentMonthlyOverhead||{month:currentMonthKey(),entries:[],total:0}; emailQueue=data.emailQueue||[];recentEmailSources=data.recentEmailSources||[];changeOrderIntakes=data.changeOrderIntakes||[];changeOrderEmailSources=data.changeOrderEmailSources||[];emailIntakeConfigured=data.emailIntakeConfigured===true; await reconcileOpenWorkSession(data.openWorkSession||null);
           Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);
           Object.keys(clientPricingNotes).forEach(k=>delete clientPricingNotes[k]);
           Object.keys(clientAssociatedEmails).forEach(k=>delete clientAssociatedEmails[k]);
@@ -5317,7 +5284,6 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           renderEmailQueue();
           nextId=getNextSequentialId();
           populateClients(); syncNextId(); renderQueue(); renderBoard(); renderWorkUtilization(); refreshMotivatorMenuGateLabels(); setBackendStatus(true,'Live Google Sheets connection');
-          const board=document.getElementById('mainBoard');if(board){board.classList.remove('is-warming');board.removeAttribute('aria-busy')}
           backendReady=true;midnightObservedKey=workdayKey();maybeShowAutoWorkdayMotivator();refreshScheduledIntake().catch(()=>{});
           if(data.midnightRollover&&data.midnightRollover.busy)checkMidnightRollover(true);
           refreshMotivatorSpent().catch(()=>{});
