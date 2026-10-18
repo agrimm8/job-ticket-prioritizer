@@ -169,6 +169,8 @@
     #job-priority-app #saveJobTimeBtn{min-width:112px;white-space:nowrap}
     #job-priority-app button.is-loading{display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:wait;white-space:nowrap;width:max-content;max-width:100%}
     #job-priority-app .timer-modal .actions button:disabled{cursor:wait;opacity:.78}
+    #job-priority-app .due-date-quick-actions{margin-top:8px}
+    #job-priority-app .due-date-quick-note{display:block;font-size:10px;font-weight:400;opacity:.75}
     @keyframes punchSpin{to{transform:rotate(360deg)}}
     #job-priority-app .timer-readout{font-size:10px;font-weight:800;min-width:54px}
     #job-priority-app .reset-block-link{display:inline-block;margin-top:2px;font-size:9px;color:inherit;text-decoration:underline;cursor:pointer;opacity:.72}
@@ -1734,6 +1736,22 @@
         <div class="actions"><button class="primary" id="saveDueDateBtn" type="button">Save Due Date</button><button class="secondary" id="cancelDueDateBtn" type="button">Cancel</button></div>
       </div>
     </div>
+    <div class="timer-modal-backdrop" id="returnToDoDueDateBackdrop" role="dialog" aria-modal="true" aria-labelledby="returnToDoDueDateTitle">
+      <div class="timer-modal">
+        <h3 id="returnToDoDueDateTitle">Set a New Due Date</h3>
+        <p id="returnToDoDueDateJob" style="margin-bottom:10px"></p>
+        <label for="returnToDoDueDateInput">Choose a due date</label>
+        <input id="returnToDoDueDateInput" type="date" required>
+        <div class="actions due-date-quick-actions">
+          <button class="secondary" id="returnToDoDueTodayBtn" type="button">Due Today</button>
+          <button class="secondary" id="returnToDoDueTomorrowBtn" type="button">Due Tomorrow <span class="due-date-quick-note">next business day</span></button>
+        </div>
+        <div class="actions">
+          <button class="primary" id="confirmReturnToDoDueDateBtn" type="button">Move to To Do</button>
+          <button class="secondary" id="cancelReturnToDoDueDateBtn" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
     <div class="timer-modal-backdrop" id="jobTitleModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="jobTitleModalTitle">
       <div class="timer-modal">
         <h3 id="jobTitleModalTitle">Edit Job Ticket Title</h3>
@@ -2170,6 +2188,7 @@
       let notificationTrayHadBlock=false;
       let notificationTrayHadOrphan=false;
       let dueDateEditTicket='';
+      let returnToDoDueDateResolver=null;
       let followUpDateEditTicket='';
       let jobTitleEditTicket='';
       let clientReviewMoveTicket='';
@@ -2245,6 +2264,8 @@
       function todayISO(){return iso(today())}
       function isWorkday(d){const day=d.getUTCDay();return day!==0&&day!==6}
       function addWorkdays(start,count){let d=new Date(start.getTime());let added=0;while(added<count){d.setUTCDate(d.getUTCDate()+1);if(isWorkday(d))added++;}return d}
+      function requestReturnToDoDueDate(job){const backdrop=document.getElementById('returnToDoDueDateBackdrop');const input=document.getElementById('returnToDoDueDateInput');document.getElementById('returnToDoDueDateJob').textContent=(job.displayTitle||job.title||'Ticket '+job.ticketNumber)+' needs a new due date before it returns to To Do.';input.value='';backdrop.classList.add('open');return new Promise(resolve=>{returnToDoDueDateResolver=resolve})}
+      function finishReturnToDoDueDate(value){const backdrop=document.getElementById('returnToDoDueDateBackdrop');backdrop.classList.remove('open');const resolve=returnToDoDueDateResolver;returnToDoDueDateResolver=null;if(resolve)resolve(value||null)}
       function offsetDate(days){let d=today();d.setUTCDate(d.getUTCDate()+days);return iso(d)}
       function normalizeWorkloadScore(value){const n=Number(value||0);return Number.isInteger(n)&&n>=1&&n<=5?n:0}
       function workloadScoreForJob(job){if(!job)return 0;const pending=(changeOrderIntakes||[]).filter(item=>Number(item.ticketNumber)===Number(job.ticketNumber)&&item.status==='Pending'&&normalizeWorkloadScore(item.workloadScore)).sort((a,b)=>Number(b.changeOrderNumber||0)-Number(a.changeOrderNumber||0))[0];if(pending)return normalizeWorkloadScore(pending.workloadScore);const direct=normalizeWorkloadScore(job.workloadScore);if(direct)return direct;const sets=(workSets||[]).filter(set=>Number(set.ticketNumber)===Number(job.ticketNumber)&&normalizeWorkloadScore(set.workloadScore)).sort((a,b)=>{const ac=Number(a.changeOrderNumber||0),bc=Number(b.changeOrderNumber||0);if(ac!==bc)return bc-ac;return String(b.createdAt||'').localeCompare(String(a.createdAt||''))});return sets.length?normalizeWorkloadScore(sets[0].workloadScore):0}
@@ -4260,8 +4281,12 @@
         const oldStatus=String(job.status||requestedOldStatus||'');
         if(newStatus===oldStatus)return true;
 
+        const requiresFreshDueDate=oldStatus==='Client Review'&&newStatus==='To Do';
+        const selectedDueDate=requiresFreshDueDate?await requestReturnToDoDueDate(job):'';
+        if(requiresFreshDueDate&&!selectedDueDate)return false;
+
         const snapshot={
-          status:job.status,dueDate:job.dueDate,due:job.due,dueAt:job.dueAt,
+          status:job.status,dueDate:job.dueDate,due:job.due,dueAt:job.dueAt,dueDateSource:job.dueDateSource,
           dateReceived:job.dateReceived,workloadScore:job.workloadScore,
           followUpDate:job.followUpDate,completedAt:job.completedAt,archived:job.archived
         };
@@ -4279,6 +4304,7 @@
         // Move the card immediately; restore this snapshot if persistence fails.
         job.status=newStatus;
         job.followUpDate=newFollowUp;
+        if(requiresFreshDueDate){job.dueDate=selectedDueDate;job.due=selectedDueDate;job.dueAt='';job.dueDateSource='Manual Override'}
         job.archived=false;
         if(newStatus==='To Be Invoiced')job.workloadScore=1;
         if(newStatus==='Completed')job.completedAt=job.completedAt||clientTimestamp;
@@ -4287,6 +4313,7 @@
         if(jobDetailsTicket&&String(jobDetailsTicket)===String(ticket))renderJobDetailsModal();
 
         const legacyPayload={action:'updateJob',ticketNumber:ticket,status:newStatus,followUpDate:newFollowUp};
+        if(requiresFreshDueDate)legacyPayload.dueDate=selectedDueDate;
         if(newStatus==='To Do'&&moveScore)legacyPayload.workloadScore=moveScore;
         if(newStatus==='To Be Invoiced')legacyPayload.workloadScore=1;
 
@@ -4304,6 +4331,7 @@
             dueDate:snapshot.dueDate,
             due:snapshot.due,
             dueAt:snapshot.dueAt,
+            dueDateSource:snapshot.dueDateSource,
             dateReceived:snapshot.dateReceived,
             workloadScore:snapshot.workloadScore,
             followUpDate:snapshot.followUpDate,
@@ -4317,13 +4345,14 @@
             oldStatus,
             newStatus,
             followUpDate:newFollowUp,
+            dueDate:requiresFreshDueDate?selectedDueDate:undefined,
             workloadScore:newStatus==='To Do'?moveScore:(newStatus==='To Be Invoiced'?1:undefined),
             clientTimestamp
           },legacyPayload);
           if(!data.success)throw new Error(data.error||'Unable to update job');
 
           const saved=data.job||data;
-          const savedDue=saved.dueDate||job.due||job.dueDate||'';
+          const savedDue=saved.dueDate||selectedDueDate||job.due||job.dueDate||'';
           job.status=saved.status||newStatus;
           job.dueDate=savedDue;job.due=savedDue;
           if(saved.dueAt!==undefined)job.dueAt=saved.dueAt;
@@ -5805,6 +5834,10 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.addEventListener('click',e=>{if(!e.target.closest('#job-priority-app .job-details-due-wrap'))closeJobDetailsDuePopovers()});
       document.addEventListener('keydown',e=>{if(e.key==='Escape')closeJobDetailsDuePopovers()});
       document.getElementById('cancelDueDateBtn').addEventListener('click',()=>{dueDateEditTicket='';document.getElementById('dueDateModalBackdrop').classList.remove('open')});
+      document.getElementById('returnToDoDueTodayBtn').addEventListener('click',()=>{document.getElementById('returnToDoDueDateInput').value=todayISO()});
+      document.getElementById('returnToDoDueTomorrowBtn').addEventListener('click',()=>{document.getElementById('returnToDoDueDateInput').value=iso(addWorkdays(today(),1))});
+      document.getElementById('confirmReturnToDoDueDateBtn').addEventListener('click',()=>{const value=document.getElementById('returnToDoDueDateInput').value;if(!value){alert('Choose a due date to continue.');return}finishReturnToDoDueDate(value)});
+      document.getElementById('cancelReturnToDoDueDateBtn').addEventListener('click',()=>finishReturnToDoDueDate(null));
       document.getElementById('cancelJobTitleBtn').addEventListener('click',()=>{
         jobTitleEditTicket='';
         document.getElementById('jobTitleModalBackdrop').classList.remove('open');
