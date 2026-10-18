@@ -1270,6 +1270,41 @@
       #job-priority-app .kpi-strip,#job-priority-app .board-column{min-height:0;max-height:100%;height:max-content;align-self:start}
       #job-priority-app .board-column-list,#job-priority-app .board-column #todoList,#job-priority-app .board-column #queue{overflow-y:auto;max-height:calc(100dvh - 150px)}
     }
+
+    /* Trello-inspired board contrast */
+    #job-priority-app .board-shell{
+      grid-template-columns:repeat(6,372px);
+      gap:14px;
+    }
+    #job-priority-app .board-column{
+      background:light-dark(#e9eae7,#171915);
+      border:0;
+      padding:12px 12px 10px;
+      border-radius:14px;
+    }
+    #job-priority-app .board-column .card{
+      background:light-dark(#ffffff,#292a2c);
+      border:0;
+      border-radius:10px;
+      padding:11px 12px;
+      margin-bottom:8px;
+      box-shadow:0 1px 2px rgba(0,0,0,.08);
+    }
+    #job-priority-app .board-column .card:last-child{margin-bottom:0}
+    #job-priority-app .board-column .copy-title-btn,
+    #job-priority-app .board-column .create-folder-btn{
+      flex:0 0 22px;
+      width:22px;
+      min-width:22px;
+      min-height:22px;
+    }
+    @media(max-width:1150px){
+      #job-priority-app .board-shell{grid-template-columns:repeat(6,372px)}
+    }
+    @media(max-width:700px){
+      #job-priority-app .board-shell{grid-template-columns:repeat(6,min(86vw,372px))}
+    }
+
 </style>
   <div class="wrap">
     <div class="top compact-top">
