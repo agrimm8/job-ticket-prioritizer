@@ -593,8 +593,6 @@
     #job-priority-app .email-recent-actions{display:flex;flex-wrap:nowrap;gap:7px;align-items:center;margin-top:10px}
     #job-priority-app .email-source-link{font-weight:700}
     #job-priority-app .email-source-expired{font-size:10px;opacity:.62}
-    #job-priority-app .email-source-reminder{margin:0 0 12px;padding:9px 10px;border:1px solid light-dark(#cdd9e7,#465467);border-radius:8px;background:light-dark(#f3f7fb,#222b34);font-size:11px;line-height:1.4}
-    #job-priority-app .email-source-reminder a{font-weight:800;color:#2f67b2;text-decoration:underline}
     #job-priority-app .email-draft-panel{margin-top:2px;padding:11px;border-radius:10px;border:1px solid light-dark(#cfded5,#375243);background:light-dark(#f4faf6,#1c2a21)}
     #job-priority-app .email-draft-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:9px}
     #job-priority-app .email-draft-title{font-size:11px;font-weight:800}
@@ -1614,7 +1612,6 @@
     <div class="timer-modal-backdrop" id="punchInModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="punchInModalTitle">
       <div class="timer-modal">
         <h3 id="punchInModalTitle">Punch In</h3>
-        <div class="email-source-reminder" id="punchInEmailSourceReminder" style="display:none"></div>
         <label for="punchInWorkType">Work Type</label>
         <select id="punchInWorkType"></select>
         <div id="punchInWorkSetWrap" style="display:none;margin-top:12px">
@@ -2972,7 +2969,7 @@
         const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;if(activeWorkSession&&activeWorkSession.sessionId){alert(`Ticket ${activeWorkSession.ticketNumber} already has an active punch. Punch out of that session before starting another job.`);return}
         pendingPunchPreset=null;document.getElementById('punchInModalBackdrop').classList.remove('punch-in-targeted');
         const pendingIntake=pendingChangeOrderIntakeForJob(job);const pendingNotes=pendingIntake?(combinedChangeOrderNotes(pendingIntake)||String(job.pendingChangeOrderNotes||'').trim()):String(job.pendingChangeOrderNotes||'').trim();
-        pendingPunchTimerKey=key;document.getElementById('punchInModalTitle').textContent=job.title||job.displayTitle||'Punch In';updatePunchInEmailSourceReminder(job);document.getElementById('punchInWorkDescription').readOnly=false;document.getElementById('punchInWorkDescription').value=pendingNotes;populatePunchInChoices(job);document.getElementById('punchInWorkType').value=(pendingIntake||pendingNotes)?'New Change Order':'';document.getElementById('punchInWorkSet').value='';document.getElementById('punchInWorkloadScore').value='';updatePunchInFields();document.getElementById('punchInModalBackdrop').classList.add('open');
+        pendingPunchTimerKey=key;document.getElementById('punchInModalTitle').textContent=job.title||job.displayTitle||'Punch In';document.getElementById('punchInWorkDescription').readOnly=false;document.getElementById('punchInWorkDescription').value=pendingNotes;populatePunchInChoices(job);document.getElementById('punchInWorkType').value=(pendingIntake||pendingNotes)?'New Change Order':'';document.getElementById('punchInWorkSet').value='';document.getElementById('punchInWorkloadScore').value='';updatePunchInFields();document.getElementById('punchInModalBackdrop').classList.add('open');
       }
       function openJobDetailsPunchIn(job,kind,number=0){
         if(!job)return;const key=timerKeyFor(job);const ticket=Number(job.ticketNumber||0);let set=null;let workType='';let workSetId='';let description='';let label='Initial Request';
@@ -2990,7 +2987,7 @@
         if(activeWorkSession&&activeWorkSession.sessionId){alert(`Ticket ${activeWorkSession.ticketNumber} already has an active punch. Punch out of that session before starting another section.`);return}
         pendingPunchPreset={kind,number:Number(number||0),workType,workSetId,label};pendingPunchTimerKey=key;
         const backdrop=document.getElementById('punchInModalBackdrop');backdrop.classList.add('punch-in-targeted');
-        document.getElementById('punchInModalTitle').textContent=`Punch In — ${label}`;updatePunchInEmailSourceReminder(job);populatePunchInChoices(job);
+        document.getElementById('punchInModalTitle').textContent=`Punch In — ${label}`;populatePunchInChoices(job);
         const type=document.getElementById('punchInWorkType');const setSelect=document.getElementById('punchInWorkSet');const area=document.getElementById('punchInWorkDescription');
         type.value=workType;setSelect.value=workSetId;area.readOnly=false;area.value=description;updatePunchInFields();
         if(workType==='Continuing Initial Draft'||workType==='Continuing Change Order')area.readOnly=true;
@@ -3868,9 +3865,10 @@
         const orphan=orphanSessionForTicket(ticket);if(orphan&&((kind==='initial'&&(!set||String(orphan.workSetId||'')===String(set.workSetId||'')))||(kind==='change-order'&&set&&String(orphan.workSetId||'')===String(set.workSetId||''))))html+=`<div class="orphan-punch-banner show job-details-orphan"><span>⚠ This section has an unresolved open punch.</span><button type="button" data-job-details-fix-orphan="${escapeHtml(orphan.sessionId)}">Fix Punch</button></div>`;
         html+=jobDetailsTimeMarkup(set,ticket,title);
         const requestReference=notes?`<div class="job-details-request-reference"><div class="job-details-source-body">${escapeHtml(notes)}</div></div>`:'';
-        const sourceMarkup=sources.length?`<div class="job-details-source-list">${sources.map((source,index)=>jobDetailsSourceMarkup(source,index,sources.length,!isCurrent)).join('')}</div>`:'<div class="job-details-source-meta">No forwarded email is attached to this request.</div>';
+        const sourceNote=sources.length?`<div class="job-details-source-meta" style="margin-bottom:8px">✉ This ${kind==='change-order'?'Change Order':'Initial Request'} came from email.</div>`:'';
+        const sourceMarkup=sources.length?`${sourceNote}<div class="job-details-source-list">${sources.map((source,index)=>jobDetailsSourceMarkup(source,index,sources.length,!isCurrent)).join('')}</div>`:'';
         const leftLabel=sources.length?'Emailed Notes / Request':'Notes / Request';
-        const leftContent=sources.length?`${requestReference}${sourceMarkup}`:(notes?requestReference:sourceMarkup);
+        const leftContent=sources.length?`${requestReference}${sourceMarkup}`:(requestReference||'<div class="job-details-source-meta">No notes or emails attached yet.</div>');
         const actionPanel=editable?`<div class="job-details-work-panel job-details-action-panel"><div class="job-details-notes-wrap"><div class="job-details-notes-head"><div class="job-details-notes-label">Action Items</div><div class="job-details-action-tools"><button class="secondary" type="button" data-job-details-add-checkbox="${escapeHtml(key)}">+ Checkbox</button><button class="primary job-details-save-btn" type="button" data-job-details-save-actions="${escapeHtml(key)}" data-initial-value="${escapeHtml(actionItems)}" disabled>Save</button></div></div>${actionItemsEditorMarkup(key,actionItems)}</div></div>`:(parseActionItemsValue(actionItems).checks.length?`<div class="job-details-work-panel job-details-action-panel"><div class="job-details-notes-wrap"><div class="job-details-notes-label">Action Items</div>${actionItemsEditorMarkup(key,actionItems)}</div></div>`:'');
         html+=`<div class="job-details-work-grid">${actionPanel}<div class="job-details-work-panel job-details-request-panel"><div class="job-details-notes-wrap"><div class="job-details-notes-label">${leftLabel}</div>${leftContent}</div></div></div>`;
         html+='</section>';return html;
@@ -5253,12 +5251,6 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const source=emailSourceForJob(job);if(!source)return '';
         if(emailSourceIsAvailable(source))return ` <span class="muted">·</span> <a class="client-notes-link email-source-link" href="${escapeHtml(source.gmailPermalink)}" target="_blank" rel="noopener noreferrer">✉ View Source Email</a>`;
         return ` <span class="muted">·</span> <span class="email-source-expired">✉ Source Email Expired</span>`;
-      }
-      function updatePunchInEmailSourceReminder(job){
-        const reminder=document.getElementById('punchInEmailSourceReminder');if(!reminder)return;const source=emailSourceForJob(job);
-        if(!source){reminder.style.display='none';reminder.innerHTML='';return}
-        reminder.style.display='block';
-        reminder.innerHTML=emailSourceIsAvailable(source)?`✉ This job came from email. <a href="${escapeHtml(source.gmailPermalink)}" target="_blank" rel="noopener noreferrer">View Source Email</a> before starting work.`:'✉ This job came from email. <span class="muted">Source Email Expired</span>';
       }
       function matchedEmailClientLabel(item){
         if(!item||!item.matchedPrimaryClientId)return '';
