@@ -3596,13 +3596,14 @@
       }
       function renderJobDetailsMoveMenu(job){
         const menu=document.getElementById('jobDetailsMoveColumnMenu');if(!menu||!job)return;
+        const face=document.getElementById('jobDetailsMoveColumnBtn');if(face)face.textContent=(String(job.status||'Status')+' ▾');
         const statuses=['To Do','Client Review','In Production / Awaiting Vendor','To Be Invoiced','Completed'];
         menu.innerHTML=statuses.map(status=>`<button type="button" data-job-details-move-status="${escapeHtml(status)}"${status===job.status?' disabled':''}>${escapeHtml(status)}${status===job.status?' ✓':''}</button>`).join('');
         menu.querySelectorAll('[data-job-details-move-status]').forEach(btn=>btn.addEventListener('click',async()=>{
           const newStatus=btn.getAttribute('data-job-details-move-status');if(!newStatus||newStatus===job.status)return;
           const proxy=document.createElement('button');proxy.setAttribute('data-move-ticket',String(job.ticketNumber||''));proxy.setAttribute('data-old-status',String(job.status||''));proxy.setAttribute('data-new-status',newStatus);
           const face=document.getElementById('jobDetailsMoveColumnBtn');const oldFace=face?face.innerHTML:'';if(face){face.disabled=true;face.classList.add('is-loading');face.innerHTML=PUNCH_LOADING_ICON+'<span>Updating…</span>'}btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>'+escapeHtml(newStatus)+'</span>';
-          menu.classList.remove('open');try{await changeJobStatusFromMenu(proxy)}finally{if(face&&document.body.contains(face)){face.disabled=false;face.classList.remove('is-loading');face.innerHTML=oldFace}}
+          menu.classList.remove('open');try{await changeJobStatusFromMenu(proxy)}finally{if(face&&document.body.contains(face)){face.disabled=false;face.classList.remove('is-loading');face.textContent=(String(job.status||newStatus||'Status')+' ▾')}}
           if(jobDetailsTicket)renderJobDetailsModal();
         }));
       }
