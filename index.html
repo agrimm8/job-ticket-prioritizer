@@ -2571,7 +2571,7 @@
       async function syncAutoWorkdayState(){if(!backendReady||!autoWorkdayConfig.enabled||autoWorkdaySyncBusy||PREVIEW_MODE)return;autoWorkdaySyncBusy=true;try{const data=await apiPost({action:'syncAutoWorkday'});if(!data.success)return;autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig;workdayPunches=data.workdayPunches||workdayPunches;renderWorkUtilization();maybeShowAutoWorkdayMotivator()}catch(ignore){}finally{autoWorkdaySyncBusy=false}}
       async function openAdminWork(){if(currentWorkdayState()!=='WORKING'){alert('Punch in to your workday before starting Admin Work.');return}if(activeAdminSession){await endActiveAdminSession();return}if(activeWorkSession&&activeWorkSession.sessionId){if(!confirm('A client job is currently running. Stop that job timer and switch to Admin Work?'))return;const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');if(!await pauseTimer(key))return}document.getElementById('adminWorkCategory').value='';document.getElementById('adminWorkDescription').value='';document.getElementById('adminWorkModalBackdrop').classList.add('open')}
       async function startAdminWork(){const category=document.getElementById('adminWorkCategory').value||'General';const description=document.getElementById('adminWorkDescription').value.trim();const btn=document.getElementById('startAdminWorkBtn');const old=btn.innerHTML;btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Starting…</span>';try{const data=await apiPost({action:'beginAdminSession',category,description});if(!data.success)throw new Error(data.error||'Unable to start Admin Work');activeAdminSession=data.session;adminSessions.push(data.session);document.getElementById('adminWorkModalBackdrop').classList.remove('open');renderWorkUtilization()}catch(err){alert('Admin Work could not be started: '+err.message)}finally{btn.disabled=false;btn.classList.remove('is-loading');btn.innerHTML=old}}
-      function renderKpis(){
+      function renderKpis({refreshProductivity=true}={}){
         const currentKey=currentMonthKey();
         const previousKey=previousMonthKey();
 
@@ -2580,7 +2580,7 @@
         document.getElementById('completedKpiCurrent').textContent=String(currentCompleted);
         document.getElementById('completedKpiPrevious').textContent='Last month: '+previousCompleted;
 
-        renderWorkUtilization();
+        if(refreshProductivity)renderWorkUtilization();
 
         const currentOverdue=overdueJobDaysForMonth(currentKey);
         const previousOverdue=overdueJobDaysForMonth(previousKey);
@@ -3117,12 +3117,12 @@
         await ensureSystemIdleDetection();if(!resumeExisting)state.committedSeconds=0;saveTimerSnapshot(key);
         activeTimerInterval=setInterval(()=>{const state=timerState[key];if(!state||!state.running)return;saveTimerSnapshot(key);updateActiveJobBarTimers()},1000);updateActiveJobBarTimers();
       }
-      async function pauseTimer(key){
+      async function pauseTimer(key,{render=true}={}){
         if(pendingPunchKeys.has(key))return false;
         const state=timerState[key];
         if(!state)return false;
         pendingPunchKeys.add(key);
-        renderQueue();
+        if(render)renderQueue();
         const wasRunning=!!state.running;
         try{
           state.running=false;
@@ -3137,8 +3137,7 @@
           return true;
         }finally{
           pendingPunchKeys.delete(key);
-          renderQueue();
-          renderBoard();
+          if(render){renderQueue();renderBoard()}
         }
       }
       function resetBlock(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;const state=ensureTimerState(job);state.remaining=recommendedWorkSeconds(job);state.overtime=0;state.blockStartRemaining=state.remaining;state.blockStartOvertime=0;state.committedSeconds=0;if(state.running)saveTimerSnapshot(key);renderQueue();renderBoard()}
@@ -3405,12 +3404,12 @@
       function clearBoardDropPlaceholder(){if(boardDropPlaceholder&&boardDropPlaceholder.parentNode)boardDropPlaceholder.remove();boardDropPlaceholder=null;document.querySelectorAll('#job-priority-app .drag-over').forEach(el=>el.classList.remove('drag-over'))}
       function boardInsertPlaceholder(container,y){if(!container)return;clearBoardDropPlaceholder();container.classList.add('drag-over');boardDropPlaceholder=document.createElement('div');boardDropPlaceholder.className='board-drop-placeholder';const cards=Array.from(container.querySelectorAll(':scope > [data-board-ticket]')).filter(card=>!boardDragState||String(card.getAttribute('data-board-ticket')||'')!==String(boardDragState.ticket||''));let before=null;for(const card of cards){const rect=card.getBoundingClientRect();if(y<rect.top+rect.height/2){before=card;break}}if(before)container.insertBefore(boardDropPlaceholder,before);else container.appendChild(boardDropPlaceholder)}
       function boardDropIndex(container){if(!container||!boardDropPlaceholder)return boardVisibleTicketOrder(container,boardDragState&&boardDragState.ticket).length;const siblings=Array.from(container.children);const placeholderIndex=siblings.indexOf(boardDropPlaceholder);let count=0;siblings.forEach((el,index)=>{if(index>=placeholderIndex)return;if(el.matches&&el.matches('[data-board-ticket]')&&String(el.getAttribute('data-board-ticket')||'')!==String(boardDragState&&boardDragState.ticket||''))count++});return count}
-      async function finishBoardDrop(targetId,container){if(!boardDragState)return;const ticket=String(boardDragState.ticket||'');const job=jobs.find(item=>String(item.ticketNumber||'')===ticket);if(!ticket||!job){clearBoardDropPlaceholder();return}const targetStatus=boardTargetStatus(targetId);if(!targetStatus){clearBoardDropPlaceholder();return}const dropIndex=targetId==='queue'?0:boardDropIndex(container);const oldState=loadBoardOrderState();const nextState=JSON.parse(JSON.stringify(oldState));boardSavedTargetIds().forEach(id=>{const existing=Array.isArray(nextState[id])?nextState[id].map(String):boardVisibleTicketOrder(document.getElementById(id),ticket);nextState[id]=existing.filter(value=>value!==ticket)});if(boardSavedTargetIds().includes(targetId)){const visible=boardVisibleTicketOrder(container,ticket);visible.splice(Math.max(0,Math.min(dropIndex,visible.length)),0,ticket);nextState[targetId]=visible}saveBoardOrderState(nextState);clearBoardDropPlaceholder();const sameTodoFamily=targetId==='todoList'&&['To Do','In Progress','To Be Invoiced'].includes(String(job.status||''));const needsStatusChange=targetId==='queue'?(!['To Do','In Progress','To Be Invoiced'].includes(String(job.status||''))):(!sameTodoFamily&&String(job.status||'')!==targetStatus);if(needsStatusChange){const proxy=document.createElement('button');proxy.setAttribute('data-move-ticket',ticket);proxy.setAttribute('data-old-status',String(job.status||''));proxy.setAttribute('data-new-status',targetStatus);const ok=await changeJobStatusFromMenu(proxy);if(ok===false){saveBoardOrderState(oldState);renderQueue();renderBoard();return}}else{renderQueue();renderBoard()}if(targetId==='queue')showJobFolderToast('Moved to To Do · WSIWON re-ranked automatically')}
+      async function finishBoardDrop(targetId,container){if(!boardDragState)return;const ticket=String(boardDragState.ticket||'');const job=jobs.find(item=>String(item.ticketNumber||'')===ticket);if(!ticket||!job){clearBoardDropPlaceholder();return}const targetStatus=boardTargetStatus(targetId);if(!targetStatus){clearBoardDropPlaceholder();return}const dropIndex=targetId==='queue'?0:boardDropIndex(container);const oldState=loadBoardOrderState();const nextState=JSON.parse(JSON.stringify(oldState));boardSavedTargetIds().forEach(id=>{const existing=Array.isArray(nextState[id])?nextState[id].map(String):boardVisibleTicketOrder(document.getElementById(id),ticket);nextState[id]=existing.filter(value=>value!==ticket)});if(boardSavedTargetIds().includes(targetId)){const visible=boardVisibleTicketOrder(container,ticket);visible.splice(Math.max(0,Math.min(dropIndex,visible.length)),0,ticket);nextState[targetId]=visible}saveBoardOrderState(nextState);clearBoardDropPlaceholder();const sameTodoFamily=targetId==='todoList'&&['To Do','In Progress','To Be Invoiced'].includes(String(job.status||''));const needsStatusChange=targetId==='queue'?(!['To Do','In Progress','To Be Invoiced'].includes(String(job.status||''))):(!sameTodoFamily&&String(job.status||'')!==targetStatus);if(needsStatusChange){const proxy=document.createElement('button');proxy.setAttribute('data-move-ticket',ticket);proxy.setAttribute('data-old-status',String(job.status||''));proxy.setAttribute('data-new-status',targetStatus);const ok=await changeJobStatusFromMenu(proxy);if(ok===false){saveBoardOrderState(oldState);refreshStatusMoveViews(job.status,job.status);return}}else if(targetId==='queue'){renderQueue()}else{const activeJobs=getWSIWONJobs();renderBoardColumn(targetId,new Set(activeJobs.map(item=>String(item.ticketNumber||''))))}if(targetId==='queue')showJobFolderToast('Moved to To Do · WSIWON re-ranked automatically')}
       function wireBoardDragSource(card,sourceTargetId){if(!card)return;card.draggable=true;card.addEventListener('dragstart',e=>{if(e.target.closest('button,a,input,select,textarea,[role=button],.move-menu')){e.preventDefault();return}const ticket=String(card.getAttribute('data-board-ticket')||'');if(!ticket){e.preventDefault();return}boardDragState={ticket,sourceTargetId:String(sourceTargetId||'')};card.classList.add('board-dragging');if(e.dataTransfer){e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',ticket)}});card.addEventListener('dragend',()=>{card.classList.remove('board-dragging');boardDragJustEndedUntil=Date.now()+350;boardDragState=null;clearBoardDropPlaceholder()})}
       function wireBoardDropTarget(container,targetId){if(!container)return;container.addEventListener('dragover',e=>{if(!boardDragState)return;e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect='move';boardInsertPlaceholder(container,e.clientY)});container.addEventListener('dragleave',e=>{if(!container.contains(e.relatedTarget))clearBoardDropPlaceholder()});container.addEventListener('drop',e=>{if(!boardDragState)return;e.preventDefault();finishBoardDrop(targetId,container).catch(err=>{clearBoardDropPlaceholder();alert('Unable to move card: '+(err&&err.message?err.message:'Unknown error'))})})}
       function wireRenderedBoardDrag(container,targetId,{dropTarget=true}={}){if(!container)return;container.querySelectorAll(':scope > [data-board-ticket]').forEach(card=>wireBoardDragSource(card,targetId));if(dropTarget&&!container.dataset.boardDropWired){container.dataset.boardDropWired='1';wireBoardDropTarget(container,targetId)}}
-      function renderQueue(){
-        const q=document.getElementById('queue'); q.innerHTML=''; const active=getWSIWONJobs(); const todayValue=todayISO();
+      function renderQueue(activeJobs=getWSIWONJobs()){
+        const q=document.getElementById('queue'); q.innerHTML=''; const active=activeJobs; const todayValue=todayISO();
         if(!active.length){document.getElementById('eodMessage').style.display='block';q.innerHTML='<div class="muted">No actionable jobs.</div>';return}
         const dueToday=active.filter(j=>effectiveDueDate(j)===todayValue); const later=active.filter(j=>effectiveDueDate(j)!==todayValue);
         document.getElementById('eodMessage').style.display=dueToday.length?'none':'block';
@@ -4309,7 +4308,7 @@
         if(newStatus==='To Be Invoiced')job.workloadScore=1;
         if(newStatus==='Completed')job.completedAt=job.completedAt||clientTimestamp;
         else if(oldStatus==='Completed')job.completedAt='';
-        renderQueue();renderBoard();
+        refreshStatusMoveViews(oldStatus,newStatus);
         if(jobDetailsTicket&&String(jobDetailsTicket)===String(ticket))renderJobDetailsModal();
 
         const legacyPayload={action:'updateJob',ticketNumber:ticket,status:newStatus,followUpDate:newFollowUp};
@@ -4322,7 +4321,7 @@
             const key=timerKeyFor(job);
             const state=ensureTimerState(job);
             if(state.running||activeTimerKey===key||(activeWorkSession&&activeWorkSession.timerKey===key)){
-              await pauseTimer(key);
+              await pauseTimer(key,{render:false});
             }
           }
 
@@ -4369,12 +4368,12 @@
             state.running=false;state.remaining=0;state.overtime=0;state.blockStartRemaining=0;state.blockStartOvertime=0;state.committedSeconds=0;
             if(activeTimerKey===timerKeyFor(job))activeTimerKey='';
           }
-          renderQueue();renderBoard();
+          refreshStatusMoveViews(oldStatus,newStatus);
           if(jobDetailsTicket&&String(jobDetailsTicket)===String(ticket))renderJobDetailsModal();
           return true;
         }catch(err){
           Object.assign(job,snapshot);
-          renderQueue();renderBoard();
+          refreshStatusMoveViews(oldStatus,newStatus);
           if(jobDetailsTicket&&String(jobDetailsTicket)===String(ticket))renderJobDetailsModal();
           alert(err.message);
           return false;
@@ -4414,6 +4413,33 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         renderCards('productionList',jobs.filter(j=>j.status==='In Production / Awaiting Vendor').sort((a,b)=>{const dateCompare=String(a.followUpDate||'9999-12-31').localeCompare(String(b.followUpDate||'9999-12-31'));if(dateCompare!==0)return dateCompare;return Number(a.ticketNumber||Number.MAX_SAFE_INTEGER)-Number(b.ticketNumber||Number.MAX_SAFE_INTEGER)}));
         const visibleCompleted=jobs.filter(j=>j.status==='Completed'&&j.archived!==true);renderCards('completedList',visibleCompleted);const archiveAllBtn=document.getElementById('archiveAllCompletedBtn');if(archiveAllBtn){archiveAllBtn.disabled=!visibleCompleted.length;archiveAllBtn.title=visibleCompleted.length?`Archive all ${visibleCompleted.length} visible completed job${visibleCompleted.length===1?'':'s'}`:'No completed jobs to archive'}
         if(document.getElementById('jobSearchModalBackdrop')&&document.getElementById('jobSearchModalBackdrop').classList.contains('open'))renderJobSearchResults();
+      }
+      function boardColumnForStatus(status){if(['To Do','In Progress','To Be Invoiced'].includes(String(status||'')))return 'todoList';if(status==='Client Review')return 'clientReviewList';if(status==='In Production / Awaiting Vendor')return 'productionList';if(status==='Completed')return 'completedList';return ''}
+      function renderBoardColumn(targetId,wsiwonTickets){
+        if(targetId==='todoList'){
+          const todo=jobs.filter(j=>(j.status==='To Do'||j.status==='In Progress'||j.status==='To Be Invoiced')&&!wsiwonTickets.has(String(j.ticketNumber||''))).sort((a,b)=>new Date(effectiveDueDate(a)+'T00:00:00Z')-new Date(effectiveDueDate(b)+'T00:00:00Z'));
+          renderTodo(todo);return;
+        }
+        if(targetId==='clientReviewList'){
+          renderCards(targetId,jobs.filter(j=>j.status==='Client Review').sort((a,b)=>{const dateCompare=String(a.followUpDate||'9999-12-31').localeCompare(String(b.followUpDate||'9999-12-31'));if(dateCompare!==0)return dateCompare;return Number(a.ticketNumber||Number.MAX_SAFE_INTEGER)-Number(b.ticketNumber||Number.MAX_SAFE_INTEGER)}));return;
+        }
+        if(targetId==='productionList'){
+          renderCards(targetId,jobs.filter(j=>j.status==='In Production / Awaiting Vendor').sort((a,b)=>{const dateCompare=String(a.followUpDate||'9999-12-31').localeCompare(String(b.followUpDate||'9999-12-31'));if(dateCompare!==0)return dateCompare;return Number(a.ticketNumber||Number.MAX_SAFE_INTEGER)-Number(b.ticketNumber||Number.MAX_SAFE_INTEGER)}));return;
+        }
+        if(targetId==='completedList'){
+          const visibleCompleted=jobs.filter(j=>j.status==='Completed'&&j.archived!==true);renderCards(targetId,visibleCompleted);
+          const archiveAllBtn=document.getElementById('archiveAllCompletedBtn');if(archiveAllBtn){archiveAllBtn.disabled=!visibleCompleted.length;archiveAllBtn.title=visibleCompleted.length?('Archive all '+visibleCompleted.length+' visible completed job'+(visibleCompleted.length===1?'':'s')):'No completed jobs to archive'}
+        }
+      }
+      function refreshStatusMoveViews(oldStatus,newStatus){
+        try{
+          renderKpis({refreshProductivity:false});renderFinancialDashboard();renderOrphanPunchBanner();
+          const activeJobs=getWSIWONJobs();const wsiwonTickets=new Set(activeJobs.map(j=>String(j.ticketNumber||'')));
+          renderQueue(activeJobs);
+          const columns=new Set([boardColumnForStatus(oldStatus),boardColumnForStatus(newStatus)].filter(Boolean));
+          columns.forEach(column=>renderBoardColumn(column,wsiwonTickets));
+          if(document.getElementById('jobSearchModalBackdrop')&&document.getElementById('jobSearchModalBackdrop').classList.contains('open'))renderJobSearchResults();
+        }catch(err){console.warn('Partial status refresh failed; refreshing the full board.',err);renderBoard()}
       }
       function setBackendStatus(ok,text){const label=document.getElementById('backendText');const dots=[document.getElementById('backendDot'),document.getElementById('backendMenuDot')].filter(Boolean);const btn=document.getElementById('appMenuBtn');if(label)label.textContent=ok?'Connected':'Disconnected';if(btn){btn.title=text?String(text):'';btn.setAttribute('aria-label','Job Ticket Prioritizer. '+(ok?'Connected to Google Sheets.':'Disconnected from Google Sheets.'))}dots.forEach(dot=>{const color=ok?'#1f7a4d':'#b42318';dot.style.background=color;dot.style.boxShadow=ok?'0 0 0 3px rgba(31,122,77,.14)':'0 0 0 3px rgba(180,35,24,.14)'})}
       let motivatorCurrentLevel='GO';
