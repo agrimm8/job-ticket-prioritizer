@@ -550,6 +550,7 @@
     #job-priority-app .panel-heading-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
     #job-priority-app .panel-heading-row h2{margin:0}
     #job-priority-app .email-queue-btn{white-space:nowrap}
+    #job-priority-app .email-queue-btn.has-intake{background:#1f7a4d;color:#fff;border-color:#1f7a4d}
     #job-priority-app .email-queue-modal{width:min(820px,calc(100vw - 32px));max-height:88vh;overflow:auto}
     #job-priority-app .email-queue-toolbar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
     #job-priority-app .email-queue-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
@@ -1183,6 +1184,49 @@
     #job-priority-app .job-scheduler-frequency-note{margin-top:9px;font-size:10px;color:var(--muted,#666)}
     @media(max-width:650px){#job-priority-app .job-schedule-card{grid-template-columns:1fr}#job-priority-app .job-schedule-actions{justify-content:flex-start}}
 
+
+    /* Single-row desktop board */
+    #job-priority-app{height:100vh;overflow:hidden;padding:14px 16px 12px}
+    #job-priority-app .wrap{max-width:none;width:100%;height:100%;display:flex;flex-direction:column;min-height:0}
+    #job-priority-app .top{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:nowrap;margin-bottom:9px}
+    #job-priority-app .top-controls{flex:1 1 auto;min-width:0;gap:7px;flex-wrap:nowrap}
+    #job-priority-app .top-right-controls{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex:0 0 auto;min-width:0}
+    #job-priority-app .header-new-job-btn,#job-priority-app .header-intake-btn{min-height:30px;padding:5px 9px;font-size:10px;white-space:nowrap}
+    #job-priority-app .top-right-controls .workday-bar{display:flex;align-items:center;gap:8px;margin:0;padding:0 0 0 8px;border:0;border-left:1px solid light-dark(#d8d8d4,#3d3d3d);border-radius:0;background:transparent;box-shadow:none;white-space:nowrap}
+    #job-priority-app .top-right-controls .workday-bar.workday-unassigned,#job-priority-app .top-right-controls .workday-bar.workday-admin,#job-priority-app .top-right-controls .workday-bar.workday-client,#job-priority-app .top-right-controls .workday-bar.workday-lunch{background:transparent;border-top:0;border-right:0;border-bottom:0}
+    #job-priority-app .top-right-controls .workday-status{font-size:10px;margin:0}
+    #job-priority-app .top-right-controls .workday-meta{display:none}
+    #job-priority-app .top-right-controls .workday-status-line{align-items:center;gap:6px}
+    #job-priority-app .top-right-controls .workday-status-line .workday-dot{margin-top:0;width:8px;height:8px}
+    #job-priority-app .top-right-controls .workday-actions{gap:5px;flex-wrap:nowrap}
+    #job-priority-app .top-right-controls .workday-actions button{min-height:30px;padding:5px 8px;font-size:9px;white-space:nowrap}
+    #job-priority-app .orphan-punch-banner,#job-priority-app .active-job-bar{flex:0 0 auto;margin-bottom:8px}
+    #job-priority-app .board-shell{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(155px,.78fr) minmax(185px,1fr) minmax(215px,1.15fr) minmax(185px,1fr) minmax(185px,1fr) minmax(185px,1fr);gap:9px;align-items:stretch;overflow-x:auto;overflow-y:hidden;padding-bottom:2px}
+    #job-priority-app .kpi-strip{grid-column:auto;display:flex;flex-direction:column;gap:9px;min-width:0;min-height:0;overflow-y:auto;padding-right:2px}
+    #job-priority-app .kpi-strip .utilization-kpi-card{order:1}
+    #job-priority-app .kpi-strip .completed-kpi-card{order:2}
+    #job-priority-app .kpi-strip .overdue-kpi-card{order:3}
+    #job-priority-app .kpi-strip .kpi-card{padding:10px 11px;border-radius:11px}
+    #job-priority-app .kpi-strip .kpi-value{font-size:21px}
+    #job-priority-app .kpi-strip .utilization-forecast-table{font-size:7.5px}
+    #job-priority-app .board-column{grid-column:auto!important;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:10px 10px 8px;border-radius:11px}
+    #job-priority-app .board-column h2{flex:0 0 auto;font-size:13px;margin:0 0 7px;line-height:1.15}
+    #job-priority-app .board-column-subtitle{flex:0 0 auto;margin:-4px 0 7px;font-size:8px;font-weight:750;opacity:.58;line-height:1.25}
+    #job-priority-app .board-column-list,#job-priority-app .board-column #todoList,#job-priority-app .board-column #queue{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding-right:3px;scrollbar-gutter:stable}
+    #job-priority-app .board-column .queue-item{padding:8px 0;grid-template-columns:27px minmax(0,1fr);gap:6px}
+    #job-priority-app .board-column .card{padding:9px 0}
+    #job-priority-app .board-column .card-title,#job-priority-app .board-column .qtitle{font-size:11px;line-height:1.3}
+    #job-priority-app .board-column .card-meta{font-size:8.5px;line-height:1.3}
+    #job-priority-app .board-column .wsiwon-stats{grid-template-columns:1fr 1fr;gap:5px}
+    #job-priority-app .board-column .wsiwon-stat{padding:5px 6px}
+    #job-priority-app .completed-board-column .completed-panel-head{flex:0 0 auto;gap:5px;align-items:flex-start}
+    #job-priority-app .completed-board-column .archive-all-btn{min-height:24px;padding:3px 6px;font-size:8px}
+    #job-priority-app .new-job-modal-panel{width:min(560px,calc(100vw - 32px));max-height:88vh;overflow:auto;margin:auto;padding:16px}
+    #job-priority-app #newJobModalBackdrop{align-items:center;justify-content:center}
+    #job-priority-app #newJobModalBackdrop.open{display:flex}
+    @media(max-width:1150px){#job-priority-app .top{align-items:flex-start;flex-wrap:wrap}#job-priority-app .top-controls{flex-wrap:wrap}#job-priority-app .top-right-controls{width:100%;justify-content:flex-end}#job-priority-app .board-shell{grid-template-columns:minmax(155px,.78fr) repeat(5,minmax(175px,1fr))}}
+    @media(max-width:700px){#job-priority-app{height:auto;min-height:100vh;overflow:auto;padding:12px}#job-priority-app .wrap{height:auto}#job-priority-app .top-right-controls{justify-content:flex-start;flex-wrap:wrap}#job-priority-app .top-right-controls .workday-bar{width:100%;border-left:0;padding-left:0;justify-content:space-between}#job-priority-app .board-shell{display:grid;grid-template-columns:1fr;overflow:visible}#job-priority-app .kpi-strip,#job-priority-app .board-column{overflow:visible;min-height:auto}#job-priority-app .board-column-list,#job-priority-app .board-column #todoList,#job-priority-app .board-column #queue{overflow:visible;max-height:none}}
+
 </style>
   <div class="wrap">
     <div class="top compact-top">
@@ -1248,22 +1292,26 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <div class="workday-bar" id="workdayBar" role="status" aria-live="polite">
-      <div class="workday-main">
-        <div class="workday-copy">
-          <div class="workday-status-line"><span class="workday-dot" aria-hidden="true"></span><div><div class="workday-status" id="workdayStatusText">Not Punched In</div><div class="workday-meta" id="workdayMetaText">Punch in when your workday begins.</div></div></div>
+      <div class="top-right-controls">
+        <button class="secondary header-new-job-btn" id="openNewJobBtn" type="button">New Job</button>
+        <button class="secondary email-queue-btn header-intake-btn" id="emailQueueBtn" type="button">Job Intake (0)</button>
+        <div class="workday-bar" id="workdayBar" role="status" aria-live="polite">
+          <div class="workday-main">
+            <div class="workday-copy">
+              <div class="workday-status-line"><span class="workday-dot" aria-hidden="true"></span><div><div class="workday-status" id="workdayStatusText">Not Punched In</div><div class="workday-meta" id="workdayMetaText">Punch in when your workday begins.</div></div></div>
+            </div>
+          </div>
+          <div class="workday-actions">
+            <button class="primary" id="workdayPunchInBtn" type="button">Punch In</button>
+            <button class="secondary" id="adminWorkBtn" type="button" style="display:none">Admin Work</button>
+            <button class="secondary" id="lunchOutBtn" type="button" style="display:none">Lunch Out</button>
+            <button class="primary" id="lunchInBtn" type="button" style="display:none">Lunch In</button>
+            <button class="secondary" id="workdayPunchOutBtn" type="button" style="display:none">Punch Out</button>
+          </div>
         </div>
       </div>
-      <div class="workday-actions">
-        <button class="primary" id="workdayPunchInBtn" type="button">Punch In</button>
-        <button class="secondary" id="adminWorkBtn" type="button" style="display:none">Admin Work</button>
-        <button class="secondary" id="lunchOutBtn" type="button" style="display:none">Lunch Out</button>
-        <button class="primary" id="lunchInBtn" type="button" style="display:none">Lunch In</button>
-        <button class="secondary" id="workdayPunchOutBtn" type="button" style="display:none">Punch Out</button>
-      </div>
     </div>
+
 
     <div class="orphan-punch-banner" id="orphanPunchBanner" role="alert">
       <span id="orphanPunchBannerText">⚠ Unresolved punch found.</span>
@@ -1358,32 +1406,9 @@
       <button class="notification-tray-collapsed" id="notificationTrayCollapsedBtn" type="button" aria-label="Expand alerts"><span aria-hidden="true">⚠</span><span id="notificationTrayCollapsedText">1 Alert</span></button>
     </div>
 
-    <div class="grid">
-      <div class="kpi-strip" id="kpiStrip">
-        <div class="kpi-card">
-          <div class="kpi-label">Jobs Completed</div>
-          <div><span class="kpi-value" id="completedKpiCurrent">—</span><span class="kpi-unit">this month</span></div>
-          <div class="kpi-comparison" id="completedKpiPrevious">Last month: —</div>
-          <div class="completed-kpi-bottom"><a class="kpi-link" id="viewCompletedJobsBtn">View Completed Jobs</a><div class="financial-dashboard compact-financial-dashboard"><div class="financial-dashboard-item"><span class="financial-dashboard-label" id="monthlyNetProfitLabel">Net Profit</span><span class="financial-dashboard-value zero" id="monthlyNetProfitValue">$0.00</span></div><div class="financial-dashboard-item"><span class="financial-dashboard-label">Potential</span><span class="financial-dashboard-value zero" id="potentialProjectProfitValue">$0.00</span></div></div></div>
-        </div>
-        <div class="kpi-card utilization-kpi-card" id="workUtilizationKpiBtn" role="button" tabindex="0" aria-label="Open today's productivity details">
-          <div class="kpi-label">Work Utilization</div>
-          <div><span class="kpi-value" id="workUtilizationCurrent">—</span><span class="kpi-unit">productive</span></div>
-          <div class="utilization-bar" id="workUtilizationTimeline" aria-label="Today's work timeline"></div><div class="timeline-axis" id="workUtilizationTimelineAxis"></div>
-          <div class="utilization-summary" id="workUtilizationSummary">Punch in to begin tracking today's productivity.</div>
-          <div class="utilization-current" id="workUtilizationCurrentState"></div>
-          <div class="utilization-forecast" id="workUtilizationForecast"></div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Overdue Job-Days</div>
-          <div><span class="kpi-value" id="overdueKpiCurrent">—</span><span class="kpi-unit">days this month</span></div>
-          <div class="kpi-comparison" id="overdueKpiPrevious">Last month: —</div>
-          <div class="kpi-note">Counts each working day a job remains overdue. Weekends and To Be Invoiced time are excluded.</div>
-        </div>
-      </div>
-
-      <section class="panel new-job-panel">
-        <div class="panel-heading-row"><h2>New Job</h2><button class="secondary email-queue-btn" id="emailQueueBtn" type="button">Job Intake (0)</button></div>
+        <div class="timer-modal-backdrop" id="newJobModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="newJobModalTitle">
+      <section class="panel new-job-panel new-job-modal-panel">
+        <div class="panel-heading-row"><h2 id="newJobModalTitle">New Job</h2><button class="job-search-close" id="closeNewJobBtn" type="button" aria-label="Close New Job" title="Close">×</button></div>
         <form id="jobForm">
           <div class="form-grid">
             <div class="full"><label for="primaryClient">Primary Client</label><select id="primaryClient"></select><div class="client-modal" id="clientModal"><div class="form-grid"><div><label for="newClientName">New Client Name</label><input id="newClientName" placeholder="e.g. Sari Ward"></div><div><label for="newClientId">3-Letter Client ID</label><input id="newClientId" maxlength="3" placeholder="e.g. SWD"><div id="clientIdAlert" class="meta" style="display:none;color:#b42318;font-weight:700"></div></div><div class="full"><label for="newClientType">Client Setup</label><select id="newClientType"><option value="Primary Only">Primary Client Only</option><option value="Has Secondary Clients">Has Secondary Clients</option></select></div></div><div class="actions"><button class="primary" id="saveClientBtn" type="button">Save Client</button><button class="secondary" id="cancelClientBtn" type="button">Cancel</button></div></div></div>
@@ -1408,21 +1433,47 @@
           <div class="actions"><button class="primary" type="submit">Create Job</button><button class="secondary" type="button" id="clearBtn">Clear</button></div>
         </form>
       </section>
+    </div>
 
-      <section class="panel todo-panel">
+<div class="board-shell" id="mainBoard">
+      <div class="kpi-strip" id="kpiStrip">
+        <div class="kpi-card completed-kpi-card">
+          <div class="kpi-label">Jobs Completed</div>
+          <div><span class="kpi-value" id="completedKpiCurrent">—</span><span class="kpi-unit">this month</span></div>
+          <div class="kpi-comparison" id="completedKpiPrevious">Last month: —</div>
+          <div class="completed-kpi-bottom"><a class="kpi-link" id="viewCompletedJobsBtn">View Completed Jobs</a><div class="financial-dashboard compact-financial-dashboard"><div class="financial-dashboard-item"><span class="financial-dashboard-label" id="monthlyNetProfitLabel">Net Profit</span><span class="financial-dashboard-value zero" id="monthlyNetProfitValue">$0.00</span></div><div class="financial-dashboard-item"><span class="financial-dashboard-label">Potential</span><span class="financial-dashboard-value zero" id="potentialProjectProfitValue">$0.00</span></div></div></div>
+        </div>
+        <div class="kpi-card utilization-kpi-card" id="workUtilizationKpiBtn" role="button" tabindex="0" aria-label="Open today's productivity details">
+          <div class="kpi-label">Work Utilization</div>
+          <div><span class="kpi-value" id="workUtilizationCurrent">—</span><span class="kpi-unit">productive</span></div>
+          <div class="utilization-bar" id="workUtilizationTimeline" aria-label="Today's work timeline"></div><div class="timeline-axis" id="workUtilizationTimelineAxis"></div>
+          <div class="utilization-summary" id="workUtilizationSummary">Punch in to begin tracking today's productivity.</div>
+          <div class="utilization-current" id="workUtilizationCurrentState"></div>
+          <div class="utilization-forecast" id="workUtilizationForecast"></div>
+        </div>
+        <div class="kpi-card overdue-kpi-card">
+          <div class="kpi-label">Overdue Job-Days</div>
+          <div><span class="kpi-value" id="overdueKpiCurrent">—</span><span class="kpi-unit">days this month</span></div>
+          <div class="kpi-comparison" id="overdueKpiPrevious">Last month: —</div>
+          <div class="kpi-note">Counts each working day a job remains overdue. Weekends and To Be Invoiced time are excluded.</div>
+        </div>
+      </div>
+
+
+      <section class="panel board-column todo-panel">
         <h2>To Do</h2>
-        <div id="todoList"></div>
+        <div id="todoList" class="board-column-list"></div>
       </section>
 
-      <section class="panel wsiwon-panel">
-        <h2>What Should I Work On Next?</h2>
+      <section class="panel board-column wsiwon-panel">
+        <h2>WSIWON</h2><div class="board-column-subtitle">What Should I Work On Next?</div>
         <div id="eodMessage" class="eod-message" style="display:none">End of Day Jobs Complete</div>
-        <div id="queue"></div>
+        <div id="queue" class="board-column-list"></div>
       </section>
 
-      <section class="panel"><h2>Client Review</h2><div id="clientReviewList"></div></section>
-      <section class="panel"><h2>In Production / Awaiting Vendor</h2><div id="productionList"></div></section>
-      <section class="panel"><div class="completed-panel-head"><h2>Completed</h2><button class="archive-all-btn" id="archiveAllCompletedBtn" type="button">Archive All</button></div><div id="completedList"></div></section>
+      <section class="panel board-column"><h2>Client Review</h2><div id="clientReviewList" class="board-column-list"></div></section>
+      <section class="panel board-column"><h2>In Production</h2><div class="board-column-subtitle">Awaiting Vendor</div><div id="productionList" class="board-column-list"></div></section>
+      <section class="panel board-column completed-board-column"><div class="completed-panel-head"><h2>Completed</h2><button class="archive-all-btn" id="archiveAllCompletedBtn" type="button">Archive All</button></div><div id="completedList" class="board-column-list"></div></section>
     </div>
     <div class="timer-modal-backdrop motivator-backdrop" id="motivatorModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="motivatorModalTitle">
       <div class="timer-modal motivator-modal">
@@ -2976,7 +3027,7 @@
       function resetBlock(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;const state=ensureTimerState(job);state.remaining=recommendedWorkSeconds(job);state.overtime=0;state.blockStartRemaining=state.remaining;state.blockStartOvertime=0;state.committedSeconds=0;if(state.running)saveTimerSnapshot(key);renderQueue();renderBoard()}
       function showTimerComplete(key){const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return;completedTimerKey=key;completedTimerEndedAt=Date.now();renderNotificationTray()}
       function getWSIWONJobs(){
-        return jobs.filter(j=>!['Client Review','In Production / Awaiting Vendor','Completed'].includes(j.status)&&j.archived!==true).sort((a,b)=>{
+        return jobs.filter(j=>!['Client Review','In Production / Awaiting Vendor','To Be Invoiced','Completed'].includes(j.status)&&j.archived!==true).sort((a,b)=>{
           const ad=new Date(rawDueAt(a)||'9999-12-31T23:59:00').getTime();const bd=new Date(rawDueAt(b)||'9999-12-31T23:59:00').getTime();if(ad!==bd)return ad-bd;
           const ar=new Date(dateReceivedForJob(a)||'9999-12-31T23:59:00').getTime();const br=new Date(dateReceivedForJob(b)||'9999-12-31T23:59:00').getTime();if(ar!==br)return ar-br;
           const aw=workloadScoreForJob(a)||99,bw=workloadScoreForJob(b)||99;if(aw!==bw)return aw-bw;
@@ -4933,7 +4984,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         if(item.matchedSecondaryClientId){const sub=subclients.find(s=>s.parentClientId===item.matchedPrimaryClientId&&s.id===item.matchedSecondaryClientId);return sub?sub.name+' ('+sub.id+')':item.matchedSecondaryClientId}
         const client=clients.find(c=>c.id===item.matchedPrimaryClientId);return client?client.name+' ('+client.id+')':item.matchedPrimaryClientId;
       }
-      function renderEmailQueueBadge(){const btn=document.getElementById('emailQueueBtn');if(btn)btn.textContent=`Job Intake (${emailQueue.length+scheduledIntake.length})`}
+      function renderEmailQueueBadge(){const btn=document.getElementById('emailQueueBtn');if(btn){const count=emailQueue.length+scheduledIntake.length;btn.textContent=`Job Intake (${count})`;btn.classList.toggle('has-intake',count>0)}}
       function recentEmailSourceIsVisible(source){if(!emailSourceIsAvailable(source))return false;if(!source.processedAt)return true;const processed=new Date(source.processedAt).getTime();return !Number.isFinite(processed)||(Date.now()-processed)<(2*24*60*60*1000)}
       function emailAttachmentMarkup(item,context='queue'){
         const attachments=Array.isArray(item&&item.attachments)?item.attachments:[];if(!attachments.length)return '';
@@ -4970,7 +5021,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         clearEmailDraftState();scheduledDraftIntakeId=String(intakeId);document.getElementById('jobForm').reset();populateClients();syncNextId();
         if(item.primaryClientId&&clients.some(c=>String(c.id)===String(item.primaryClientId))){document.getElementById('primaryClient').value=item.primaryClientId;updateSecondaryVisibility();updateSubs();if(item.secondaryClientId&&subclients.some(s=>String(s.parentClientId)===String(item.primaryClientId)&&String(s.id)===String(item.secondaryClientId)))document.getElementById('secondaryClient').value=item.secondaryClientId}
         document.getElementById('description').value=item.defaultTitle||'';document.getElementById('workloadScore').value=String(item.workloadScore||'');document.getElementById('status').value='To Do';document.getElementById('dueOverrideCheck').checked=false;document.getElementById('dueOverrideDate').value='';syncDueOverrideUI();
-        document.getElementById('scheduledDraftMeta').textContent=`${schedulerClientLabel(item.primaryClientId,item.secondaryClientId)} · ${formatScheduledFor(item.scheduledFor)} · WLS ${Number(item.workloadScore||0)}`;document.getElementById('scheduledDraftPanel').style.display='block';updatePreview();document.getElementById('emailQueueModalBackdrop').classList.remove('open');document.querySelector('.new-job-panel').scrollIntoView({behavior:'smooth',block:'start'})
+        document.getElementById('scheduledDraftMeta').textContent=`${schedulerClientLabel(item.primaryClientId,item.secondaryClientId)} · ${formatScheduledFor(item.scheduledFor)} · WLS ${Number(item.workloadScore||0)}`;document.getElementById('scheduledDraftPanel').style.display='block';updatePreview();document.getElementById('emailQueueModalBackdrop').classList.remove('open');document.getElementById('newJobModalBackdrop').classList.add('open')
       }
       async function skipScheduledIntake(intakeId){
         if(!confirm('Skip this scheduled occurrence? The recurring schedule will remain active.'))return;
@@ -5045,7 +5096,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         document.getElementById('description').value=item.cleanSubject||item.subject||'';document.getElementById('workloadScore').value='';document.getElementById('status').value='To Do';document.getElementById('dueOverrideCheck').checked=false;document.getElementById('dueOverrideDate').value='';syncDueOverrideUI();document.getElementById('emailDraftJobNotes').value=String(item.body||'');
         const sender=[item.originalSenderName,item.originalSenderEmail].filter(Boolean).join(item.originalSenderName&&item.originalSenderEmail?' · ':'');document.getElementById('emailDraftMeta').textContent=`${sender||'Unknown sender'}${item.receivedAt?' · '+item.receivedAt:''}`;
         const panel=document.getElementById('emailDraftPanel');panel.style.display='block';const attachments=document.getElementById('emailDraftAttachments');attachments.innerHTML=emailAttachmentMarkup(item,'draft');attachEmailDownloadHandlers(attachments);updatePreview();
-        document.getElementById('emailQueueModalBackdrop').classList.remove('open');document.querySelector('.new-job-panel').scrollIntoView({behavior:'smooth',block:'start'});
+        document.getElementById('emailQueueModalBackdrop').classList.remove('open');document.getElementById('newJobModalBackdrop').classList.add('open');
       }
       async function dismissEmailQueueItem(queueId){
         if(!confirm('Dismiss this email request? It will leave the ticket queue and its source email will be scheduled for deletion in 7 days.'))return;
@@ -5195,7 +5246,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('saveJobScheduleBtn').addEventListener('click',saveJobSchedule);
       document.getElementById('jobSchedulePrimaryClient').addEventListener('change',()=>populateJobSchedulerClients(document.getElementById('jobSchedulePrimaryClient').value,''));
       document.getElementById('jobScheduleFrequency').addEventListener('change',updateJobSchedulerFrequencyNote);
-      document.getElementById('backToJobIntakeBtn').addEventListener('click',()=>{clearScheduledDraftState();renderEmailQueue();document.getElementById('emailQueueModalBackdrop').classList.add('open')});
+      document.getElementById('backToJobIntakeBtn').addEventListener('click',()=>{clearScheduledDraftState();document.getElementById('newJobModalBackdrop').classList.remove('open');renderEmailQueue();document.getElementById('emailQueueModalBackdrop').classList.add('open')});
       document.getElementById('primaryClient').addEventListener('change',()=>{const value=document.getElementById('primaryClient').value;document.getElementById('clientModal').classList.toggle('open',value==='__ADD_CLIENT__');document.getElementById('jobNumberWrap').style.display=value&&value!=='__ADD_CLIENT__'?'block':'none';if(value&&value!=='__ADD_CLIENT__')syncNextId();updateSecondaryVisibility();updateSubs();updatePreview()});
       document.getElementById('secondaryClient').addEventListener('change',()=>{const value=document.getElementById('secondaryClient').value;document.getElementById('subclientModal').classList.toggle('open',value==='__ADD_SUBCLIENT__');updatePreview()});
       document.getElementById('description').addEventListener('input',updatePreview);
@@ -5261,6 +5312,9 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           if(clientNotesTarget)openClientNotesModal(clientNotesTarget.primaryClientId,clientNotesTarget.secondaryClientId||'');
         }catch(err){alert(err.message)}finally{saveBtn.disabled=false}
       });
+      document.getElementById('openNewJobBtn').addEventListener('click',()=>document.getElementById('newJobModalBackdrop').classList.add('open'));
+      document.getElementById('closeNewJobBtn').addEventListener('click',()=>document.getElementById('newJobModalBackdrop').classList.remove('open'));
+      document.getElementById('newJobModalBackdrop').addEventListener('click',e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove('open')});
       document.getElementById('clearBtn').addEventListener('click',()=>{document.getElementById('jobForm').reset();document.getElementById('dueOverrideCheck').checked=false;document.getElementById('dueOverrideDate').value='';syncDueOverrideUI();clearEmailDraftState();clearScheduledDraftState();document.getElementById('clientModal').classList.remove('open');document.getElementById('subclientModal').classList.remove('open');populateClients();syncNextId();document.getElementById('ticketPreview').style.display='none';document.getElementById('jobNumberWrap').style.display='none'});
       document.getElementById('viewCompletedJobsBtn').addEventListener('click',openCompletedMetricsModal);
       document.getElementById('archiveAllCompletedBtn').addEventListener('click',archiveAllCompleted);
@@ -5368,7 +5422,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('emailAttachInitialCancelBtn').addEventListener('click',()=>{emailAttachQueueId='';document.getElementById('emailAttachInitialModalBackdrop').classList.remove('open');renderEmailQueue();document.getElementById('emailQueueModalBackdrop').classList.add('open')});
       document.getElementById('emailAttachInitialSaveBtn').addEventListener('click',attachEmailToInitialRequest);
       document.getElementById('scanEmailInboxBtn').addEventListener('click',async()=>{const btn=document.getElementById('scanEmailInboxBtn');btn.disabled=true;btn.textContent='Checking…';try{const data=await apiPost({action:'scanEmailInbox'});if(!data.success)throw new Error(data.error||'Unable to check email inbox');emailQueue=data.emailQueue||[];recentEmailSources=data.recentEmailSources||[];changeOrderIntakes=data.changeOrderIntakes||changeOrderIntakes;changeOrderEmailSources=data.changeOrderEmailSources||changeOrderEmailSources;emailIntakeConfigured=true;renderEmailQueue();if(changeOrderModalTicket)renderChangeOrderModal();if(jobDetailsTicket)renderJobDetailsModal();if(jobNotesTicket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(jobNotesTicket));if(job)renderJobNotesChangeOrders(job)}}catch(err){alert(err.message)}finally{btn.disabled=false;btn.textContent='Check Inbox Now'}});
-      document.getElementById('backToEmailQueueBtn').addEventListener('click',()=>{renderEmailQueue();document.getElementById('emailQueueModalBackdrop').classList.add('open')});
+      document.getElementById('backToEmailQueueBtn').addEventListener('click',()=>{document.getElementById('newJobModalBackdrop').classList.remove('open');renderEmailQueue();document.getElementById('emailQueueModalBackdrop').classList.add('open')});
       document.getElementById('clearEmailDraftNotes').addEventListener('click',()=>{document.getElementById('emailDraftJobNotes').value=''});
       document.getElementById('addIncomeFinancialRowBtn').addEventListener('click',()=>addFinancialRow('Income'));
       document.getElementById('addExpenseFinancialRowBtn').addEventListener('click',()=>addFinancialRow('Expense'));
@@ -5794,7 +5848,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           const overrideCheck=document.getElementById('dueOverrideCheck'),overrideDate=document.getElementById('dueOverrideDate');if(overrideCheck&&overrideCheck.checked&&!overrideDate.value){alert('Choose the override due date.');return}const payload={action:createAction,ticketNumber:requestedTicketNumber,primaryClientId:primary,secondaryClientId:secondary,description:desc,designType:'',workloadScore:normalizeWorkloadScore(document.getElementById('workloadScore').value),status,notes:emailDraftQueueId?document.getElementById('emailDraftJobNotes').value:''};if(overrideCheck&&overrideCheck.checked)payload.dueDate=overrideDate.value;
           if(emailDraftQueueId)payload.queueId=emailDraftQueueId;
           const data=await apiPost(payload);
-          if(!data.success)throw new Error(data.error||'Unable to create job'); jobs.push(data.job);if(pendingScheduledIntakeId){try{const scheduleData=await schedulerApi('/scheduler/intake/complete',{method:'POST',body:{intakeId:pendingScheduledIntakeId,ticketNumber:data.job.ticketNumber}});scheduledIntake=scheduleData.intake||[]}catch(syncErr){console.warn('Scheduled intake completion sync failed:',syncErr);alert('The ticket was created, but JTP could not clear the scheduled intake item. Refresh JTP, then skip that duplicate intake item.')}}if(emailDraftQueueId){const source=emailQueueItem(emailDraftQueueId);if(source)recentEmailSources.unshift({...source,ticketNumber:data.job.ticketNumber,deleteAfter:data.deleteAfter||''});emailQueue=emailQueue.filter(item=>String(item.queueId||'')!==String(emailDraftQueueId))}clearEmailDraftState();clearScheduledDraftState();renderEmailQueue(); renderQueue(); renderBoard(); document.getElementById('jobForm').reset(); document.getElementById('dueOverrideCheck').checked=false; document.getElementById('dueOverrideDate').value=''; syncDueOverrideUI(); document.getElementById('clientModal').classList.remove('open'); document.getElementById('subclientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; document.getElementById('clientIdAlert').style.display='none'; document.getElementById('clientIdAlert').textContent=''; document.getElementById('newSubclientName').value=''; document.getElementById('newSubclientId').value=''; document.getElementById('subclientIdAlert').style.display='none'; document.getElementById('subclientIdAlert').textContent=''; populateClients(); syncNextId(); document.getElementById('ticketPreview').style.display='none'; document.getElementById('jobNumberWrap').style.display='none';
+          if(!data.success)throw new Error(data.error||'Unable to create job'); jobs.push(data.job);if(pendingScheduledIntakeId){try{const scheduleData=await schedulerApi('/scheduler/intake/complete',{method:'POST',body:{intakeId:pendingScheduledIntakeId,ticketNumber:data.job.ticketNumber}});scheduledIntake=scheduleData.intake||[]}catch(syncErr){console.warn('Scheduled intake completion sync failed:',syncErr);alert('The ticket was created, but JTP could not clear the scheduled intake item. Refresh JTP, then skip that duplicate intake item.')}}if(emailDraftQueueId){const source=emailQueueItem(emailDraftQueueId);if(source)recentEmailSources.unshift({...source,ticketNumber:data.job.ticketNumber,deleteAfter:data.deleteAfter||''});emailQueue=emailQueue.filter(item=>String(item.queueId||'')!==String(emailDraftQueueId))}clearEmailDraftState();clearScheduledDraftState();renderEmailQueue(); renderQueue(); renderBoard(); document.getElementById('jobForm').reset(); document.getElementById('dueOverrideCheck').checked=false; document.getElementById('dueOverrideDate').value=''; syncDueOverrideUI(); document.getElementById('clientModal').classList.remove('open'); document.getElementById('subclientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; document.getElementById('clientIdAlert').style.display='none'; document.getElementById('clientIdAlert').textContent=''; document.getElementById('newSubclientName').value=''; document.getElementById('newSubclientId').value=''; document.getElementById('subclientIdAlert').style.display='none'; document.getElementById('subclientIdAlert').textContent=''; populateClients(); syncNextId(); document.getElementById('ticketPreview').style.display='none'; document.getElementById('jobNumberWrap').style.display='none'; document.getElementById('newJobModalBackdrop').classList.remove('open');
         }catch(err){alert(err.message)}finally{if(createBtn){createBtn.classList.remove('is-loading');createBtn.innerHTML=originalCreateHtml;validateJobNumber()}}
       });
       const markActivity=()=>{if(systemIdleDetectionState==='active')lastActivityAt=Date.now()};
