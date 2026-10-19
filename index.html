@@ -3984,7 +3984,8 @@
       }
       function renderJobDetailsModal(){
         const body=document.getElementById('jobDetailsBody');const job=jobs.find(item=>String(item.ticketNumber||'')===String(jobDetailsTicket));if(!body||!job)return;
-        const jobDetailsTitle=job.title||job.displayTitle||'';document.getElementById('jobDetailsModalJob').textContent=jobDetailsTitle;const jobDetailsFolderBtn=document.getElementById('jobDetailsCreateFolderBtn');if(jobDetailsFolderBtn){jobDetailsFolderBtn.innerHTML=FOLDER_ICON;jobDetailsFolderBtn.setAttribute('data-folder-title',jobDetailsTitle);jobDetailsFolderBtn.setAttribute('data-create-job-folder',String(job.ticketNumber||''))}const jobDetailsCopyBtn=document.getElementById('jobDetailsCopyTitleBtn');if(jobDetailsCopyBtn){jobDetailsCopyBtn.innerHTML=COPY_ICON;jobDetailsCopyBtn.setAttribute('data-copy-title',jobDetailsTitle)}const add=document.getElementById('jobDetailsAddChangeOrderBtn');const pending=pendingChangeOrderIntakeForJob(job);if(add){add.disabled=job.status==='Completed';add.textContent=pending?'View Pending Change Order':'Add Change Order';add.title=job.status==='Completed'?'Completed jobs cannot start a new Change Order.':(pending?'Jump to the pending Change Order below.':'Create the next Change Order')}renderJobDetailsMoveMenu(job);
+        if(boardWarmActive){renderWarmJobDetailsModal(job,body);return}
+        const jobDetailsTitle=job.title||job.displayTitle||'';document.getElementById('jobDetailsModalJob').textContent=jobDetailsTitle;const jobDetailsFolderBtn=document.getElementById('jobDetailsCreateFolderBtn');if(jobDetailsFolderBtn){jobDetailsFolderBtn.disabled=false;jobDetailsFolderBtn.innerHTML=FOLDER_ICON;jobDetailsFolderBtn.setAttribute('data-folder-title',jobDetailsTitle);jobDetailsFolderBtn.setAttribute('data-create-job-folder',String(job.ticketNumber||''))}const jobDetailsCopyBtn=document.getElementById('jobDetailsCopyTitleBtn');if(jobDetailsCopyBtn){jobDetailsCopyBtn.disabled=false;jobDetailsCopyBtn.innerHTML=COPY_ICON;jobDetailsCopyBtn.setAttribute('data-copy-title',jobDetailsTitle)}const add=document.getElementById('jobDetailsAddChangeOrderBtn');const pending=pendingChangeOrderIntakeForJob(job);if(add){add.disabled=job.status==='Completed';add.textContent=pending?'View Pending Change Order':'Add Change Order';add.title=job.status==='Completed'?'Completed jobs cannot start a new Change Order.':(pending?'Jump to the pending Change Order below.':'Create the next Change Order')}renderJobDetailsMoveMenu(job);
         const records=changeOrderIntakesForJob(job);const numbers=new Set(records.map(item=>Number(item.changeOrderNumber||0)).filter(Boolean));(Array.isArray(workSets)?workSets:[]).filter(item=>Number(item.ticketNumber)===Number(job.ticketNumber)&&item.workSetType==='Change Order').forEach(item=>numbers.add(Number(item.changeOrderNumber||0)));const changeOrders=[...numbers].filter(Boolean).sort((a,b)=>b-a);
         const tab= ['work','financials','activity'].includes(jobDetailsActiveTab)?jobDetailsActiveTab:'work';jobDetailsActiveTab=tab;
         body.innerHTML=`<div class="job-details-layout"><div class="job-details-tabs" role="tablist" aria-label="Job Details sections"><button class="job-details-tab${tab==='work'?' active':''}" type="button" role="tab" data-job-details-tab="work" aria-selected="${tab==='work'?'true':'false'}">Work</button><button class="job-details-tab${tab==='financials'?' active':''}" type="button" role="tab" data-job-details-tab="financials" aria-selected="${tab==='financials'?'true':'false'}">Financials</button><button class="job-details-tab${tab==='activity'?' active':''}" type="button" role="tab" data-job-details-tab="activity" aria-selected="${tab==='activity'?'true':'false'}">Activity</button></div><div class="job-details-tab-panels"><section class="job-details-tab-panel job-details-pane job-details-pane-right${tab==='work'?' active':''}" data-job-details-tab-panel="work" role="tabpanel"><div class="job-details-work-tab-inner">${jobDetailsActiveJobBarMarkup(job)}<div class="job-details-work-overview"><div>${renderJobDetailsGeneralNotes(job)}</div><div class="job-details-time-summary-card"><div class="job-details-time-summary-title">Time Summary</div>${jobDetailsAccumulatedMarkup(job)}${jobDetailsTimeSummaryMarkup(job,changeOrders)}</div></div><div class="job-details-history">${changeOrders.map(number=>jobDetailsSectionMarkup(job,'change-order',number)).join('')}${jobDetailsSectionMarkup(job,'initial')}</div></div></section><section class="job-details-tab-panel${tab==='financials'?' active':''}" data-job-details-tab-panel="financials" role="tabpanel"><div class="job-details-financials-tab-inner">${renderJobDetailsPricingNotes(job)}${renderJobDetailsInvoiceBox(job)}${renderJobDetailsFinancials(job)}</div></section><section class="job-details-tab-panel${tab==='activity'?' active':''}" data-job-details-tab-panel="activity" role="tabpanel"><div class="job-details-activity-tab-inner">${jobDetailsActivityMarkup(job)}</div></section></div></div>`;
@@ -4018,8 +4019,17 @@
         updateActiveJobBarTimers();
         renderActiveJobBar();
       }
+      function renderWarmJobDetailsModal(job,body){
+        const title=job.title||job.displayTitle||('Ticket '+String(job.ticketNumber||''));
+        document.getElementById('jobDetailsModalJob').textContent=title;
+        const folder=document.getElementById('jobDetailsCreateFolderBtn');if(folder){folder.innerHTML=FOLDER_ICON;folder.disabled=true;folder.title='Available after Google data finishes loading.'}
+        const copy=document.getElementById('jobDetailsCopyTitleBtn');if(copy){copy.innerHTML=COPY_ICON;copy.disabled=true;copy.title='Available after Google data finishes loading.'}
+        const punch=document.getElementById('jobDetailsPunchBtn');if(punch){punch.disabled=true;punch.title='Available after Google data finishes loading.'}
+        const add=document.getElementById('jobDetailsAddChangeOrderBtn');if(add){add.disabled=true;add.title='Available after Google data finishes loading.'}
+        renderJobDetailsMoveMenu(job);
+        body.innerHTML=`<div class="job-details-warm-summary"><div class="job-details-time-summary-card"><div class="job-details-time-summary-title">Ticket ${escapeHtml(String(job.ticketNumber||''))}</div><div><strong>Status:</strong> ${escapeHtml(job.status||'—')}</div><div><strong>Due:</strong> ${escapeHtml(formatDateTimeDisplay(rawDueAt(job))||'—')}</div><div><strong>Date received:</strong> ${escapeHtml(formatDateTimeDisplay(dateReceivedForJob(job))||'—')}</div><div><strong>Workload score:</strong> ${escapeHtml(workloadScoreLabel(workloadScoreForJob(job)))}</div><div><strong>Time accrued:</strong> ${escapeHtml(formatHours(getRecordedTimeAccruedHours(job)))}</div></div><div class="muted" style="margin-top:12px">Full work history, client notes, email, and punch details will appear here as soon as the supporting data finishes loading.</div></div>`;
+      }
       function openJobDetailsModal(ticket){
-        if(boardWarmActive)return;
         const job=(Array.isArray(jobs)?jobs:[]).find(item=>String(item.ticketNumber||'')===String(ticket));if(!job)return;
         jobDetailsTicket=String(ticket);jobDetailsActiveTab='work';jobDetailsClientOpen=true;jobDetailsClientEditing=false;
         const backdrop=document.getElementById('jobDetailsModalBackdrop');if(backdrop)backdrop.classList.add('open');
@@ -5299,7 +5309,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       }
       function applyWarmBoardInteractionLimits(){
         if(!boardWarmActive)return;const board=document.getElementById('mainBoard');if(!board)return;
-        board.querySelectorAll('button').forEach(btn=>{if(btn.matches('[data-menu-ticket],[data-move-ticket]'))return;btn.disabled=true;btn.title='Available after Google data finishes loading.'});
+        board.querySelectorAll('button').forEach(btn=>{if(btn.matches('[data-menu-ticket],[data-move-ticket],[data-job-details-ticket]'))return;btn.disabled=true;btn.title='Available after Google data finishes loading.'});
         board.querySelectorAll('a').forEach(link=>{link.setAttribute('aria-disabled','true');link.tabIndex=-1});
       }
       function readCachedD1BoardAuth(){
@@ -5341,7 +5351,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           renderEmailQueue();
           nextId=getNextSequentialId();
           populateClients(); syncNextId(); renderQueue(); renderBoard(); renderWorkUtilization(); refreshMotivatorMenuGateLabels(); setBackendStatus(true,'Live Google Sheets connection');
-          boardWarmActive=false;const board=document.getElementById('mainBoard');if(board){board.classList.remove('is-warming');board.removeAttribute('aria-busy')}
+          boardWarmActive=false;const board=document.getElementById('mainBoard');if(board){board.classList.remove('is-warming');board.removeAttribute('aria-busy')}if(jobDetailsTicket)renderJobDetailsModal();
           backendReady=true;midnightObservedKey=workdayKey();maybeShowAutoWorkdayMotivator();refreshScheduledIntake().catch(()=>{});
           if(data.midnightRollover&&data.midnightRollover.busy)checkMidnightRollover(true);
           refreshMotivatorSpent().catch(()=>{});
