@@ -5236,6 +5236,23 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         }
         throw new Error('Unable to reach the fast status service. The card was restored; try again.');
       }
+      async function d1FastJobNotesPost(legacyPayload){
+        if(!d1FastPathReady())return apiPost(legacyPayload);
+        const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('notes-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+        const payload={operationId,ticketNumber:legacyPayload.ticketNumber,notes:String(legacyPayload.notes==null?'':legacyPayload.notes)};
+        const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/job/notes';
+        const options={method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)};
+        for(let attempt=0;attempt<2;attempt++){
+          let response;
+          try{response=await fetch(url,options)}catch(err){if(attempt===0)continue;throw new Error('Unable to reach the fast Job Notes service. Your note was not confirmed; try saving again.')}
+          let data={};try{data=await response.json()}catch(ignore){}
+          if(response.ok&&data&&data.success)return data;
+          if(response.status===401||response.status===403)return apiPost(legacyPayload);
+          if(response.status>=500&&attempt===0)continue;
+          throw new Error((data&&data.error)||('Job Notes save failed ('+response.status+')'));
+        }
+        throw new Error('Unable to reach the fast Job Notes service. Your note was not confirmed; try saving again.');
+      }
       async function punchApiPost(payload){
         if(!payload||!d1FastPathReady()||!['beginWorkSession','endWorkSession'].includes(payload.action))return apiPost(payload);
         if(payload.action==='beginWorkSession'){
@@ -6203,7 +6220,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('jobDetailsModalBackdrop').addEventListener('click',e=>{if(e.target!==e.currentTarget)return;requestCloseJobDetailsModal()});
       document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented)return;const backdrop=document.getElementById('jobDetailsModalBackdrop');if(!backdrop||!backdrop.classList.contains('open'))return;e.preventDefault();requestCloseJobDetailsModal()},true);
       document.getElementById('closeClientNotesBtn').addEventListener('click',()=>{const returnToFinancial=clientNotesReturnToFinancial;const returnToClients=clientNotesReturnToClients;clientNotesTarget=null;clientNotesReturnToFinancial=false;clientNotesReturnToClients=false;document.getElementById('clientNotesModalBackdrop').classList.remove('open');if(returnToFinancial&&jobFinancialsViewTicket)document.getElementById('jobFinancialsModalBackdrop').classList.add('open');else if(returnToClients){renderClientsDirectory();document.getElementById('clientsModalBackdrop').classList.add('open')}});
-      document.getElementById('doneJobNotesBtn').addEventListener('click',async()=>{const job=jobs.find(j=>String(j.ticketNumber||'')===jobNotesTicket);if(!job)return;const textarea=document.getElementById('jobNotesTextarea');const notes=textarea.value;try{const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,timeAccruedHours:getTimeAccruedHours(job),notes});if(!data.success)throw new Error(data.error||'Unable to save job notes');job.notes=notes;textarea.dataset.initialValue=textarea.value;document.getElementById('doneJobNotesBtn').disabled=true}catch(err){alert(err.message)}});
+      document.getElementById('doneJobNotesBtn').addEventListener('click',async()=>{const job=jobs.find(j=>String(j.ticketNumber||'')===jobNotesTicket);if(!job)return;const textarea=document.getElementById('jobNotesTextarea');const notes=textarea.value;const btn=document.getElementById('doneJobNotesBtn');btn.disabled=true;btn.textContent='Saving…';try{const data=await d1FastJobNotesPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,timeAccruedHours:getTimeAccruedHours(job),notes});if(!data.success)throw new Error(data.error||'Unable to save job notes');job.notes=notes;textarea.dataset.initialValue=textarea.value;btn.disabled=true}catch(err){alert(err.message);btn.disabled=textarea.value===String(textarea.dataset.initialValue||'')}finally{btn.textContent='Save'}});
       document.getElementById('closeTimeRecordBtn').addEventListener('click',()=>{timeRecordTicket='';document.getElementById('timeRecordModalBackdrop').classList.remove('open')});
       document.getElementById('cancelPunchEditBtn').addEventListener('click',()=>{editPunchSessionId='';document.getElementById('editPunchModalBackdrop').classList.remove('open')});
       document.getElementById('savePunchEditBtn').addEventListener('click',async()=>{
