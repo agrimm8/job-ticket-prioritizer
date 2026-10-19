@@ -4027,6 +4027,12 @@
           holder.querySelectorAll('button,input,textarea,select').forEach(control=>{control.disabled=true});
           holder.querySelectorAll('[data-job-details-tab]').forEach(control=>{control.disabled=false});
           const move=document.getElementById('jobDetailsMoveColumnBtn');if(move)move.disabled=false;
+          if(d1JobDetailsCacheReady){
+            const initialChecklist=holder.querySelector('[data-job-details-checklist="initial"]');
+            if(initialChecklist)initialChecklist.querySelectorAll('[data-action-check-box],[data-action-check-text],[data-action-check-remove]').forEach(control=>{control.disabled=false});
+            holder.querySelectorAll('[data-job-details-add-checkbox="initial"]').forEach(control=>{control.disabled=false});
+            const invoiceNotes=holder.querySelector('#jobDetailsInvoiceNotes');if(invoiceNotes)invoiceNotes.disabled=false;
+          }
         }
         renderJobDetailsPunchControl(job);
         updateActiveJobBarTimers();
