@@ -1224,7 +1224,7 @@
     #job-priority-app .top-right-controls .workday-actions{gap:5px;flex-wrap:nowrap}
     #job-priority-app .top-right-controls .workday-actions button{min-height:30px;padding:5px 8px;font-size:9px;white-space:nowrap}
     #job-priority-app .orphan-punch-banner,#job-priority-app .active-job-bar{flex:0 0 auto;margin-bottom:8px}
-    #job-priority-app .board-shell.is-warming{pointer-events:none;opacity:.84}
+    #job-priority-app .board-shell.is-warming{opacity:1}
     #job-priority-app .board-shell{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(155px,.78fr) minmax(185px,1fr) minmax(215px,1.15fr) minmax(185px,1fr) minmax(185px,1fr) minmax(185px,1fr);gap:9px;align-items:stretch;overflow-x:auto;overflow-y:hidden;padding-bottom:2px}
     #job-priority-app .kpi-strip{grid-column:auto;display:flex;flex-direction:column;gap:9px;min-width:0;min-height:0;overflow-y:auto;padding-right:2px}
     #job-priority-app .kpi-strip .utilization-kpi-card{order:1}
@@ -2165,6 +2165,8 @@
       let workdayPunches=[];
       let boardSnapshotAccruedHours=null;
       let boardWarmRender=false;
+      let boardWarmActive=false;
+      const d1WarmStatusOverrides=new Map();
       let boardStartupLoadId=0;
       let boardBootstrapDataArrived=false;
       const D1_BOARD_SESSION_CACHE_KEY='jtp.d1.board-startup-session.v1';
@@ -4017,6 +4019,7 @@
         renderActiveJobBar();
       }
       function openJobDetailsModal(ticket){
+        if(boardWarmActive)return;
         const job=(Array.isArray(jobs)?jobs:[]).find(item=>String(item.ticketNumber||'')===String(ticket));if(!job)return;
         jobDetailsTicket=String(ticket);jobDetailsActiveTab='work';jobDetailsClientOpen=true;jobDetailsClientEditing=false;
         const backdrop=document.getElementById('jobDetailsModalBackdrop');if(backdrop)backdrop.classList.add('open');
@@ -4341,6 +4344,7 @@
         }
       }
       async function changeJobStatusFromMenu(button){
+        const startedWarm=boardWarmActive;
         const ticket=button.getAttribute('data-move-ticket');
         const requestedOldStatus=button.getAttribute('data-old-status');
         const newStatus=button.getAttribute('data-new-status');
@@ -4432,6 +4436,10 @@
           if(newStatus==='Completed')job.completedAt=saved.completedAt||data.completedAt||job.completedAt||clientTimestamp;
           else if(oldStatus==='Completed')job.completedAt='';
 
+          const committedStatusFields={status:job.status,dueDate:job.dueDate,due:job.due,dueAt:job.dueAt,dueDateSource:job.dueDateSource,followUpDate:job.followUpDate,workloadScore:job.workloadScore,completedAt:job.completedAt,archived:job.archived};
+          if(startedWarm)d1WarmStatusOverrides.set(String(ticket),{savedAt:Date.now(),fields:committedStatusFields});
+          const liveJob=jobs.find(item=>String(item.ticketNumber||'')===String(ticket));if(liveJob&&liveJob!==job)Object.assign(liveJob,committedStatusFields);
+
           if(newStatus==='Client Review'){
             const state=ensureTimerState(job);
             state.running=false;state.remaining=0;state.overtime=0;state.blockStartRemaining=0;state.blockStartOvertime=0;state.committedSeconds=0;
@@ -4508,7 +4516,8 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           const columns=new Set([boardColumnForStatus(oldStatus),boardColumnForStatus(newStatus)].filter(Boolean));
           columns.forEach(column=>renderBoardColumn(column,wsiwonTickets));
           if(document.getElementById('jobSearchModalBackdrop')&&document.getElementById('jobSearchModalBackdrop').classList.contains('open'))renderJobSearchResults();
-        }catch(err){console.warn('Partial status refresh failed; refreshing the full board.',err);renderBoard()}
+          applyWarmBoardInteractionLimits();
+        }catch(err){console.warn('Partial status refresh failed; refreshing the full board.',err);renderBoard();applyWarmBoardInteractionLimits()}
       }
       function setBackendStatus(ok,text){const label=document.getElementById('backendText');const dots=[document.getElementById('backendDot'),document.getElementById('backendMenuDot')].filter(Boolean);const btn=document.getElementById('appMenuBtn');if(label)label.textContent=ok?'Connected':'Disconnected';if(btn){btn.title=text?String(text):'';btn.setAttribute('aria-label','Job Ticket Prioritizer. '+(ok?'Connected to Google Sheets.':'Disconnected from Google Sheets.'))}dots.forEach(dot=>{const color=ok?'#1f7a4d':'#b42318';dot.style.background=color;dot.style.boxShadow=ok?'0 0 0 3px rgba(31,122,77,.14)':'0 0 0 3px rgba(180,35,24,.14)'})}
       let motivatorCurrentLevel='GO';
@@ -5286,9 +5295,23 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         renderCards('clientReviewList',jobs.filter(job=>job.status==='Client Review').sort((a,b)=>{const c=String(a.followUpDate||'9999-12-31').localeCompare(String(b.followUpDate||'9999-12-31'));return c||Number(a.ticketNumber||Number.MAX_SAFE_INTEGER)-Number(b.ticketNumber||Number.MAX_SAFE_INTEGER)}));
         renderCards('productionList',jobs.filter(job=>job.status==='In Production / Awaiting Vendor').sort((a,b)=>{const c=String(a.followUpDate||'9999-12-31').localeCompare(String(b.followUpDate||'9999-12-31'));return c||Number(a.ticketNumber||Number.MAX_SAFE_INTEGER)-Number(b.ticketNumber||Number.MAX_SAFE_INTEGER)}));
         const completed=jobs.filter(job=>job.status==='Completed'&&job.archived!==true);renderCards('completedList',completed);const archiveAllBtn=document.getElementById('archiveAllCompletedBtn');if(archiveAllBtn){archiveAllBtn.disabled=!completed.length;archiveAllBtn.title=completed.length?`Archive all ${completed.length} visible completed job${completed.length===1?'':'s'}`:'No completed jobs to archive'}
+        applyWarmBoardInteractionLimits();
+      }
+      function applyWarmBoardInteractionLimits(){
+        if(!boardWarmActive)return;const board=document.getElementById('mainBoard');if(!board)return;
+        board.querySelectorAll('button').forEach(btn=>{if(btn.matches('[data-menu-ticket],[data-move-ticket]'))return;btn.disabled=true;btn.title='Available after Google data finishes loading.'});
+        board.querySelectorAll('a').forEach(link=>{link.setAttribute('aria-disabled','true');link.tabIndex=-1});
       }
       function readCachedD1BoardAuth(){
         try{const cached=JSON.parse(localStorage.getItem(D1_BOARD_SESSION_CACHE_KEY)||'null');if(!cached||!cached.apiUrl||!cached.token||!cached.expiresAt||new Date(cached.expiresAt).getTime()<Date.now()+60000)return null;return cached}catch(ignore){return null}
+      }
+      function mergeD1WarmStatusOverrides(googleJobs){
+        const now=Date.now();const rows=Array.isArray(googleJobs)?googleJobs:[];
+        d1WarmStatusOverrides.forEach((override,ticket)=>{
+          if(!override||now-Number(override.savedAt||0)>120000){d1WarmStatusOverrides.delete(ticket);return}
+          const job=rows.find(item=>String(item.ticketNumber||'')===String(ticket));if(job)Object.assign(job,override.fields||{});
+        });
+        return rows;
       }
       function cacheD1BoardAuth(config){
         try{if(config&&config.enabled&&config.apiUrl&&config.token&&config.expiresAt)localStorage.setItem(D1_BOARD_SESSION_CACHE_KEY,JSON.stringify({apiUrl:config.apiUrl,token:config.token,expiresAt:config.expiresAt}));else localStorage.removeItem(D1_BOARD_SESSION_CACHE_KEY)}catch(ignore){}
@@ -5296,9 +5319,10 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       async function warmBoardFromD1(loadId){
         if(PREVIEW_MODE||backendReady||boardBootstrapDataArrived)return false;const cached=readCachedD1BoardAuth();if(!cached)return false;
         try{
+          d1FastPath=Object.assign({enabled:true},cached);
           const url=String(cached.apiUrl).replace(/\/+$/,'')+'/board/snapshot';const response=await fetch(url,{method:'GET',headers:{'Authorization':'Bearer '+cached.token}});if(response.status===401||response.status===403){try{localStorage.removeItem(D1_BOARD_SESSION_CACHE_KEY)}catch(ignore){}return false}if(!response.ok)return false;const data=await response.json();
           if(!data||!data.success||!Array.isArray(data.jobs)||loadId!==boardStartupLoadId||backendReady||boardBootstrapDataArrived)return false;
-          jobs=data.jobs;boardSnapshotAccruedHours=data.accruedHoursByTicket||{};boardWarmRender=true;const board=document.getElementById('mainBoard');if(board){board.classList.add('is-warming');board.setAttribute('aria-busy','true')}
+          jobs=data.jobs;boardSnapshotAccruedHours=data.accruedHoursByTicket||{};boardWarmRender=true;boardWarmActive=true;const board=document.getElementById('mainBoard');if(board){board.classList.add('is-warming');board.setAttribute('aria-busy','true')}
           try{renderWarmBoardColumns()}finally{boardWarmRender=false}
           setBackendStatus(false,'Showing the fast D1 board while live data finishes loading.');return true;
         }catch(ignore){return false}
@@ -5308,7 +5332,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const loadId=++boardStartupLoadId;boardBootstrapDataArrived=false;if(!backendReady)warmBoardFromD1(loadId);
         try{
           const data=await apiGet();boardBootstrapDataArrived=true;if(!data.success)throw new Error(data.error||'Backend error');
-          d1FastPath=data.d1FastPath||d1FastPath;cacheD1BoardAuth(d1FastPath);clients=data.clients||[]; subclients=data.subclients||[]; jobs=data.jobs||[]; statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; workSets=data.workSets||[]; boardSnapshotAccruedHours=null; workdayPunches=data.workdayPunches||[]; autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig; adminSessions=data.adminSessions||[]; activeAdminSession=data.openAdminSession||null; motivatorBankReady=false; motivatorBankServer={active:false,shiftStart:'',shiftStartMs:0,clientWorkSeconds:0,earnedSeconds:0,spentSeconds:0,availableSeconds:0}; holidayCalendar=data.holidayCalendar||[]; jobFinancials=data.jobFinancials||[]; overheadTemplates=data.overheadTemplates||[]; currentMonthlyOverhead=data.currentMonthlyOverhead||{month:currentMonthKey(),entries:[],total:0}; emailQueue=data.emailQueue||[];recentEmailSources=data.recentEmailSources||[];changeOrderIntakes=data.changeOrderIntakes||[];changeOrderEmailSources=data.changeOrderEmailSources||[];emailIntakeConfigured=data.emailIntakeConfigured===true; await reconcileOpenWorkSession(data.openWorkSession||null);
+          d1FastPath=data.d1FastPath||d1FastPath;cacheD1BoardAuth(d1FastPath);clients=data.clients||[]; subclients=data.subclients||[]; jobs=mergeD1WarmStatusOverrides(data.jobs||[]); statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; workSets=data.workSets||[]; boardSnapshotAccruedHours=null; workdayPunches=data.workdayPunches||[]; autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig; adminSessions=data.adminSessions||[]; activeAdminSession=data.openAdminSession||null; motivatorBankReady=false; motivatorBankServer={active:false,shiftStart:'',shiftStartMs:0,clientWorkSeconds:0,earnedSeconds:0,spentSeconds:0,availableSeconds:0}; holidayCalendar=data.holidayCalendar||[]; jobFinancials=data.jobFinancials||[]; overheadTemplates=data.overheadTemplates||[]; currentMonthlyOverhead=data.currentMonthlyOverhead||{month:currentMonthKey(),entries:[],total:0}; emailQueue=data.emailQueue||[];recentEmailSources=data.recentEmailSources||[];changeOrderIntakes=data.changeOrderIntakes||[];changeOrderEmailSources=data.changeOrderEmailSources||[];emailIntakeConfigured=data.emailIntakeConfigured===true; await reconcileOpenWorkSession(data.openWorkSession||null);
           Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);
           Object.keys(clientPricingNotes).forEach(k=>delete clientPricingNotes[k]);
           Object.keys(clientAssociatedEmails).forEach(k=>delete clientAssociatedEmails[k]);
@@ -5317,7 +5341,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           renderEmailQueue();
           nextId=getNextSequentialId();
           populateClients(); syncNextId(); renderQueue(); renderBoard(); renderWorkUtilization(); refreshMotivatorMenuGateLabels(); setBackendStatus(true,'Live Google Sheets connection');
-          const board=document.getElementById('mainBoard');if(board){board.classList.remove('is-warming');board.removeAttribute('aria-busy')}
+          boardWarmActive=false;const board=document.getElementById('mainBoard');if(board){board.classList.remove('is-warming');board.removeAttribute('aria-busy')}
           backendReady=true;midnightObservedKey=workdayKey();maybeShowAutoWorkdayMotivator();refreshScheduledIntake().catch(()=>{});
           if(data.midnightRollover&&data.midnightRollover.busy)checkMidnightRollover(true);
           refreshMotivatorSpent().catch(()=>{});
