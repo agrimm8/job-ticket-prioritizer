@@ -4028,6 +4028,8 @@
           holder.querySelectorAll('[data-job-details-tab]').forEach(control=>{control.disabled=false});
           const move=document.getElementById('jobDetailsMoveColumnBtn');if(move)move.disabled=false;
           if(d1JobDetailsCacheReady){
+            holder.querySelectorAll('#jobDetailsClientGeneral,#jobDetailsClientPricing').forEach(control=>{control.disabled=false});
+            holder.querySelectorAll('[data-job-details-financials]').forEach(control=>{control.disabled=false});
             const initialChecklist=holder.querySelector('[data-job-details-checklist="initial"]');
             if(initialChecklist)initialChecklist.querySelectorAll('[data-action-check-box],[data-action-check-text],[data-action-check-remove]').forEach(control=>{control.disabled=false});
             holder.querySelectorAll('[data-job-details-add-checkbox="initial"]').forEach(control=>{control.disabled=false});
@@ -4067,7 +4069,7 @@
         }
         renderActiveJobBar();document.querySelectorAll('#job-priority-app .move-menu.open').forEach(menu=>menu.classList.remove('open'))
       }
-      async function saveJobDetailsClientNotes(job,scope){const ids=jobDetailsClientIds(job);if(!ids.primaryClientId)return;const key=clientNotesKey(ids.primaryClientId,ids.secondaryClientId);const generalField=document.getElementById('jobDetailsClientGeneral');const pricingField=document.getElementById('jobDetailsClientPricing');const notes=generalField?generalField.value:String(clientNotes[key]||'');const pricingNotes=pricingField?pricingField.value:String(clientPricingNotes[key]||'');const associatedEmails=String(clientAssociatedEmails[key]||'');const btn=document.getElementById(scope==='pricing'?'jobDetailsSavePricingNotesBtn':'jobDetailsSaveGeneralNotesBtn');if(btn){btn.disabled=true;btn.textContent='Saving…'}try{const payload=ids.secondaryClientId?{action:'updateSubclientNotes',parentClientId:ids.primaryClientId,subclientId:ids.secondaryClientId,notes,pricingNotes,associatedEmails}:{action:'updateClientNotes',clientId:ids.primaryClientId,notes,pricingNotes,associatedEmails};const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to save client notes');clientNotes[key]=notes;clientPricingNotes[key]=pricingNotes;const record=ids.secondaryClientId?subclients.find(item=>item.parentClientId===ids.primaryClientId&&item.id===ids.secondaryClientId):clients.find(item=>item.id===ids.primaryClientId);if(record){record.notes=notes;record.pricingNotes=pricingNotes}jobDetailsClientEditing=false;renderJobDetailsModal();renderQueue();renderBoard()}catch(err){alert(err.message)}finally{if(btn&&document.body.contains(btn)){btn.disabled=false;btn.textContent='Save'}}}
+      async function saveJobDetailsClientNotes(job,scope){const ids=jobDetailsClientIds(job);if(!ids.primaryClientId)return;const key=clientNotesKey(ids.primaryClientId,ids.secondaryClientId);const generalField=document.getElementById('jobDetailsClientGeneral');const pricingField=document.getElementById('jobDetailsClientPricing');const notes=generalField?generalField.value:String(clientNotes[key]||'');const pricingNotes=pricingField?pricingField.value:String(clientPricingNotes[key]||'');const associatedEmails=String(clientAssociatedEmails[key]||'');const btn=document.getElementById(scope==='pricing'?'jobDetailsSavePricingNotesBtn':'jobDetailsSaveGeneralNotesBtn');if(btn){btn.disabled=true;btn.textContent='Saving…'}try{const payload=ids.secondaryClientId?{action:'updateSubclientNotes',parentClientId:ids.primaryClientId,subclientId:ids.secondaryClientId,notes,pricingNotes,associatedEmails}:{action:'updateClientNotes',clientId:ids.primaryClientId,notes,pricingNotes,associatedEmails};const data=await d1FastClientNotesPost(payload);if(!data.success)throw new Error(data.error||'Unable to save client notes');clientNotes[key]=notes;clientPricingNotes[key]=pricingNotes;clientAssociatedEmails[key]=associatedEmails;const record=ids.secondaryClientId?subclients.find(item=>item.parentClientId===ids.primaryClientId&&item.id===ids.secondaryClientId):clients.find(item=>item.id===ids.primaryClientId);if(record){record.notes=notes;record.pricingNotes=pricingNotes;record.associatedEmails=associatedEmails}jobDetailsClientEditing=false;renderJobDetailsModal();renderQueue();renderBoard()}catch(err){alert(err.message)}finally{if(btn&&document.body.contains(btn)){btn.disabled=false;btn.textContent='Save'}}}
       async function saveJobDetailsSectionNotes(job,key){const area=document.querySelector(`#jobDetailsBody [data-job-details-notes="${key}"]`);const btn=document.querySelector(`#jobDetailsBody [data-job-details-save-notes="${key}"]`);if(!area||!btn||btn.disabled)return;btn.disabled=true;btn.textContent='Saving…';try{if(key==='initial'){const notes=area.value;const data=await d1FastJobNotesPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,timeAccruedHours:getTimeAccruedHours(job),notes});if(!data.success)throw new Error(data.error||'Unable to save Initial Request notes');job.notes=notes}else{const number=Number(String(key).replace('co-',''));const record=changeOrderIntakesForJob(job).find(item=>Number(item.changeOrderNumber||0)===number);if(!record)throw new Error('This legacy Change Order does not have an editable Change Order record.');const data=await apiPost({action:'updateChangeOrderIntake',changeOrderIntakeId:record.changeOrderIntakeId,notes:area.value});if(!data.success)throw new Error(data.error||'Unable to save Change Order notes');const updated=data.changeOrderIntake||record;const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===record.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=updated;job.pendingChangeOrderNotes=updated.status==='Pending'?String(updated.manualNotes||''):String(job.pendingChangeOrderNotes||'')}renderJobDetailsModal();renderQueue();renderBoard()}catch(err){alert(err.message);btn.disabled=false}finally{if(document.body.contains(btn))btn.textContent='Save'}}
       async function saveJobDetailsActionItems(job,key){const btn=document.querySelector(`#jobDetailsBody [data-job-details-save-actions="${key}"]`);if(!btn||btn.disabled)return;const value=serializeActionItemsEditor(key);btn.disabled=true;btn.textContent='Saving…';try{if(key==='initial'){const data=await d1FastJobNotesPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,initialActionItems:value});if(!data.success)throw new Error(data.error||'Unable to save Initial Request action items');job.initialActionItems=value}else{const number=Number(String(key).replace('co-',''));const record=changeOrderIntakesForJob(job).find(item=>Number(item.changeOrderNumber||0)===number);if(!record)throw new Error('This Change Order does not have an editable record.');const data=await apiPost({action:'updateChangeOrderIntake',changeOrderIntakeId:record.changeOrderIntakeId,actionItems:value});if(!data.success)throw new Error(data.error||'Unable to save Change Order action items');const updated=data.changeOrderIntake||record;const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===record.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=updated}renderJobDetailsModal()}catch(err){alert(err.message);btn.disabled=false}finally{if(document.body.contains(btn))btn.textContent='Save'}}
       async function cancelJobDetailsChangeOrder(btn){
@@ -5259,6 +5261,35 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         }
         throw new Error('Unable to reach the fast Job Notes service. Your note was not confirmed; try saving again.');
       }
+      async function d1FastClientNotesPost(legacyPayload){
+        if(!d1FastPathReady())return apiPost(legacyPayload);
+        const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('client-notes-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+        const secondary=String(legacyPayload.secondaryClientId||legacyPayload.subclientId||'');
+        const primary=String(legacyPayload.primaryClientId||legacyPayload.parentClientId||legacyPayload.clientId||'');
+        const profileKey=secondary?'secondary:'+primary+':'+secondary:'primary:'+primary;
+        const payload={operationId,profileKey,primaryClientId:primary,secondaryClientId:secondary,notes:String(legacyPayload.notes||''),pricingNotes:String(legacyPayload.pricingNotes||''),associatedEmails:String(legacyPayload.associatedEmails||'')};
+        return d1FastWritePost('/client/notes',payload,legacyPayload,'Client Notes');
+      }
+      async function d1FastFinancialsPost(ticketNumber,entries,legacyPayload){
+        if(!d1FastPathReady())return apiPost(legacyPayload);
+        const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('job-financials-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+        const payload={operationId,ticketNumber:Number(ticketNumber),entries};
+        return d1FastWritePost('/job/financials',payload,legacyPayload,'Job Financials');
+      }
+      async function d1FastWritePost(path,payload,legacyPayload,label){
+        const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+path;
+        const options={method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)};
+        for(let attempt=0;attempt<2;attempt++){
+          let response;
+          try{response=await fetch(url,options)}catch(err){if(attempt===0)continue;throw new Error('Unable to reach the fast '+label+' service. The save was not confirmed; try again.')}
+          let data={};try{data=await response.json()}catch(ignore){}
+          if(response.ok&&data&&data.success)return data;
+          if(response.status===401||response.status===403)return apiPost(legacyPayload);
+          if(response.status>=500&&attempt===0)continue;
+          throw new Error((data&&data.error)||(label+' save failed ('+response.status+')'));
+        }
+        throw new Error('Unable to reach the fast '+label+' service. The save was not confirmed; try again.');
+      }
       async function punchApiPost(payload){
         if(!payload||!d1FastPathReady()||!['beginWorkSession','endWorkSession'].includes(payload.action))return apiPost(payload);
         if(payload.action==='beginWorkSession'){
@@ -5888,7 +5919,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         try{
           const entries=[...readFinancialRows('Income',true),...readFinancialRows('Expense',true)];
           saveBtn.disabled=true;saveBtn.textContent='Saving…';
-          const data=await apiPost({action:'saveJobFinancials',ticketNumber:ticket,entries});
+          const data=await d1FastFinancialsPost(ticket,entries,{action:'saveJobFinancials',ticketNumber:ticket,entries});
           if(!data.success)throw new Error(data.error||'Unable to save job financials');
           jobFinancials=jobFinancials.filter(entry=>String(entry.ticketNumber||'')!==ticket);
           (data.entries||entries).forEach(entry=>jobFinancials.push({...entry,ticketNumber:Number(ticket)}));
