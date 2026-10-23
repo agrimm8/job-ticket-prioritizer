@@ -3455,7 +3455,7 @@
         if(!menu)return;const wasOpen=menu.classList.contains('open');document.querySelectorAll('#job-priority-app .move-menu.open').forEach(item=>item.classList.remove('open'));if(wasOpen)return;menu.style.visibility='hidden';menu.style.top='0px';menu.style.left='0px';menu.classList.add('open');positionBoardMoveMenu(button,menu);
       }
       function closeBoardMoveMenus(){document.querySelectorAll('#job-priority-app .move-menu.open').forEach(menu=>menu.classList.remove('open'))}
-      function cardPunchIsActive(job){const key=timerKeyFor(job);return !!((activeWorkSession&&activeWorkSession.sessionId&&String(activeWorkSession.ticketNumber||'')===String(job&&job.ticketNumber||''))||(timerState[key]&&timerState[key].running))}
+      function cardPunchIsActive(job){return !!(activeWorkSession&&activeWorkSession.sessionId&&String(activeWorkSession.ticketNumber||'')===String(job&&job.ticketNumber||''))}
       function cardPunchControlMarkup(job){if(!job||String(job.status||'')==='Completed')return '';const key=timerKeyFor(job);const active=cardPunchIsActive(job);const locked=!!(activeWorkSession&&activeWorkSession.sessionId&&String(activeWorkSession.ticketNumber||'')!==String(job.ticketNumber||''));const busy=pendingPunchKeys.has(key)||(active&&punchOutRequestInFlight);const disabled=boardWarmActive||busy||locked;const icon=busy?PUNCH_LOADING_ICON:(active?CARD_PUNCH_OUT_ICON:CARD_PUNCH_IN_ICON);const label=busy?(active?'Punching Out…':'Punching In…'):active?'Punch Out':locked?`Punch unavailable while ${activePunchDisplayLabel()} is active`:'Punch In to latest work section';return `<button class="card-punch-btn${busy?' is-loading':''}" type="button" data-card-punch-ticket="${escapeHtml(String(job.ticketNumber||''))}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" ${disabled?'disabled':''}>${icon}</button>`}
       async function handleCardPunchControl(button){const ticket=String(button&&button.getAttribute('data-card-punch-ticket')||'');const job=jobs.find(item=>String(item.ticketNumber||'')===ticket);if(!job||button.disabled||boardWarmActive)return;const key=timerKeyFor(job);if(pendingPunchKeys.has(key))return;if(cardPunchIsActive(job)){button.disabled=true;button.classList.add('is-loading');button.innerHTML=PUNCH_LOADING_ICON;button.title='Punching Out…';button.setAttribute('aria-label','Punching Out…');button.setAttribute('aria-busy','true');try{await pauseTimer(key)}catch(err){alert('Punch Out could not be saved: '+err.message)}finally{button.removeAttribute('aria-busy')}return}if(activeWorkSession&&activeWorkSession.sessionId){alert(`Ticket ${activeWorkSession.ticketNumber} already has an active punch. Punch out before starting another job.`);return}if(String(job.status||'')==='Completed')return;const latest=currentJobDetailsTarget(job);if(!latest)return;const target=jobDetailsPunchTarget(job,latest.kind,latest.number||0);if(!target)return;await startPunchInDirect(job,target,button)}
       function renderQueue(activeJobs=getWSIWONJobs()){
@@ -4418,9 +4418,13 @@
         try{
           if(!['To Do','In Progress'].includes(newStatus)){
             const key=timerKeyFor(job);
-            const state=ensureTimerState(job);
-            if(state.running||activeTimerKey===key||(activeWorkSession&&activeWorkSession.timerKey===key)){
+            const activeSessionForJob=!!(activeWorkSession&&activeWorkSession.sessionId&&String(activeWorkSession.ticketNumber||'')===String(ticket));
+            if(activeSessionForJob){
               await pauseTimer(key,{render:false});
+            }else{
+              const state=timerState[key];
+              if(state)state.running=false;
+              if(activeTimerKey===key){activeTimerKey='';stopTimerInterval()}
             }
           }
 
