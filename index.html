@@ -1428,10 +1428,6 @@
     </div>
 
 
-    <div class="orphan-punch-banner" id="orphanPunchBanner" role="alert">
-      <span id="orphanPunchBannerText">⚠ Unresolved punch found.</span>
-      <button type="button" id="fixOrphanPunchBtn">Fix Punch</button>
-    </div>
     <div class="active-job-bar" id="activeJobBar" role="status" aria-live="polite">
       <div class="active-job-main">
         <span class="active-job-dot" aria-hidden="true"></span>
@@ -1510,11 +1506,6 @@
           <button class="primary" id="notificationContinueBtn" type="button">Continue Working</button>
           <button class="secondary" id="notificationReprioritizeBtn" type="button">Re-Prioritize</button>
         </div>
-      </div>
-      <div class="notification-row orphan" id="orphanPunchNotification" role="alert">
-        <div class="notification-row-head"><span class="notification-row-icon" aria-hidden="true">⚠</span><span class="notification-row-title">Unresolved Punch</span></div>
-        <p class="notification-row-message" id="orphanPunchNotificationMessage">An unresolved open punch was found.</p>
-        <div class="notification-row-actions"><button type="button" id="notificationFixOrphanBtn">Fix Punch</button></div>
       </div>
         </div>
       </div>
@@ -2211,7 +2202,6 @@
       let hourlyWorkReminderHour=0;
       let notificationTrayMinimized=false;
       let notificationTrayHadBlock=false;
-      let notificationTrayHadOrphan=false;
       let dueDateEditTicket='';
       let returnToDoDueDateResolver=null;
       let followUpDateEditTicket='';
@@ -2975,7 +2965,7 @@
           saveActiveWorkSession(null);clearTimerSnapshot();
           renderActiveJobBar();renderWorkUtilization();renderNotificationTray();
           if(jobDetailsTicket&&String(jobDetailsTicket)===String(localSession.ticketNumber||''))renderJobDetailsModal();
-          scheduleOrphanPunchCheck(1200);
+          scheduleOrphanPunchCheck(0);
           return true
         }catch(err){scheduleOrphanPunchCheck();alert('Punch Out could not be saved: '+err.message);return false}
         finally{
@@ -3059,16 +3049,8 @@
         const target=jobDetailsPunchTarget(job,kind,number);if(!target)return;if(target.workType==='New Change Order'&&!target.workloadScore){openJobDetailsPunchIn(job,kind,number);return}startPunchInDirect(job,target,btn);
       }
       function sessionRecoveryKey(session){return String(session&&session.ticketNumber||'')}
-      function orphanOpenSessions(){
-        const activeId=activeWorkSession&&activeWorkSession.sessionId?String(activeWorkSession.sessionId):'';
-        return workSessions.filter(session=>!session.punchOut&&!wasWorkSessionRecentlyClosed(session.sessionId)&&String(session.sessionId||'')!==activeId);
-      }
-      function orphanSessionForTicket(ticket){return orphanOpenSessions().find(session=>String(session.ticketNumber||'')===String(ticket))||null}
       function jobDetailsButton(ticket){
-        const session=orphanSessionForTicket(ticket);
-        const title=session?'Job Details — unresolved open punch':'Job Details';
-        const warning=session?'<span class="job-details-warning" aria-label="Unresolved punch">!</span>':'';
-        return `<button class="job-details-btn" type="button" data-job-details-ticket="${escapeHtml(String(ticket))}" aria-label="${escapeHtml(title)}" title="${escapeHtml(title)}">${JOB_DETAILS_ICON}${warning}</button>`;
+        return `<button class="job-details-btn" type="button" data-job-details-ticket="${escapeHtml(String(ticket))}" aria-label="Job Details" title="Job Details">${JOB_DETAILS_ICON}</button>`;
       }
       function renderOrphanPunchBanner(){
         const banner=document.getElementById('orphanPunchBanner');
@@ -3101,7 +3083,7 @@
           if(!data||!data.success)return;
           if(Array.isArray(data.workdayPunches))workdayPunches=data.workdayPunches;if(data.autoWorkday)autoWorkdayConfig=data.autoWorkday;
           const open=data.openWorkSession||null;const activeId=activeWorkSession&&activeWorkSession.sessionId?String(activeWorkSession.sessionId):'';const backendId=open&&open.sessionId?String(open.sessionId):'';
-          if(!backendId){if(activeId)clearBackendClosedActiveSession();workSessions=workSessions.filter(session=>session.punchOut||wasWorkSessionRecentlyClosed(session.sessionId));renderQueue();renderBoard();renderWorkUtilization();return}
+          if(!backendId){if(activeId)clearBackendClosedActiveSession();workSessions=workSessions.filter(session=>session.punchOut||wasWorkSessionRecentlyClosed(session.sessionId));renderQueue();renderBoard();renderWorkUtilization();renderNotificationTray();return}
           if(wasWorkSessionRecentlyClosed(backendId))return;
           if(!activeId||activeId!==backendId)await adoptBackendWorkSession(open);else{const existing=workSessions.find(session=>String(session.sessionId||'')===backendId);if(existing)Object.assign(existing,open);else workSessions.push(open)}
           workSessions=workSessions.filter(session=>session.punchOut||String(session.sessionId||'')===backendId);renderQueue();renderBoard();renderWorkUtilization();renderNotificationTray();
@@ -3123,7 +3105,6 @@
       function renderNotificationTray(){
         const tray=document.getElementById('notificationTray');if(!tray)return;
         const block=document.getElementById('blockCompleteNotification');
-        const orphan=document.getElementById('orphanPunchNotification');
         const hasBlock=Boolean(completedTimerKey);
         if(block)block.classList.toggle('show',hasBlock);
         if(hasBlock&&completedTimerEndedAt){
@@ -3136,23 +3117,10 @@
           const msg=document.getElementById('blockCompleteNotificationMessage');
           if(msg)msg.textContent=`Allotted time for ${label} is complete. Block ended ${timeText} ago.${recoveryText}`;
         }
-        const orphanSessions=orphanOpenSessions();
-        if(orphan){
-          orphan.classList.toggle('show',orphanSessions.length>0);
-          if(orphanSessions.length){
-            const session=orphanSessions[0];
-            const job=jobs.find(j=>Number(j.ticketNumber)===Number(session.ticketNumber));
-            const label=job?(job.title||job.displayTitle||('Ticket '+session.ticketNumber)):('Ticket '+session.ticketNumber);
-            const extra=orphanSessions.length>1?` (+${orphanSessions.length-1} more)`:'';
-            document.getElementById('orphanPunchNotificationMessage').textContent=`${label}${extra} has an open punch that is not active in this browser.`;
-            orphan.setAttribute('data-orphan-session',String(session.sessionId||''));
-          }else orphan.removeAttribute('data-orphan-session');
-        }
-        const hasOrphan=orphanSessions.length>0;
-        const alertCount=(hasBlock?1:0)+(hasOrphan?1:0);
-        const urgentNew=(hasBlock&&!notificationTrayHadBlock)||(hasOrphan&&!notificationTrayHadOrphan);
+        const alertCount=hasBlock?1:0;
+        const urgentNew=hasBlock&&!notificationTrayHadBlock;
         if(urgentNew)notificationTrayMinimized=false;
-        notificationTrayHadBlock=hasBlock;notificationTrayHadOrphan=hasOrphan;
+        notificationTrayHadBlock=hasBlock;
         if(!alertCount)notificationTrayMinimized=false;
         tray.classList.toggle('show',alertCount>0);
         tray.classList.toggle('minimized',notificationTrayMinimized&&alertCount>0);
@@ -3947,7 +3915,6 @@
         const scoreControl=isCurrent?workloadScoreEditorMarkup(sectionWorkloadScore,kind==='change-order'?'change-order':'work-set',job.ticketNumber,number,set&&set.workSetId||'',record&&record.changeOrderIntakeId||''):'';
         const dueValue=job.due||job.dueDate||'';const dueInputValue=String(dueValue||'').slice(0,10);const dueButton=isCurrent?`<div class="job-details-section-head-actions"><div class="job-details-due-wrap"><button class="job-details-due-btn" type="button" data-job-details-due-date="${escapeHtml(String(job.ticketNumber||''))}" title="Change Due Date">${dueValue?'Due '+escapeHtml(formatDate(dueValue)):'Set Due Date'}</button><div class="job-details-due-popover" data-job-details-due-popover><label class="job-details-due-popover-label" for="jobDetailsDueDateInput-${escapeHtml(String(job.ticketNumber||''))}">Due Date</label><input id="jobDetailsDueDateInput-${escapeHtml(String(job.ticketNumber||''))}" type="date" data-job-details-due-input value="${escapeHtml(dueInputValue)}"><div class="job-details-due-popover-actions"><button class="secondary" type="button" data-job-details-due-cancel>Cancel</button><button class="primary" type="button" data-job-details-due-save="${escapeHtml(String(job.ticketNumber||''))}">Save</button></div></div></div></div>`:'';
         let html=`<section class="job-details-section ${toneClass}${sectionActive?' timer-active':''}${isCurrent?' is-current':' is-history'}" data-job-details-section="${escapeHtml(key)}"><div class="job-details-section-head"><div class="job-details-section-heading">${canCancel?`<button class="job-details-cancel-co" type="button" data-job-details-cancel-co="${escapeHtml(record.changeOrderIntakeId)}" aria-label="Cancel ${escapeHtml(title)}" title="Cancel ${escapeHtml(title)}">×</button>`:''}<div><div class="job-details-section-title-row"><div class="job-details-section-title">${escapeHtml(title)}</div>${isCurrent?'<span class="job-details-current-badge">Current</span>':''}${scoreControl}</div>${isCurrent&&record&&record.emailAddress?`<div class="job-details-co-email"><span class="job-details-co-email-address">${escapeHtml(record.emailAddress)}</span><button class="job-details-co-email-copy" type="button" data-job-details-copy-co-email="${escapeHtml(record.changeOrderIntakeId)}" aria-label="Copy Change Order email address" title="Copy email address">${COPY_ICON}</button></div>`:''}${status?`<div class="job-details-section-status">${escapeHtml(status)}</div>`:''}</div></div>${dueButton}</div>`;
-        const orphan=orphanSessionForTicket(ticket);if(orphan&&((kind==='initial'&&(!set||String(orphan.workSetId||'')===String(set.workSetId||'')))||(kind==='change-order'&&set&&String(orphan.workSetId||'')===String(set.workSetId||''))))html+=`<div class="orphan-punch-banner show job-details-orphan"><span>⚠ This section has an unresolved open punch.</span><button type="button" data-job-details-fix-orphan="${escapeHtml(orphan.sessionId)}">Fix Punch</button></div>`;
         const requestReference=notes?`<div class="job-details-request-reference"><div class="job-details-source-body">${escapeHtml(notes)}</div></div>`:'';
         const sourceNote=sources.length?`<div class="job-details-source-meta" style="margin-bottom:8px">✉ This ${kind==='change-order'?'Change Order':'Initial Request'} came from email.</div>`:'';
         const sourceMarkup=sources.length?`${sourceNote}<div class="job-details-source-list">${sources.map((source,index)=>jobDetailsSourceMarkup(source,index,sources.length,!isCurrent)).join('')}</div>`:'';
@@ -4039,7 +4006,6 @@
         holder.querySelectorAll('[data-job-details-due-save]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();saveJobDetailsDueDate(btn)}));
         holder.querySelectorAll('[data-job-details-edit-punch]').forEach(btn=>btn.addEventListener('click',()=>openEditPunchModal(btn.getAttribute('data-job-details-edit-punch'))));
         holder.querySelectorAll('[data-job-details-delete-punch]').forEach(btn=>btn.addEventListener('click',()=>openDeletePunchModal(btn.getAttribute('data-job-details-delete-punch'))));
-        holder.querySelectorAll('[data-job-details-fix-orphan]').forEach(btn=>btn.addEventListener('click',()=>{const session=workSessions.find(item=>String(item.sessionId||'')===String(btn.getAttribute('data-job-details-fix-orphan')||''));if(session){document.getElementById('jobDetailsModalBackdrop').classList.remove('open');showOpenSessionRecovery(session)}}));
         const moveBtn=document.getElementById('jobDetailsMoveColumnBtn'),moveMenu=document.getElementById('jobDetailsMoveColumnMenu');if(moveBtn&&moveMenu){moveBtn.onclick=e=>{e.stopPropagation();moveMenu.classList.toggle('open')}}
         const invoiceArea=document.getElementById('jobDetailsInvoiceNotes'),invoiceSave=document.getElementById('jobDetailsSaveInvoiceNotesBtn');if(invoiceArea&&invoiceSave){invoiceArea.addEventListener('input',()=>{invoiceSave.disabled=invoiceArea.value===String(invoiceArea.dataset.initialValue||'')});invoiceSave.addEventListener('click',()=>saveJobDetailsInvoiceNotes(job))}
         if(boardWarmActive){
@@ -4176,8 +4142,6 @@
         });
         const total=sessions.filter(s=>s.punchOut).reduce((sum,s)=>sum+Number(s.durationMinutes||0),0);
         let html=`<div class="time-record-summary"><strong>Total Recorded Time</strong><strong>${formatSessionDuration(total)}</strong></div>`;
-        const orphan=orphanSessionForTicket(ticket);
-        if(orphan)html+=`<div class="orphan-punch-banner show" style="margin:0 0 12px"><span>⚠ This job has an unresolved open punch.</span><button type="button" data-fix-time-record-orphan="${escapeHtml(orphan.sessionId)}">Fix Punch</button></div>`;
         if(!sessions.length){body.innerHTML=html+'<div class="time-record-empty">No punches have been recorded for this job yet.</div>';return}
         const represented=new Set();
         sets.forEach(set=>{
@@ -4199,7 +4163,6 @@
           html+=`<div class="time-record-set-total">Other Total: ${escapeHtml(formatSessionDuration(subtotal))}</div></section>`;
         }
         body.innerHTML=html;
-        body.querySelectorAll('[data-fix-time-record-orphan]').forEach(btn=>btn.addEventListener('click',()=>{const session=workSessions.find(item=>String(item.sessionId||'')===String(btn.getAttribute('data-fix-time-record-orphan')||''));if(session){document.getElementById('timeRecordModalBackdrop').classList.remove('open');showOpenSessionRecovery(session)}}));
         body.querySelectorAll('[data-edit-punch-session]').forEach(btn=>btn.addEventListener('click',()=>openEditPunchModal(btn.getAttribute('data-edit-punch-session'))));
         body.querySelectorAll('[data-delete-punch-session]').forEach(btn=>btn.addEventListener('click',()=>openDeletePunchModal(btn.getAttribute('data-delete-punch-session'))));
       }
@@ -6021,11 +5984,6 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('moveFinancialJobToCompletedBtn').addEventListener('click',moveCurrentFinancialJobToCompleted);
       document.getElementById('notificationTrayMinimizeBtn').addEventListener('click',()=>{notificationTrayMinimized=true;renderNotificationTray()});
       document.getElementById('notificationTrayCollapsedBtn').addEventListener('click',()=>{notificationTrayMinimized=false;renderNotificationTray()});
-      document.getElementById('notificationFixOrphanBtn').addEventListener('click',()=>{
-        const sessionId=document.getElementById('orphanPunchNotification').getAttribute('data-orphan-session');
-        const session=workSessions.find(item=>String(item.sessionId||'')===String(sessionId||''));
-        if(session)showOpenSessionRecovery(session);
-      });
       async function applyRecoveredGapToJob(key,recoveredSeconds){
         const seconds=Math.max(0,Number(recoveredSeconds)||0);if(!seconds)return true;
         const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return false;
