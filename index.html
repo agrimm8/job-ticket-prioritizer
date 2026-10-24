@@ -2318,7 +2318,7 @@
       function boardColumnDateForJob(job,targetId){
         if(targetId==='todoList'||targetId==='queue')return dateReceivedForJob(job)||String(job&&job.createdAt||'');
         const ticket=String(job&&job.ticketNumber||'');const status=String(job&&job.status||'');
-        const matches=statusHistory.filter(item=>String(item.ticketNumber||'')===ticket&&String(item.newStatus||item.status||'')===status&&item.changedAt).sort((a,b)=>new Date(b.changedAt)-new Date(a.changedAt));
+        const matches=statusHistory.filter(item=>String(item.ticketNumber||'')===ticket&&String(item.newStatus||item.toStatus||item.status||'')===status&&item.changedAt).sort((a,b)=>new Date(b.changedAt)-new Date(a.changedAt));
         return matches.length?String(matches[0].changedAt||''):String(job&&job.createdAt||dateReceivedForJob(job)||'');
       }
       function formatDateTimeDisplay(value){if(!value)return '—';const d=new Date(value);if(Number.isNaN(d.getTime()))return '—';return d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}
@@ -2693,7 +2693,7 @@
         const ticket=String(j.ticketNumber||'');
         const current=String(j.status||'');
         const matches=statusHistory
-          .filter(e=>String(e.ticketNumber||'')===ticket&&String(e.newStatus||'')===current&&e.changedAt)
+          .filter(e=>String(e.ticketNumber||'')===ticket&&String(e.newStatus||e.toStatus||e.status||'')===current&&e.changedAt)
           .sort((a,b)=>new Date(b.changedAt)-new Date(a.changedAt));
         const value=matches.length?matches[0].changedAt:j.createdAt;
         const parsed=value?new Date(value):null;
@@ -3402,7 +3402,7 @@
       function completedDateForFinancialJob(job){
         if(!job||String(job.status||'')!=='Completed')return '';
         const raw=String(job.completedAt||'').slice(0,10);if(raw)return raw;
-        const matching=statusHistory.filter(item=>String(item.ticketNumber||'')===String(job.ticketNumber||'')&&String(item.newStatus||item.status||'')==='Completed');
+        const matching=statusHistory.filter(item=>String(item.ticketNumber||'')===String(job.ticketNumber||'')&&String(item.newStatus||item.toStatus||item.status||'')==='Completed');
         if(!matching.length)return '';
         const rawDate=String(matching[matching.length-1].changedAt||matching[matching.length-1].date||'').slice(0,10);return rawDate;
       }
@@ -4528,6 +4528,9 @@
             clientTimestamp
           },legacyPayload);
           if(!data.success)throw new Error(data.error||'Unable to update job');
+
+          const hasLocalStatusEvent=statusHistory.some(item=>String(item.ticketNumber||'')===String(ticket)&&String(item.newStatus||item.toStatus||item.status||'')===String(newStatus)&&String(item.changedAt||'')===clientTimestamp);
+          if(!hasLocalStatusEvent)statusHistory.push({ticketNumber:String(ticket),oldStatus,newStatus,fromStatus:oldStatus,toStatus:newStatus,changedAt:clientTimestamp});
 
           const saved=data.job||data;
           const savedDue=saved.dueDate||selectedDueDate||job.due||job.dueDate||'';
