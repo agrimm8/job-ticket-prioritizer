@@ -466,6 +466,12 @@
     #job-priority-app .job-details-financials-title{font-size:11px;font-weight:850}
     #job-priority-app .job-details-financials-open{min-height:25px;padding:4px 7px;font-size:9px}
     #job-priority-app .job-details-financials-body{padding:8px 11px 10px}
+    #job-priority-app .job-details-financial-grid{margin:0;gap:10px}
+    #job-priority-app .job-details-financial-panel-title{font-size:10px;padding:8px 10px}
+    #job-priority-app .job-details-financial-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;margin-top:9px}
+    #job-priority-app .job-details-financial-actions button{min-height:27px;padding:5px 10px;font-size:10px}
+    #job-priority-app .job-details-financials .financial-net{margin-top:10px;padding:9px 11px;font-size:10px}
+    #job-priority-app .job-details-financials .financial-net-value{font-size:14px}
     #job-priority-app .job-details-financial-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:4px 0;font-size:9px;border-bottom:1px solid light-dark(#ecece8,#373737)}
     #job-priority-app .job-details-financial-row:last-child{border-bottom:0}
     #job-priority-app .job-details-financial-kind{font-weight:800;opacity:.62;margin-top:6px;font-size:8px;text-transform:uppercase;letter-spacing:.04em}
@@ -2246,6 +2252,7 @@
       let jobDetailsActiveTab='work';
       let jobDetailsClientOpen=false;
       let jobDetailsClientEditing=false;
+      let jobDetailsFinancialsDirty=false;
       let jobFinancialsReturnToJobDetailsTicket='';
       let jobFinancialsReturnJobDetailsScroll={left:0,right:0};
       let jobSearchFilter='all';
@@ -3931,8 +3938,51 @@
       function renderJobDetailsFinancials(job){
         if(boardWarmActive&&!d1JobDetailsCacheReady)return '<div class="job-details-financials"><div class="job-details-financials-head"><div class="job-details-financials-title">Job Income &amp; Expenses</div></div><div class="job-details-financials-body"><div class="job-details-financial-empty">Financial records are loading from Google…</div></div></div>';
         const entries=financialEntriesForTicket(job.ticketNumber);const incomes=entries.filter(item=>item.type==='Income');const expenses=entries.filter(item=>item.type==='Expense');const summary=financialSummary(job.ticketNumber);
-        const rows=list=>list.length?list.map(item=>`<div class="job-details-financial-row"><span>${escapeHtml(item.description||'—')}</span><span>${escapeHtml(formatCurrency(item.amount))}</span></div>`).join(''):'<div class="job-details-financial-empty">No entries recorded.</div>';
-        return `<div class="job-details-financials"><div class="job-details-financials-head"><div class="job-details-financials-title">Job Income &amp; Expenses</div><button class="secondary job-details-financials-open" type="button" data-job-details-financials="${escapeHtml(String(job.ticketNumber||''))}">Open / Edit</button></div><div class="job-details-financials-body"><div class="job-details-financial-kind">Income</div>${rows(incomes)}<div class="job-details-financial-kind">Expenses</div>${rows(expenses)}<div class="job-details-financial-totals"><span>Income</span><span>${escapeHtml(formatCurrency(summary.income))}</span><span>Expenses</span><span>${escapeHtml(formatCurrency(summary.expenses))}</span><strong>Net Profit</strong><strong>${escapeHtml(formatCurrency(summary.net))}</strong></div></div></div>`;
+        const rows=(type,list)=>{const values=list.length?list:[{}];return values.map(item=>{const amount=item.amountText!==undefined?String(item.amountText):(Number.isFinite(Number(item.amount))&&item.amount!==''?Number(item.amount).toFixed(2):'');return `<div class="financial-entry-row" data-job-details-financial-row="${type}"><input class="financial-description" data-job-details-financial-description type="text" placeholder="Description" value="${escapeHtml(item.description||'')}"><input class="financial-amount" data-job-details-financial-amount type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" value="${escapeHtml(amount)}"><button class="financial-remove" data-job-details-financial-remove type="button" aria-label="Remove ${type.toLowerCase()} row" title="Remove row">×</button></div>`}).join('')};
+        return `<div class="job-details-financials"><div class="job-details-financials-head"><div class="job-details-financials-title">Job Income &amp; Expenses</div></div><div class="job-details-financials-body"><div class="financial-grid job-details-financial-grid" data-job-details-financial-editor data-ticket="${escapeHtml(String(job.ticketNumber||''))}"><section class="financial-panel"><div class="financial-panel-title job-details-financial-panel-title">Income</div><div class="financial-columns-head"><span>Description</span><span>Amount</span><span></span></div><div data-job-details-financial-rows="Income">${rows('Income',incomes)}</div><button class="secondary financial-add" data-job-details-financial-add="Income" type="button">+ Add Income</button><div class="financial-total-row"><span>Income Total</span><span class="financial-total-amount" data-job-details-financial-total="Income">${escapeHtml(formatCurrency(summary.income))}</span><span></span></div></section><section class="financial-panel"><div class="financial-panel-title job-details-financial-panel-title">Expenses</div><div class="financial-columns-head"><span>Description</span><span>Amount</span><span></span></div><div data-job-details-financial-rows="Expense">${rows('Expense',expenses)}</div><button class="secondary financial-add" data-job-details-financial-add="Expense" type="button">+ Add Expense</button><div class="financial-total-row"><span>Expense Total</span><span class="financial-total-amount" data-job-details-financial-total="Expense">${escapeHtml(formatCurrency(summary.expenses))}</span><span></span></div></section></div><div class="financial-net"><span>Project Net Profit</span><span class="financial-net-value ${profitClass(summary.net)||'zero'}" data-job-details-financial-net>${escapeHtml(formatCurrency(summary.net))}</span></div><div class="job-details-financial-actions"><button class="secondary" data-job-details-financial-cancel type="button">Cancel</button><button class="primary" data-job-details-financial-save type="button" disabled>Save</button></div></div></div>`;
+      }
+      function readJobDetailsFinancialRows(type,validate=false){
+        const editor=document.querySelector('#jobDetailsBody [data-job-details-financial-editor]');if(!editor)return [];
+        const entries=[];
+        editor.querySelectorAll(`[data-job-details-financial-row="${type}"]`).forEach(row=>{
+          const description=String(row.querySelector('[data-job-details-financial-description]')?.value||'').trim();
+          const amountText=String(row.querySelector('[data-job-details-financial-amount]')?.value||'').trim();
+          if(!description&&!amountText)return;
+          const amount=Number(amountText);
+          if(validate&&(!description||amountText===''||!Number.isFinite(amount)||amount<0))throw new Error(`${type} rows need both a description and a valid amount.`);
+          if(description&&amountText!==''&&Number.isFinite(amount)&&amount>=0)entries.push({type,description,amount});
+        });
+        return entries;
+      }
+      function updateJobDetailsFinancialTotals(){
+        let income=[],expenses=[];try{income=readJobDetailsFinancialRows('Income');expenses=readJobDetailsFinancialRows('Expense')}catch(ignore){}
+        const incomeTotal=income.reduce((sum,item)=>sum+Number(item.amount||0),0);const expenseTotal=expenses.reduce((sum,item)=>sum+Number(item.amount||0),0);const net=incomeTotal-expenseTotal;
+        const incomeEl=document.querySelector('#jobDetailsBody [data-job-details-financial-total="Income"]');const expenseEl=document.querySelector('#jobDetailsBody [data-job-details-financial-total="Expense"]');const netEl=document.querySelector('#jobDetailsBody [data-job-details-financial-net]');
+        if(incomeEl)incomeEl.textContent=formatCurrency(incomeTotal);if(expenseEl)expenseEl.textContent=formatCurrency(expenseTotal);if(netEl){netEl.textContent=formatCurrency(net);netEl.classList.remove('negative','zero');const cls=profitClass(net);if(cls)netEl.classList.add(cls);else netEl.classList.add('zero')}
+        jobDetailsFinancialsDirty=true;const save=document.querySelector('#jobDetailsBody [data-job-details-financial-save]');if(save)save.disabled=false;
+      }
+      function addJobDetailsFinancialRow(type,entry={}){
+        const target=document.querySelector(`#jobDetailsBody [data-job-details-financial-rows="${type}"]`);if(!target)return;
+        const amount=entry.amountText!==undefined?String(entry.amountText):(Number.isFinite(Number(entry.amount))&&entry.amount!==''?Number(entry.amount).toFixed(2):'');
+        const row=document.createElement('div');row.className='financial-entry-row';row.setAttribute('data-job-details-financial-row',type);
+        row.innerHTML=`<input class="financial-description" data-job-details-financial-description type="text" placeholder="Description" value="${escapeHtml(entry.description||'')}"><input class="financial-amount" data-job-details-financial-amount type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" value="${escapeHtml(amount)}"><button class="financial-remove" data-job-details-financial-remove type="button" aria-label="Remove ${type.toLowerCase()} row" title="Remove row">×</button>`;
+        target.appendChild(row);wireJobDetailsFinancialRow(row);updateJobDetailsFinancialTotals();row.querySelector('[data-job-details-financial-description]').focus();
+      }
+      function wireJobDetailsFinancialRow(row){
+        row.querySelectorAll('[data-job-details-financial-description],[data-job-details-financial-amount]').forEach(input=>input.addEventListener('input',updateJobDetailsFinancialTotals));
+        row.querySelector('[data-job-details-financial-remove]')?.addEventListener('click',()=>{row.remove();updateJobDetailsFinancialTotals()});
+      }
+      async function saveJobDetailsFinancials(job){
+        const ticket=String(job&&job.ticketNumber||'');const save=document.querySelector('#jobDetailsBody [data-job-details-financial-save]');if(!ticket||!save||!jobDetailsFinancialsDirty)return;
+        try{
+          const entries=[...readJobDetailsFinancialRows('Income',true),...readJobDetailsFinancialRows('Expense',true)];save.disabled=true;save.textContent='Saving…';
+          let data;
+          try{data=await d1FastFinancialsPost(ticket,entries,{action:'saveJobFinancials',ticketNumber:ticket,entries})}
+          catch(firstError){if(!/job is not mirrored in d1/i.test(String(firstError&&firstError.message||firstError)))throw firstError;const mirror=await ensureJobMirroredToD1(job);if(!mirror.fastPath)throw firstError;data=await d1FastFinancialsPost(ticket,entries,{action:'saveJobFinancials',ticketNumber:ticket,entries})}
+          if(!data.success)throw new Error(data.error||'Unable to save job financials');
+          jobFinancials=jobFinancials.filter(item=>String(item.ticketNumber||'')!==ticket);(data.entries||entries).forEach(item=>jobFinancials.push({...item,ticketNumber:Number(ticket)}));jobDetailsFinancialsDirty=false;
+          const pane=document.querySelector('#jobDetailsBody [data-job-details-tab-panel="financials"]');const scrollTop=pane?pane.scrollTop:0;renderQueue();renderBoard();renderJobDetailsModal();const updatedPane=document.querySelector('#jobDetailsBody [data-job-details-tab-panel="financials"]');if(updatedPane)updatedPane.scrollTop=scrollTop;
+        }catch(err){alert(err.message);save.disabled=false;save.textContent='Save'}
       }
       function renderJobDetailsGeneralNotes(job){
         if(boardWarmActive){const ids=jobDetailsClientIds(job);const found=ids.secondaryClientId?subclients.some(item=>String(item.parentClientId)===ids.primaryClientId&&String(item.id)===ids.secondaryClientId):clients.some(item=>String(item.id)===ids.primaryClientId);if(!found)return `<div class="job-details-client open"><div class="job-details-client-heading"><strong>General Notes</strong><span class="muted">${escapeHtml(jobDetailsClientLabel(job)||'Client notes')}</span></div><div class="job-details-client-body"><div class="job-details-source-meta">Client notes are loading from Google…</div></div></div>`}
@@ -3993,7 +4043,10 @@
         const wireClientField=(fieldId,saveId,cancelId,scope)=>{const field=holder.querySelector('#'+fieldId),save=holder.querySelector('#'+saveId),cancel=holder.querySelector('#'+cancelId);if(!field)return;const update=()=>{const dirty=field.value!==String(field.dataset.initialValue||'');jobDetailsClientEditing=dirty;if(save)save.disabled=!dirty;if(cancel)cancel.style.display=dirty?'inline-flex':'none'};field.addEventListener('input',update);if(save)save.addEventListener('click',()=>saveJobDetailsClientNotes(job,scope));if(cancel)cancel.addEventListener('click',()=>{jobDetailsClientEditing=false;renderJobDetailsModal()})};
         wireClientField('jobDetailsClientGeneral','jobDetailsSaveGeneralNotesBtn','jobDetailsCancelGeneralNotesBtn','general');
         wireClientField('jobDetailsClientPricing','jobDetailsSavePricingNotesBtn','jobDetailsCancelPricingNotesBtn','pricing');
-        holder.querySelectorAll('[data-job-details-financials]').forEach(btn=>btn.addEventListener('click',()=>{const left=holder.querySelector('.job-details-pane-left');const right=holder.querySelector('.job-details-pane-right');jobDetailsActiveTab='financials';jobFinancialsReturnToJobDetailsTicket=String(jobDetailsTicket||'');jobFinancialsReturnJobDetailsScroll={left:left?left.scrollTop:0,right:right?right.scrollTop:0};document.getElementById('jobDetailsModalBackdrop').classList.remove('open');openJobFinancialsModal(btn.getAttribute('data-job-details-financials'))}));
+        holder.querySelectorAll('[data-job-details-financial-row]').forEach(wireJobDetailsFinancialRow);
+        holder.querySelectorAll('[data-job-details-financial-add]').forEach(btn=>btn.addEventListener('click',()=>addJobDetailsFinancialRow(btn.getAttribute('data-job-details-financial-add'))));
+        holder.querySelectorAll('[data-job-details-financial-save]').forEach(btn=>btn.addEventListener('click',()=>saveJobDetailsFinancials(job)));
+        holder.querySelectorAll('[data-job-details-financial-cancel]').forEach(btn=>btn.addEventListener('click',()=>{jobDetailsFinancialsDirty=false;renderJobDetailsModal()}));
         holder.querySelectorAll('[data-job-details-notes]').forEach(area=>{const key=area.getAttribute('data-job-details-notes');const save=holder.querySelector(`[data-job-details-save-notes="${key}"]`);area.addEventListener('input',()=>{if(save)save.disabled=area.value===String(area.dataset.initialValue||'')})});
         holder.querySelectorAll('[data-job-details-save-notes]').forEach(btn=>btn.addEventListener('click',()=>saveJobDetailsSectionNotes(job,btn.getAttribute('data-job-details-save-notes'))));
         holder.querySelectorAll('[data-action-check-row]').forEach(row=>{const list=row.closest('[data-job-details-checklist]');wireActionChecklistRow(row,list?list.getAttribute('data-job-details-checklist'):'')});
@@ -4017,7 +4070,8 @@
           const move=document.getElementById('jobDetailsMoveColumnBtn');if(move)move.disabled=false;
           if(d1JobDetailsCacheReady){
             holder.querySelectorAll('#jobDetailsClientGeneral,#jobDetailsClientPricing').forEach(control=>{control.disabled=false});
-            holder.querySelectorAll('[data-job-details-financials]').forEach(control=>{control.disabled=false});
+            holder.querySelectorAll('[data-job-details-financial-add],[data-job-details-financial-save],[data-job-details-financial-cancel],[data-job-details-financial-description],[data-job-details-financial-amount],[data-job-details-financial-remove]').forEach(control=>{control.disabled=false});
+            const financialSave=holder.querySelector('[data-job-details-financial-save]');if(financialSave)financialSave.disabled=!jobDetailsFinancialsDirty;
             const initialChecklist=holder.querySelector('[data-job-details-checklist="initial"]');
             if(initialChecklist)initialChecklist.querySelectorAll('[data-action-check-box],[data-action-check-text],[data-action-check-remove]').forEach(control=>{control.disabled=false});
             holder.querySelectorAll('[data-job-details-add-checkbox="initial"]').forEach(control=>{control.disabled=false});
@@ -4050,7 +4104,7 @@
       }
       function openJobDetailsModal(ticket){
         const job=(Array.isArray(jobs)?jobs:[]).find(item=>String(item.ticketNumber||'')===String(ticket));if(!job)return;
-        jobDetailsTicket=String(ticket);jobDetailsActiveTab='work';jobDetailsClientOpen=true;jobDetailsClientEditing=false;
+        jobDetailsTicket=String(ticket);jobDetailsActiveTab='work';jobDetailsClientOpen=true;jobDetailsClientEditing=false;jobDetailsFinancialsDirty=false;
         const backdrop=document.getElementById('jobDetailsModalBackdrop');if(backdrop)backdrop.classList.add('open');
         try{renderJobDetailsModal()}catch(err){
           console.error('Job Details render failed',err);
@@ -5342,7 +5396,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         return JSON.stringify({intakes,sources});
       }
       function jobDetailsIsActivelyEditing(){
-        if(jobDetailsClientEditing)return true;
+        if(jobDetailsClientEditing||jobDetailsFinancialsDirty)return true;
         return Array.from(document.querySelectorAll('#jobDetailsBody .job-details-save-btn,#jobDetailsSaveClientNotesBtn')).some(btn=>!btn.disabled);
       }
       async function refreshChangeOrderDetails(){
@@ -6278,8 +6332,8 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         }catch(err){alert(err.message)}
       });
       document.getElementById('jobDetailsAddChangeOrderBtn').addEventListener('click',addJobDetailsChangeOrder);
-      function jobDetailsHasUnsavedEdits(){if(jobDetailsClientEditing)return true;return Array.from(document.querySelectorAll('#jobDetailsBody .job-details-save-btn,#jobDetailsSaveClientNotesBtn')).some(btn=>!btn.disabled)}
-      function closeJobDetailsModal(){jobDetailsTicket='';jobDetailsActiveTab='work';jobDetailsClientOpen=false;jobDetailsClientEditing=false;document.getElementById('jobDetailsModalBackdrop').classList.remove('open');renderActiveJobBar()}
+      function jobDetailsHasUnsavedEdits(){if(jobDetailsClientEditing||jobDetailsFinancialsDirty)return true;return Array.from(document.querySelectorAll('#jobDetailsBody .job-details-save-btn,#jobDetailsSaveClientNotesBtn')).some(btn=>!btn.disabled)}
+      function closeJobDetailsModal(){jobDetailsTicket='';jobDetailsActiveTab='work';jobDetailsClientOpen=false;jobDetailsClientEditing=false;jobDetailsFinancialsDirty=false;document.getElementById('jobDetailsModalBackdrop').classList.remove('open');renderActiveJobBar()}
       function requestCloseJobDetailsModal(){if(jobDetailsHasUnsavedEdits()&&!confirm('Close Job Details and discard unsaved changes?'))return false;closeJobDetailsModal();return true}
       document.getElementById('closeJobDetailsBtn').addEventListener('click',closeJobDetailsModal);
       document.getElementById('jobDetailsModalBackdrop').addEventListener('click',e=>{if(e.target!==e.currentTarget)return;requestCloseJobDetailsModal()});
