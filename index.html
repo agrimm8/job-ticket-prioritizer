@@ -435,7 +435,7 @@
     #job-priority-app .job-details-move-wrap{position:relative}
     #job-priority-app .job-details-move-btn{background:#2e7d32;color:#fff;white-space:nowrap}
     #job-priority-app .job-details-move-btn:hover{background:#256628}
-    #job-priority-app .job-details-move-menu{left:auto;right:0;top:34px;min-width:220px}
+    #job-priority-app .job-details-move-menu{left:0;right:auto;top:0;min-width:220px}
     #job-priority-app .job-details-move-menu button[disabled]{opacity:.45;cursor:default}
 
     #job-priority-app .job-details-client{border:1px solid light-dark(#d8d8d4,#444);border-radius:10px;margin-bottom:12px;overflow:hidden;background:light-dark(#fafaf8,#242424)}
@@ -4059,7 +4059,7 @@
         holder.querySelectorAll('[data-job-details-due-save]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();saveJobDetailsDueDate(btn)}));
         holder.querySelectorAll('[data-job-details-edit-punch]').forEach(btn=>btn.addEventListener('click',()=>openEditPunchModal(btn.getAttribute('data-job-details-edit-punch'))));
         holder.querySelectorAll('[data-job-details-delete-punch]').forEach(btn=>btn.addEventListener('click',()=>openDeletePunchModal(btn.getAttribute('data-job-details-delete-punch'))));
-        const moveBtn=document.getElementById('jobDetailsMoveColumnBtn'),moveMenu=document.getElementById('jobDetailsMoveColumnMenu');if(moveBtn&&moveMenu){moveBtn.onclick=e=>{e.stopPropagation();moveMenu.classList.toggle('open')}}
+        const moveBtn=document.getElementById('jobDetailsMoveColumnBtn'),moveMenu=document.getElementById('jobDetailsMoveColumnMenu');if(moveBtn&&moveMenu){moveBtn.onclick=e=>{e.stopPropagation();toggleBoardMoveMenu(moveBtn,moveMenu)}}
         const invoiceArea=document.getElementById('jobDetailsInvoiceNotes'),invoiceSave=document.getElementById('jobDetailsSaveInvoiceNotesBtn');if(invoiceArea&&invoiceSave){invoiceArea.addEventListener('input',()=>{invoiceSave.disabled=invoiceArea.value===String(invoiceArea.dataset.initialValue||'')});invoiceSave.addEventListener('click',()=>saveJobDetailsInvoiceNotes(job))}
         if(boardWarmActive){
           const folder=document.getElementById('jobDetailsCreateFolderBtn');if(folder){folder.disabled=true;folder.title='Available after Google data finishes loading.'}
