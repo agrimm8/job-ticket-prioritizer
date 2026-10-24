@@ -529,8 +529,8 @@
     #job-priority-app .job-details-time-total{display:flex;justify-content:space-between;gap:10px;padding:7px 9px;border-top:1px solid light-dark(#deded9,#414141);background:light-dark(#f7f7f4,#202020);font-size:10px;font-weight:850}
     #job-priority-app .job-details-time-empty{padding:8px 9px;font-size:10px;opacity:.6}
     #job-priority-app .job-details-notes-wrap{padding:0 12px 12px}
-    #job-priority-app .job-details-notes-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
-    #job-priority-app .job-details-notes-label{font-size:10px;font-weight:800}
+    #job-priority-app .job-details-notes-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;min-height:30px}
+    #job-priority-app .job-details-notes-label{font-size:10px;font-weight:800;line-height:1.2}
     #job-priority-app .job-details-notes-actions{display:flex;gap:5px}
     #job-priority-app .job-details-notes-actions button{min-height:26px;padding:4px 7px;font-size:9px}
     #job-priority-app .job-details-notes{min-height:235px;font-size:10px;line-height:1.45}
@@ -541,16 +541,17 @@
     #job-priority-app .job-details-action-panel .job-details-checklist:empty{display:none}
     #job-priority-app .job-details-request-panel .job-details-source-body{max-height:360px;font-size:10px;line-height:1.55}
     #job-priority-app .job-details-save-btn[disabled],#job-priority-app .notes-save-btn[disabled]{opacity:.42;cursor:default}
-    #job-priority-app .job-details-action-tools{display:flex;gap:5px;align-items:center}
+    #job-priority-app .job-details-action-tools{display:flex;gap:5px;align-items:center;align-self:center;flex:none}
+    #job-priority-app .job-details-action-tools button{display:inline-flex;align-items:center;justify-content:center;align-self:center;line-height:1.2}
     #job-priority-app .job-details-action-tools button{min-height:26px;padding:4px 7px;font-size:9px}
     #job-priority-app .job-details-checklist{display:flex;flex-direction:column;gap:5px;margin-top:7px;min-height:34px}
     #job-priority-app .job-details-action-panel .job-details-notes-wrap{height:100%}
     #job-priority-app .job-details-request-reference{margin-bottom:8px;padding:8px 9px;border:1px solid light-dark(#e0e0dc,#414141);border-radius:8px;background:light-dark(#fafaf8,#202020)}
     #job-priority-app .job-details-request-reference .job-details-source-body{margin-top:0}
-    #job-priority-app .job-details-check-row{display:grid;grid-template-columns:18px minmax(0,1fr) 24px;gap:5px;align-items:start}
-    #job-priority-app .job-details-check-row input[type=checkbox]{width:15px;height:15px;margin:7px 0 0}
+    #job-priority-app .job-details-check-row{display:grid;grid-template-columns:18px minmax(0,1fr) 24px;gap:5px;align-items:center}
+    #job-priority-app .job-details-check-row input[type=checkbox]{width:15px;height:15px;margin:0;align-self:center}
     #job-priority-app .job-details-check-row textarea{min-height:30px;max-height:220px;padding:6px 7px;font-size:10px;line-height:1.35;resize:none;overflow:hidden}
-    #job-priority-app .job-details-check-remove{min-height:28px;padding:2px 5px;font-size:12px;line-height:1}
+    #job-priority-app .job-details-check-remove{min-height:28px;padding:2px 5px;font-size:12px;line-height:1;align-self:center;display:inline-flex;align-items:center;justify-content:center}
     #job-priority-app .job-details-email-note-separator{height:1px;background:light-dark(#deded8,#444);margin:8px 0}
     #job-priority-app .job-details-co-email{display:flex;align-items:center;gap:5px;margin-top:2px;min-width:0;font-size:10px;font-weight:700;line-height:1.25;color:light-dark(#4e6f95,#9fc8ef)}
     #job-priority-app .job-details-co-email-address{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
