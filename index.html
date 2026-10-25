@@ -194,7 +194,6 @@
     #job-priority-app .timer-active{box-shadow:inset 0 0 0 2px #4169e1}
     #job-priority-app .queue-item.timer-active{background:light-dark(rgba(65,105,225,.055),rgba(65,105,225,.10));border-radius:8px}
     #job-priority-app .board-column .card.timer-active,#job-priority-app .board-column .queue-item.timer-active{background:light-dark(#e3f2e5,#21382a)!important;box-shadow:inset 0 0 0 1px light-dark(#a8c9ad,#456a4d),0 1px 2px rgba(0,0,0,.08)}
-    #job-priority-app .board-column .card.is-overdue-card,#job-priority-app .board-column #queue>.queue-item.is-overdue-card{box-shadow:inset 0 0 0 2px light-dark(#c5342c,#ed675f),0 1px 2px rgba(0,0,0,.08)!important}
     #job-priority-app .queue-item:last-child{border-bottom:0}
     #job-priority-app .rank{width:24px;height:24px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:light-dark(#e8e8e3,#303030);font-weight:800;font-size:10px}
     #job-priority-app .qtitle{font-size:12px;font-weight:750;line-height:1.3}
@@ -202,6 +201,9 @@
     #job-priority-app .wsiwon-stats{display:flex;flex-direction:column;margin-top:10px;border:1px solid light-dark(#c5cbc3,#485048);border-radius:8px;overflow:hidden;background:light-dark(#edf0eb,#222722);box-shadow:inset 0 1px 0 rgba(255,255,255,.45)}
     #job-priority-app .wsiwon-stat{min-width:0;padding:7px 9px;background:transparent;border-bottom:1px solid light-dark(#d4dad2,#3d453e);display:grid;grid-template-columns:108px minmax(0,1fr);align-items:center;gap:8px}
     #job-priority-app .wsiwon-stat:last-child{border-bottom:0}
+    #job-priority-app .wsiwon-stat.is-overdue-date-row{background:light-dark(#fce9e7,#402725);color:light-dark(#a52620,#ff8b82)}
+    #job-priority-app .wsiwon-stat.is-overdue-date-row .wsiwon-stat-label{opacity:1;color:inherit}
+    #job-priority-app .wsiwon-stat.is-overdue-date-row .card-date-edit:hover{background:light-dark(rgba(165,38,32,.10),rgba(255,139,130,.14))}
     #job-priority-app .wsiwon-stat-label{font-size:8px;font-weight:700;letter-spacing:.01em;line-height:1.15;opacity:.58;white-space:nowrap}
     #job-priority-app .wsiwon-stat-value{font-size:11px;font-weight:800;line-height:1.2;word-break:break-word}
     #job-priority-app .card-date-edit{display:block;width:max-content;max-width:100%;min-width:0;min-height:18px;height:auto;margin:-1px -4px;padding:1px 4px;border:0;border-radius:5px;background:transparent;color:inherit;text-align:left;font-size:11px;font-weight:800;line-height:1.2;cursor:pointer;text-decoration:none;transition:background .12s ease;word-break:break-word}
@@ -3285,8 +3287,8 @@
         const cls=net<0?'profit-negative':(Math.abs(net)<.005?'profit-zero':'profit-positive');
         return `<span class="card-tag ${cls}">Net Profit: ${escapeHtml(formatCurrency(net))}</span>`;
       }
-      function cardStatRow(label,valueMarkup){
-        return `<div class="wsiwon-stat"><div class="wsiwon-stat-label">${escapeHtml(label)}</div>${valueMarkup}</div>`;
+      function cardStatRow(label,valueMarkup,extraClass=''){
+        return `<div class="wsiwon-stat${extraClass?' '+extraClass:''}"><div class="wsiwon-stat-label">${escapeHtml(label)}</div>${valueMarkup}</div>`;
       }
       function cardStatValue(value,extraClass=''){
         return `<div class="wsiwon-stat-value${extraClass?' '+extraClass:''}">${value}</div>`;
@@ -3300,21 +3302,22 @@
       function boardCardStats(job,targetId,accrued){
         const status=String(job.status||'');
         const ticket=escapeHtml(String(job.ticketNumber||''));
+        const overdueDateRow=boardCardIsOverdue(job)?'is-overdue-date-row':'';
         const rows=[];
         if(targetId==='completedList'){
           const completedDate=completedDateForFinancialJob(job);
           rows.push(cardStatRow('Completed Date',cardStatValue(completedDate?escapeHtml(formatDate(completedDate)):'—')));
         }else if(status==='Client Review'){
           const followUp=String(job.followUpDate||'');
-          rows.push(cardStatRow('Follow Up Date',`<button class="wsiwon-stat-value card-date-edit" type="button" data-card-date-ticket="${ticket}" data-card-date-kind="follow-up" aria-label="Change Follow Up Date">${followUp?escapeHtml(formatDate(followUp)):'—'}</button>`));
+          rows.push(cardStatRow('Follow Up Date',`<button class="wsiwon-stat-value card-date-edit" type="button" data-card-date-ticket="${ticket}" data-card-date-kind="follow-up" aria-label="Change Follow Up Date">${followUp?escapeHtml(formatDate(followUp)):'—'}</button>`,overdueDateRow));
           rows.push(cardStatRow('Column Date',cardStatValue(escapeHtml(formatDateTimeDisplay(boardColumnDateForJob(job,targetId))))));
           rows.push(cardStatRow('Creation Date',cardStatValue(escapeHtml(formatDateTimeDisplay(job.createdAt||'')),'creation-date-value')));
         }else if(status==='In Production / Awaiting Vendor'){
-          rows.push(cardStatRow('Due Date',`<button class="wsiwon-stat-value card-date-edit" type="button" data-card-date-ticket="${ticket}" data-card-date-kind="due" aria-label="Change Due Date">${escapeHtml(formatDateTimeDisplay(rawDueAt(job)))}</button>`));
+          rows.push(cardStatRow('Due Date',`<button class="wsiwon-stat-value card-date-edit" type="button" data-card-date-ticket="${ticket}" data-card-date-kind="due" aria-label="Change Due Date">${escapeHtml(formatDateTimeDisplay(rawDueAt(job)))}</button>`,overdueDateRow));
           rows.push(cardStatRow('Column Date',cardStatValue(escapeHtml(formatDateTimeDisplay(boardColumnDateForJob(job,targetId))))));
           rows.push(cardStatRow('Creation Date',cardStatValue(escapeHtml(formatDateTimeDisplay(job.createdAt||'')),'creation-date-value')));
         }else{
-          rows.push(cardStatRow('Due Date',`<button class="wsiwon-stat-value card-date-edit" type="button" data-card-date-ticket="${ticket}" data-card-date-kind="due" aria-label="Change Due Date">${escapeHtml(formatDateTimeDisplay(rawDueAt(job)))}</button>`));
+          rows.push(cardStatRow('Due Date',`<button class="wsiwon-stat-value card-date-edit" type="button" data-card-date-ticket="${ticket}" data-card-date-kind="due" aria-label="Change Due Date">${escapeHtml(formatDateTimeDisplay(rawDueAt(job)))}</button>`,overdueDateRow));
           rows.push(cardStatRow('Column Date',cardStatValue(escapeHtml(formatDateTimeDisplay(dateReceivedForJob(job))))));
           rows.push(cardStatRow('Creation Date',cardStatValue(escapeHtml(formatDateTimeDisplay(job.createdAt||'')),'creation-date-value')));
           if(status==='To Be Invoiced')rows.push(cardStatRow('Status',cardStatValue('To Be Invoiced')));
