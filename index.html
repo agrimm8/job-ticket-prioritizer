@@ -38,6 +38,15 @@
     #job-priority-app .kpi-unit{font-size:11px;font-weight:700;opacity:.72;margin-left:4px}
     #job-priority-app .kpi-comparison{font-size:10px;opacity:.68;margin-top:6px}
     #job-priority-app .kpi-note{font-size:9px;opacity:.55;margin-top:4px;line-height:1.35}
+    #job-priority-app .due-attention-kpi-card{order:0!important;height:280px;max-height:calc(100dvh - 125px);min-height:230px;display:flex;flex-direction:column;overflow:hidden}
+    #job-priority-app .due-attention-counts{font-size:9px;font-weight:750;opacity:.62;margin:-1px 0 4px}
+    #job-priority-app .due-attention-list{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-right:2px}
+    #job-priority-app .due-attention-item{padding:7px 0;border-top:1px solid light-dark(#ecece8,#383838);cursor:default;user-select:text}
+    #job-priority-app .due-attention-item-title{font-size:10px;font-weight:750;line-height:1.25;overflow-wrap:anywhere}
+    #job-priority-app .due-attention-item-meta{font-size:8.5px;line-height:1.25;margin-top:3px;opacity:.64}
+    #job-priority-app .due-attention-item.is-overdue .due-attention-item-meta{color:light-dark(#a52620,#ff8b82);opacity:1;font-weight:750}
+    #job-priority-app .due-attention-empty{font-size:10px;opacity:.6;padding:8px 0}
+    @media(max-width:700px){#job-priority-app .due-attention-kpi-card{height:280px;max-height:calc(100dvh - 125px)}}
     #job-priority-app .kpi-link{display:inline-block;margin-top:6px;font-size:9px;color:inherit;text-decoration:underline;cursor:pointer;opacity:.72}
     #job-priority-app .utilization-kpi-card{cursor:pointer;transition:border-color .15s,box-shadow .15s;text-align:left}
     #job-priority-app .utilization-kpi-card:hover{border-color:light-dark(#aeb9c5,#555);box-shadow:0 4px 16px rgba(0,0,0,.06)}
@@ -1566,6 +1575,11 @@
 
 <div class="board-shell" id="mainBoard">
       <div class="kpi-strip" id="kpiStrip">
+        <section class="kpi-card due-attention-kpi-card" aria-labelledby="dueAttentionTitle">
+          <div class="kpi-label" id="dueAttentionTitle">Overdue &amp; Due Today</div>
+          <div class="due-attention-counts" id="dueAttentionCounts"></div>
+          <div class="due-attention-list" id="dueAttentionList" aria-live="polite"></div>
+        </section>
         <div class="kpi-card completed-kpi-card">
           <div class="kpi-label">Jobs Completed</div>
           <div><span class="kpi-value" id="completedKpiCurrent">—</span><span class="kpi-unit">this month</span></div>
@@ -4598,7 +4612,38 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         try{const data=await apiPost({action:'archiveAllCompleted'});if(!data.success)throw new Error(data.error||'Unable to archive completed jobs');const set=new Set((data.archivedTickets||[]).map(String));jobs.forEach(job=>{if(set.has(String(job.ticketNumber||'')))job.archived=true});renderBoard();if(document.getElementById('archivedJobsModalBackdrop').classList.contains('open'))renderArchivedJobs();showJobFolderToast(`${Number(data.count||set.size)} Job${Number(data.count||set.size)===1?'':'s'} Archived`)}
         catch(err){alert('Completed jobs could not be archived: '+err.message)}finally{btn.disabled=false;btn.innerHTML=old}
       }
+      function renderDueAttentionSummary(){
+        const list=document.getElementById('dueAttentionList');
+        const counts=document.getElementById('dueAttentionCounts');
+        if(!list||!counts)return;
+        const today=todayISO();
+        const wsiwonTickets=new Set(getWSIWONJobs().map(job=>String(job.ticketNumber||'')));
+        const items=[];
+        (jobs||[]).forEach(job=>{
+          if(!job||job.archived===true) return;
+          const status=String(job.status||'');
+          if(!['To Do','In Progress','To Be Invoiced','Client Review','In Production / Awaiting Vendor'].includes(status)) return;
+          const dateValue=status==='Client Review'?String(job.followUpDate||''):rawDueDate(job);
+          const dueDate=String(dateValue||'').slice(0,10);
+          if(!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)||dueDate>today) return;
+          const location=status==='Client Review'?'Client Review':status==='In Production / Awaiting Vendor'?'In Production':status==='To Be Invoiced'?'To Be Invoiced':wsiwonTickets.has(String(job.ticketNumber||''))?'WSIWON':'To Do';
+          items.push({job,dueDate,overdue:dueDate<today,location});
+        });
+        items.sort((a,b)=>Number(b.overdue)-Number(a.overdue)||a.dueDate.localeCompare(b.dueDate)||Number(a.job.ticketNumber||0)-Number(b.job.ticketNumber||0));
+        const overdueCount=items.filter(item=>item.overdue).length;
+        const dueTodayCount=items.length-overdueCount;
+        counts.textContent=`${overdueCount} overdue · ${dueTodayCount} due today`;
+        if(!items.length){list.innerHTML='<div class="due-attention-empty">No overdue or due today jobs.</div>';return}
+        list.innerHTML=items.map(item=>{
+          const title=String(item.job.title||item.job.displayTitle||('Ticket '+item.job.ticketNumber));
+          const ticket=String(item.job.ticketNumber||'');
+          const state=item.overdue?'Overdue':'Due Today';
+          const dueLabel=item.overdue?'Due '+formatDate(item.dueDate):'Due Today';
+          return `<div class="due-attention-item${item.overdue?' is-overdue':''}"><div class="due-attention-item-title">${ticket?'#'+escapeHtml(ticket)+' · ':''}${escapeHtml(title)}</div><div class="due-attention-item-meta">${state} · ${escapeHtml(item.location)} · ${escapeHtml(dueLabel)}</div></div>`;
+        }).join('');
+      }
       function renderBoard(){
+        renderDueAttentionSummary();
         renderKpis();
         renderFinancialDashboard();
         renderOrphanPunchBanner();
@@ -4631,7 +4676,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       }
       function refreshStatusMoveViews(oldStatus,newStatus){
         try{
-          renderKpis({refreshProductivity:false});renderFinancialDashboard();renderOrphanPunchBanner();
+          renderDueAttentionSummary();renderKpis({refreshProductivity:false});renderFinancialDashboard();renderOrphanPunchBanner();
           const activeJobs=getWSIWONJobs();const wsiwonTickets=new Set(activeJobs.map(j=>String(j.ticketNumber||'')));
           renderQueue(activeJobs);
           const columns=new Set([boardColumnForStatus(oldStatus),boardColumnForStatus(newStatus)].filter(Boolean));
