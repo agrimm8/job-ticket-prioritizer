@@ -732,6 +732,30 @@
     #job-priority-app .financial-dashboard-value.negative{color:#b42318}
     #job-priority-app .financial-dashboard-value.zero{color:#6b7280}
     #job-priority-app .overhead-modal{width:min(900px,calc(100vw - 32px));max-height:88vh;overflow:auto}
+    #job-priority-app .revenue-calendar-modal{width:min(920px,calc(100vw - 32px));max-height:90vh;overflow:auto}
+    #job-priority-app .revenue-calendar-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+    #job-priority-app .revenue-calendar-heading h3{margin:0}
+    #job-priority-app .revenue-calendar-month-nav{display:flex;align-items:center;justify-content:center;gap:12px;margin:12px 0 8px}
+    #job-priority-app .revenue-calendar-month-nav strong{min-width:150px;text-align:center;font-size:14px}
+    #job-priority-app .revenue-calendar-total{margin-left:auto;font-size:11px;font-weight:850;color:light-dark(#1f5d3b,#8bd39b)}
+    #job-priority-app .revenue-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+    #job-priority-app .revenue-calendar-weekday{padding:5px 3px;text-align:center;font-size:9px;font-weight:800;opacity:.58}
+    #job-priority-app .revenue-calendar-day{display:flex;min-width:0;min-height:68px;flex-direction:column;align-items:flex-start;gap:4px;padding:6px;border:1px solid light-dark(#deded8,#414141);border-radius:7px;background:light-dark(#fff,#242424);color:inherit;text-align:left;cursor:pointer}
+    #job-priority-app .revenue-calendar-day:hover{background:light-dark(#f3f6f2,#2c332e)}
+    #job-priority-app .revenue-calendar-day.selected{border-color:light-dark(#398257,#6fb985);box-shadow:inset 0 0 0 1px light-dark(#398257,#6fb985)}
+    #job-priority-app .revenue-calendar-day.has-revenue{background:light-dark(#edf5ee,#24352a)}
+    #job-priority-app .revenue-calendar-day-number{font-size:10px;font-weight:750;opacity:.7}
+    #job-priority-app .revenue-calendar-day-total{font-size:10px;font-weight:900;color:light-dark(#1f5d3b,#8bd39b);overflow-wrap:anywhere}
+    #job-priority-app .revenue-calendar-day-count{font-size:8px;opacity:.62}
+    #job-priority-app .revenue-calendar-blank{min-height:68px}
+    #job-priority-app .revenue-calendar-day-details{margin-top:12px;padding:10px;border:1px solid light-dark(#deded8,#414141);border-radius:9px;background:light-dark(#f7f8f6,#252925)}
+    #job-priority-app .revenue-calendar-detail-head{display:flex;justify-content:space-between;gap:10px;font-size:11px;font-weight:850;margin-bottom:6px}
+    #job-priority-app .revenue-calendar-entry{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:7px 0;border-top:1px solid light-dark(#e1e3df,#3a3d3a);font-size:10px}
+    #job-priority-app .revenue-calendar-entry-title{font-weight:750;overflow-wrap:anywhere}
+    #job-priority-app .revenue-calendar-entry-meta{font-size:8px;opacity:.62;margin-top:2px}
+    #job-priority-app .revenue-calendar-entry-amount{font-weight:850;white-space:nowrap}
+    #job-priority-app .revenue-calendar-legacy-note{margin-top:9px;padding:7px 9px;border-radius:7px;background:light-dark(#f5f0df,#3b3628);font-size:9px;line-height:1.4;opacity:.8}
+    @media(max-width:600px){#job-priority-app .revenue-calendar-modal{padding:12px}#job-priority-app .revenue-calendar-day{min-height:54px;padding:4px}#job-priority-app .revenue-calendar-day-total{font-size:8px}#job-priority-app .revenue-calendar-day-count{font-size:7px}}
     #job-priority-app .overhead-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
     #job-priority-app .overhead-summary-card{border:1px solid light-dark(#dfe5ec,#454545);border-radius:9px;padding:9px 10px;background:light-dark(#fbfcfd,#292929)}
     #job-priority-app .overhead-summary-label{font-size:9px;font-weight:800;opacity:.65;text-transform:uppercase;letter-spacing:.04em}
@@ -1066,6 +1090,13 @@
     #job-priority-app .kpi-card{padding:10px 12px}
     #job-priority-app .completed-kpi-bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:5px;flex-wrap:wrap}
     #job-priority-app .completed-kpi-bottom .kpi-link{margin-top:0}
+    #job-priority-app .annual-revenue-pace{margin-top:7px;padding-top:6px;border-top:1px solid light-dark(#deded9,#3b3b3b);display:flex;flex-direction:column;gap:4px}
+    #job-priority-app .annual-revenue-target-label{display:flex;align-items:center;gap:6px;font-size:8px;font-weight:750;letter-spacing:.02em;opacity:.72}
+    #job-priority-app .annual-revenue-target-label select{min-width:104px;min-height:23px;padding:2px 22px 2px 6px;border:1px solid light-dark(#d1d1cb,#4a4a4a);border-radius:5px;background:light-dark(#fff,#242424);color:inherit;font-size:9px;font-weight:750;letter-spacing:0}
+    #job-priority-app .annual-revenue-pace-copy{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:8px;line-height:1.25;opacity:.78}
+    #job-priority-app .annual-revenue-pace-copy strong{font-size:9px;font-weight:850;color:light-dark(#1f5d3b,#8bd39b);white-space:nowrap}
+    #job-priority-app .annual-revenue-pace-track{height:4px;border-radius:999px;overflow:hidden;background:light-dark(#e4e6e0,#393e39)}
+    #job-priority-app .annual-revenue-pace-track span{display:block;width:0;height:100%;border-radius:inherit;background:light-dark(#398257,#6fb985);transition:width .18s ease}
     #job-priority-app .compact-financial-dashboard{margin:0;gap:5px 10px;justify-content:flex-end}
     #job-priority-app .compact-financial-dashboard .financial-dashboard-item{font-size:9px;gap:4px}
     #job-priority-app .compact-financial-dashboard .financial-dashboard-value{font-size:11px}
@@ -1434,6 +1465,7 @@
         <div class="toolbar-dropdown" id="revenueMenuControl">
           <button class="secondary toolbar-dropdown-launch" id="revenueMenuBtn" type="button" aria-haspopup="menu" aria-expanded="false">Revenue <span class="toolbar-dropdown-caret">▾</span></button>
           <div class="toolbar-dropdown-menu" id="revenueMenu" role="menu" aria-label="Revenue menu">
+            <button type="button" role="menuitem" id="revenueCalendarBtn">Revenue Calendar</button>
             <button type="button" role="menuitem" id="overheadBtn">Overhead</button>
           </div>
         </div>
@@ -1591,6 +1623,18 @@
           <div class="kpi-label">Jobs Completed</div>
           <div><span class="kpi-value" id="completedKpiCurrent">—</span><span class="kpi-unit">this month</span></div>
           <div class="kpi-comparison" id="completedKpiPrevious">Last month: —</div>
+          <div class="annual-revenue-pace" aria-label="Annual gross revenue monthly and daily pace">
+            <label class="annual-revenue-target-label" for="annualRevenueGoalSelect">Annual Gross Goal <span id="annualRevenueGoalYear"></span>
+              <select id="annualRevenueGoalSelect" aria-label="Annual gross revenue goal">
+                <option value="">Choose target</option>
+                <option value="10000">$10,000</option><option value="20000">$20,000</option><option value="30000">$30,000</option><option value="40000">$40,000</option><option value="50000">$50,000</option><option value="60000">$60,000</option><option value="70000">$70,000</option><option value="80000">$80,000</option><option value="90000">$90,000</option><option value="100000">$100,000</option>
+              </select>
+            </label>
+            <div class="annual-revenue-pace-copy"><span id="annualRevenueMonthlyPace">Monthly goal: —</span><strong id="annualRevenueMonthProgress">—</strong></div>
+            <div class="annual-revenue-pace-track" id="annualRevenueMonthTrack" role="progressbar" aria-label="This month's gross revenue toward the monthly goal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="annualRevenueMonthFill"></span></div>
+            <div class="annual-revenue-pace-copy"><span id="annualRevenueDailyPace">Daily pace: —</span><strong id="annualRevenueTodayProgress">—</strong></div>
+            <div class="annual-revenue-pace-track" id="annualRevenuePaceTrack" role="progressbar" aria-label="Today's gross revenue toward the daily pace" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="annualRevenuePaceFill"></span></div>
+          </div>
           <div class="completed-kpi-bottom"><a class="kpi-link" id="viewCompletedJobsBtn">View Completed Jobs</a><div class="financial-dashboard compact-financial-dashboard"><div class="financial-dashboard-item"><span class="financial-dashboard-label" id="monthlyNetProfitLabel">Net Profit</span><span class="financial-dashboard-value zero" id="monthlyNetProfitValue">$0.00</span></div><div class="financial-dashboard-item"><span class="financial-dashboard-label">Potential</span><span class="financial-dashboard-value zero" id="potentialProjectProfitValue">$0.00</span></div></div></div>
         </div>
         <div class="kpi-card utilization-kpi-card" id="workUtilizationKpiBtn" role="button" tabindex="0" aria-label="Open today's productivity details">
@@ -2089,6 +2133,16 @@
         <div class="actions"><button class="secondary" id="cancelOverheadBtn" type="button">Cancel</button><button class="primary" id="saveOverheadBtn" type="button">Save Overhead</button></div>
       </div>
     </div>
+    <div class="timer-modal-backdrop" id="revenueCalendarBackdrop" role="dialog" aria-modal="true" aria-labelledby="revenueCalendarTitle">
+      <div class="timer-modal revenue-calendar-modal">
+        <div class="revenue-calendar-heading"><div><h3 id="revenueCalendarTitle">Revenue Calendar</h3><p class="muted" style="margin-top:4px">Gross income is credited on the date a job is first marked Completed.</p></div><button class="job-search-close" id="closeRevenueCalendarBtn" type="button" aria-label="Close Revenue Calendar" title="Close">×</button></div>
+        <div class="revenue-calendar-month-nav"><button class="secondary" id="revenueCalendarPreviousBtn" type="button" aria-label="Previous month">‹</button><strong id="revenueCalendarMonthLabel">—</strong><button class="secondary" id="revenueCalendarNextBtn" type="button" aria-label="Next month">›</button><span class="revenue-calendar-total" id="revenueCalendarMonthTotal"></span></div>
+        <div class="revenue-calendar-grid" id="revenueCalendarGrid" role="grid"></div>
+        <div class="revenue-calendar-day-details" id="revenueCalendarDayDetails" aria-live="polite"></div>
+        <div class="revenue-calendar-legacy-note">Older completed jobs are initialized from the income currently on file because their original completion-time amounts weren’t recorded. New completions are saved as fixed snapshots.</div>
+        <div class="actions"><button class="secondary" id="closeRevenueCalendarFooterBtn" type="button">Close</button></div>
+      </div>
+    </div>
     <div class="timer-modal-backdrop" id="timeRecordModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="timeRecordModalTitle">
       <div class="timer-modal time-record-modal">
         <h3 id="timeRecordModalTitle">Time Record</h3>
@@ -2224,6 +2278,11 @@
       let adminSessions=[];
       let activeAdminSession=null;
       let jobFinancials=[];
+      const revenueSnapshotsByMonth={};
+      const revenueCalendarLoads=new Map();
+      const revenueCalendarErrors={};
+      let revenueCalendarMonthKey='';
+      let revenueCalendarSelectedDate='';
       let d1JobDetailsCacheReady=false;
       let jobFinancialsTicket='';
       let jobFinancialsOriginTicket='';
@@ -2651,6 +2710,7 @@
         const previousCompleted=completedJobsForMonth(previousKey).length;
         document.getElementById('completedKpiCurrent').textContent=String(currentCompleted);
         document.getElementById('completedKpiPrevious').textContent='Last month: '+previousCompleted;
+        renderAnnualRevenuePaceKpi();
 
         if(refreshProductivity)renderWorkUtilization();
 
@@ -2658,6 +2718,147 @@
         const previousOverdue=overdueJobDaysForMonth(previousKey);
         document.getElementById('overdueKpiCurrent').textContent=String(currentOverdue);
         document.getElementById('overdueKpiPrevious').textContent='Last month: '+previousOverdue+' days';
+      }
+      function annualGrossRevenueGoalStorageKey(){return 'jtp-annual-gross-revenue-goal-'+new Date().getFullYear()}
+      function annualRevenueGoal(){
+        const select=document.getElementById('annualRevenueGoalSelect');
+        if(!select)return 0;
+        if(select.dataset.initialized!=='1'){
+          let saved='';try{saved=localStorage.getItem(annualGrossRevenueGoalStorageKey())||''}catch(ignore){}
+          if([...select.options].some(option=>option.value===saved))select.value=saved;
+          select.dataset.initialized='1';
+        }
+        return Number(select.value)||0;
+      }
+      function weekdaysInYear(year){
+        let count=0;
+        for(let date=new Date(year,0,1);date.getFullYear()===year;date.setDate(date.getDate()+1))if(isWeekdayDate(date))count++;
+        return count;
+      }
+      function renderAnnualRevenuePaceKpi(){
+        const year=new Date().getFullYear();
+        const yearEl=document.getElementById('annualRevenueGoalYear');
+        const monthlyEl=document.getElementById('annualRevenueMonthlyPace');
+        const monthProgressEl=document.getElementById('annualRevenueMonthProgress');
+        const monthTrack=document.getElementById('annualRevenueMonthTrack');
+        const monthFill=document.getElementById('annualRevenueMonthFill');
+        const dailyEl=document.getElementById('annualRevenueDailyPace');
+        const todayEl=document.getElementById('annualRevenueTodayProgress');
+        const track=document.getElementById('annualRevenuePaceTrack');
+        const fill=document.getElementById('annualRevenuePaceFill');
+        if(!yearEl||!monthlyEl||!monthProgressEl||!monthTrack||!monthFill||!dailyEl||!todayEl||!track||!fill)return;
+        yearEl.textContent=String(year);
+        const goal=annualRevenueGoal();
+        if(!goal){monthlyEl.textContent='Monthly goal: —';monthProgressEl.textContent='Choose a goal';dailyEl.textContent='Daily pace: —';todayEl.textContent='Choose a goal';monthTrack.setAttribute('aria-valuenow','0');monthTrack.setAttribute('aria-valuetext','No annual goal selected');monthFill.style.width='0%';track.setAttribute('aria-valuenow','0');track.setAttribute('aria-valuetext','No annual goal selected');fill.style.width='0%';return}
+        const monthlyTarget=goal/12;
+        const dailyTarget=goal/Math.max(1,weekdaysInYear(year));
+        const monthKey=currentMonthKey();
+        const cached=revenueSnapshotsByMonth[monthKey];
+        if(!Array.isArray(cached)){
+          const loading=revenueCalendarLoads.has(monthKey);
+          const message=revenueCalendarErrors[monthKey]?'Revenue history unavailable':(loading?'Loading revenue history…':'Loading revenue history…');
+          monthlyEl.textContent='Monthly goal: '+formatCurrency(monthlyTarget);monthProgressEl.textContent=message;dailyEl.textContent='Daily pace: '+formatCurrency(dailyTarget)+' per weekday';todayEl.textContent=message;
+          monthFill.style.width='0%';fill.style.width='0%';
+          if(!loading&&!revenueCalendarErrors[monthKey])loadRevenueCalendarMonth(monthKey).catch(()=>{});
+          return;
+        }
+        const todayKey=localDateKey(new Date());
+        const included=cached.filter(entry=>!revenueSnapshotIsExcluded(entry));
+        const grossThisMonth=included.reduce((sum,entry)=>sum+Number(entry.grossIncome||0),0);
+        const grossToday=included.filter(entry=>String(entry.revenueDate||'')===todayKey).reduce((sum,entry)=>sum+Number(entry.grossIncome||0),0);
+        const monthPercent=Math.min(100,Math.max(0,monthlyTarget?grossThisMonth/monthlyTarget*100:0));
+        const dailyPercent=Math.min(100,Math.max(0,dailyTarget?grossToday/dailyTarget*100:0));
+        monthlyEl.textContent='Monthly goal: '+formatCurrency(monthlyTarget);
+        monthProgressEl.textContent=formatCurrency(grossThisMonth)+' MTD';
+        monthFill.style.width=monthPercent.toFixed(1)+'%';
+        monthTrack.setAttribute('aria-valuenow',String(Math.round(monthPercent)));
+        monthTrack.setAttribute('aria-valuetext',formatCurrency(grossThisMonth)+' month to date of '+formatCurrency(monthlyTarget)+' monthly goal');
+        dailyEl.textContent='Daily pace: '+formatCurrency(dailyTarget)+' per weekday';
+        todayEl.textContent=formatCurrency(grossToday)+' today';
+        fill.style.width=dailyPercent.toFixed(1)+'%';
+        track.setAttribute('aria-valuenow',String(Math.round(dailyPercent)));
+        track.setAttribute('aria-valuetext',formatCurrency(grossToday)+' completed today of '+formatCurrency(dailyTarget)+' daily pace');
+      }
+      function revenueSnapshotIsExcluded(entry){
+        const job=jobs.find(item=>String(item.ticketNumber||'')===String(entry&&entry.ticketNumber||''));
+        return job?job.excludeFromCompletedMetrics===true:entry&&entry.excluded===true;
+      }
+      async function loadRevenueCalendarMonth(monthKey,{force=false}={}){
+        const key=String(monthKey||'');
+        if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(key))throw new Error('Choose a valid calendar month.');
+        if(!force&&Array.isArray(revenueSnapshotsByMonth[key]))return revenueSnapshotsByMonth[key];
+        if(revenueCalendarLoads.has(key))return revenueCalendarLoads.get(key);
+        const pending=(async()=>{
+          delete revenueCalendarErrors[key];
+          try{
+            const data=await d1RevenueCalendarApi('/revenue/calendar?month='+encodeURIComponent(key));
+            revenueSnapshotsByMonth[key]=Array.isArray(data.entries)?data.entries:[];
+            renderAnnualRevenuePaceKpi();
+            if(revenueCalendarMonthKey===key&&document.getElementById('revenueCalendarBackdrop').classList.contains('open'))renderRevenueCalendar();
+            return revenueSnapshotsByMonth[key];
+          }catch(error){revenueCalendarErrors[key]=String(error&&error.message||error);throw error}
+          finally{revenueCalendarLoads.delete(key);if(key===currentMonthKey())renderAnnualRevenuePaceKpi()}
+        })();
+        revenueCalendarLoads.set(key,pending);
+        return pending;
+      }
+      function upsertRevenueCompletionSnapshot(snapshot,job){
+        if(!snapshot||!snapshot.revenueDate)return;
+        const monthKey=String(snapshot.revenueDate).slice(0,7);
+        if(!Array.isArray(revenueSnapshotsByMonth[monthKey])){loadRevenueCalendarMonth(monthKey,{force:true}).catch(()=>{});return}
+        const item={...snapshot,title:job&&(job.displayTitle||job.title||job.description)||('Ticket '+snapshot.ticketNumber),excluded:job?job.excludeFromCompletedMetrics===true:false};
+        const rows=revenueSnapshotsByMonth[monthKey];
+        const index=rows.findIndex(row=>String(row.ticketNumber||'')===String(item.ticketNumber||''));
+        if(index>=0)rows[index]={...rows[index],...item};else rows.push(item);
+        renderAnnualRevenuePaceKpi();
+        if(revenueCalendarMonthKey===monthKey&&document.getElementById('revenueCalendarBackdrop').classList.contains('open'))renderRevenueCalendar();
+      }
+      function moneyCompact(value){return new Intl.NumberFormat(undefined,{style:'currency',currency:'USD',maximumFractionDigits:0}).format(Number(value)||0)}
+      function revenueCalendarMonthDate(monthKey){const [year,month]=String(monthKey||'').split('-').map(Number);return new Date(year,month-1,1)}
+      function revenueCalendarMonthLabel(monthKey){return revenueCalendarMonthDate(monthKey).toLocaleDateString(undefined,{month:'long',year:'numeric'})}
+      function shiftRevenueCalendarMonth(monthKey,delta){const d=revenueCalendarMonthDate(monthKey);d.setMonth(d.getMonth()+delta);return monthKeyFromDate(d)}
+      function openRevenueCalendar(){
+        closeTopToolbarMenus();
+        revenueCalendarMonthKey=currentMonthKey();
+        revenueCalendarSelectedDate=todayISO();
+        document.getElementById('revenueCalendarBackdrop').classList.add('open');
+        renderRevenueCalendar();
+        loadRevenueCalendarMonth(revenueCalendarMonthKey).catch(error=>{renderRevenueCalendar();alert(error.message)});
+      }
+      function renderRevenueCalendar(){
+        const key=revenueCalendarMonthKey||currentMonthKey();
+        const label=document.getElementById('revenueCalendarMonthLabel');
+        const total=document.getElementById('revenueCalendarMonthTotal');
+        const grid=document.getElementById('revenueCalendarGrid');
+        const details=document.getElementById('revenueCalendarDayDetails');
+        if(!label||!total||!grid||!details)return;
+        label.textContent=revenueCalendarMonthLabel(key);
+        const entries=revenueSnapshotsByMonth[key];
+        if(!Array.isArray(entries)){
+          total.textContent='';grid.innerHTML='<div class="muted" style="grid-column:1/-1;padding:18px;text-align:center">'+escapeHtml(revenueCalendarErrors[key]||'Loading revenue history…')+'</div>';details.textContent='Revenue records are loading.';return;
+        }
+        const included=entries.filter(entry=>!revenueSnapshotIsExcluded(entry));
+        const totalGross=included.reduce((sum,entry)=>sum+Number(entry.grossIncome||0),0);
+        total.textContent='Month gross: '+formatCurrency(totalGross);
+        const byDate=new Map();
+        included.forEach(entry=>{const date=String(entry.revenueDate||'');if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;const rows=byDate.get(date)||[];rows.push(entry);byDate.set(date,rows)});
+        const first=revenueCalendarMonthDate(key);const year=first.getFullYear(),month=first.getMonth();const firstOffset=first.getDay();const days=new Date(year,month+1,0).getDate();
+        const weekdayLabels=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        let cells=weekdayLabels.map(day=>`<div class="revenue-calendar-weekday" role="columnheader">${day}</div>`).join('');
+        for(let i=0;i<firstOffset;i++)cells+='<div class="revenue-calendar-blank" aria-hidden="true"></div>';
+        for(let day=1;day<=days;day++){
+          const date=key+'-'+String(day).padStart(2,'0');const dayEntries=byDate.get(date)||[];const amount=dayEntries.reduce((sum,entry)=>sum+Number(entry.grossIncome||0),0);const selected=date===revenueCalendarSelectedDate;
+          const amountMarkup=dayEntries.length?`<span class="revenue-calendar-day-total">${escapeHtml(moneyCompact(amount))}</span><span class="revenue-calendar-day-count">${dayEntries.length} job${dayEntries.length===1?'':'s'}</span>`:'';
+          cells+=`<button class="revenue-calendar-day${dayEntries.length?' has-revenue':''}${selected?' selected':''}" type="button" role="gridcell" data-revenue-calendar-date="${date}" aria-label="${escapeHtml(formatDate(date))}${dayEntries.length?', '+escapeHtml(formatCurrency(amount))+' from '+dayEntries.length+' jobs':''}"><span class="revenue-calendar-day-number">${day}</span>${amountMarkup}</button>`;
+        }
+        const trailing=(7-((firstOffset+days)%7))%7;for(let i=0;i<trailing;i++)cells+='<div class="revenue-calendar-blank" aria-hidden="true"></div>';
+        grid.innerHTML=cells;
+        grid.querySelectorAll('[data-revenue-calendar-date]').forEach(button=>button.addEventListener('click',()=>{revenueCalendarSelectedDate=button.dataset.revenueCalendarDate||'';renderRevenueCalendar()}));
+        const selectedEntries=included.filter(entry=>String(entry.revenueDate||'')===revenueCalendarSelectedDate);
+        const selectedLabel=revenueCalendarSelectedDate?formatDate(revenueCalendarSelectedDate):'Choose a day';
+        if(!selectedEntries.length){details.innerHTML=`<div class="revenue-calendar-detail-head"><span>${escapeHtml(selectedLabel)}</span><span>$0.00 gross</span></div><div class="muted">No completed revenue recorded for this day.</div>`;return}
+        const selectedTotal=selectedEntries.reduce((sum,entry)=>sum+Number(entry.grossIncome||0),0);
+        details.innerHTML=`<div class="revenue-calendar-detail-head"><span>${escapeHtml(selectedLabel)}</span><span>${escapeHtml(formatCurrency(selectedTotal))} gross</span></div>`+selectedEntries.map(entry=>`<div class="revenue-calendar-entry"><div><div class="revenue-calendar-entry-title">#${escapeHtml(String(entry.ticketNumber||''))} · ${escapeHtml(entry.title||('Ticket '+entry.ticketNumber))}</div><div class="revenue-calendar-entry-meta">${entry.captureSource==='legacy-current-income-backfill'?'Historical backfill':'Completion snapshot'} · ${revenueSnapshotIsExcluded(entry)?'Excluded from metrics':''}</div></div><div class="revenue-calendar-entry-amount">${escapeHtml(formatCurrency(entry.grossIncome))}</div></div>`).join('');
       }
       function completedMetricsReasonLabel(value){
         const reason=String(value||'').trim();
@@ -4628,6 +4829,7 @@
           const committedStatusFields={status:job.status,dueDate:job.dueDate,due:job.due,dueAt:job.dueAt,dueDateSource:job.dueDateSource,followUpDate:job.followUpDate,workloadScore:job.workloadScore,completedAt:job.completedAt,archived:job.archived};
           if(startedWarm)d1WarmStatusOverrides.set(String(ticket),{savedAt:Date.now(),fields:committedStatusFields});
           const liveJob=jobs.find(item=>String(item.ticketNumber||'')===String(ticket));if(liveJob&&liveJob!==job)Object.assign(liveJob,committedStatusFields);
+          if(data.revenueSnapshot)upsertRevenueCompletionSnapshot(data.revenueSnapshot,job);
 
           if(newStatus==='Client Review'){
             const state=ensureTimerState(job);
@@ -5521,6 +5723,15 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         if(!res.ok||!data.success){if(res.status===401||res.status===403)throw new Error('Job Scheduler authorization expired. Refresh JTP and try again.');throw new Error(data.error||('Job Scheduler request failed ('+res.status+')'))}
         return data
       }
+      async function d1RevenueCalendarApi(path){
+        if(PREVIEW_MODE)throw new Error('Live Revenue Calendar access is disabled in Preview Mode.');
+        if(!d1FastPathReady())throw new Error('D1 Revenue Calendar is not connected yet. Refresh JTP and try again.');
+        const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+path;
+        const response=await fetch(url,{method:'GET',headers:{'Authorization':'Bearer '+d1FastPath.token}});
+        let data={};try{data=await response.json()}catch(ignore){}
+        if(!response.ok||!data.success){if(response.status===401||response.status===403)throw new Error('Revenue Calendar authorization expired. Refresh JTP and try again.');throw new Error(data.error||('Revenue Calendar request failed ('+response.status+')'))}
+        return data;
+      }
 
       async function apiGet(){if(PREVIEW_MODE)throw new Error('Live backend access is disabled in Preview Mode.');const res=await fetch(API_URL+'?action=bootstrap',{method:'GET'});if(!res.ok)throw new Error('Unable to reach backend');return res.json()}
       async function apiPost(payload){if(PREVIEW_MODE)throw new Error('Live backend access is disabled in Preview Mode.');const restore=beginAutomaticButtonFeedback(payload);try{const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});if(!res.ok)throw new Error('Backend request failed');return await res.json()}finally{if(restore)restore()}}
@@ -5999,6 +6210,13 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('newJobModalBackdrop').addEventListener('click',e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove('open')});
       document.getElementById('clearBtn').addEventListener('click',()=>{document.getElementById('jobForm').reset();document.getElementById('dueOverrideCheck').checked=false;document.getElementById('dueOverrideDate').value='';syncDueOverrideUI();clearEmailDraftState();clearScheduledDraftState();document.getElementById('clientModal').classList.remove('open');document.getElementById('subclientModal').classList.remove('open');populateClients();syncNextId();document.getElementById('ticketPreview').style.display='none';document.getElementById('jobNumberWrap').style.display='none'});
       document.getElementById('viewCompletedJobsBtn').addEventListener('click',openCompletedMetricsModal);
+      document.getElementById('annualRevenueGoalSelect').addEventListener('change',e=>{try{if(e.currentTarget.value)localStorage.setItem(annualGrossRevenueGoalStorageKey(),e.currentTarget.value);else localStorage.removeItem(annualGrossRevenueGoalStorageKey())}catch(ignore){}e.currentTarget.dataset.initialized='1';renderAnnualRevenuePaceKpi()});
+      document.getElementById('revenueCalendarBtn').addEventListener('click',openRevenueCalendar);
+      document.getElementById('revenueCalendarPreviousBtn').addEventListener('click',()=>{revenueCalendarMonthKey=shiftRevenueCalendarMonth(revenueCalendarMonthKey,-1);revenueCalendarSelectedDate=revenueCalendarMonthKey+'-01';renderRevenueCalendar();loadRevenueCalendarMonth(revenueCalendarMonthKey).catch(error=>{renderRevenueCalendar();alert(error.message)})});
+      document.getElementById('revenueCalendarNextBtn').addEventListener('click',()=>{revenueCalendarMonthKey=shiftRevenueCalendarMonth(revenueCalendarMonthKey,1);revenueCalendarSelectedDate=revenueCalendarMonthKey+'-01';renderRevenueCalendar();loadRevenueCalendarMonth(revenueCalendarMonthKey).catch(error=>{renderRevenueCalendar();alert(error.message)})});
+      document.getElementById('closeRevenueCalendarBtn').addEventListener('click',()=>document.getElementById('revenueCalendarBackdrop').classList.remove('open'));
+      document.getElementById('closeRevenueCalendarFooterBtn').addEventListener('click',()=>document.getElementById('revenueCalendarBackdrop').classList.remove('open'));
+      document.getElementById('revenueCalendarBackdrop').addEventListener('click',e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove('open')});
       document.getElementById('archiveAllCompletedBtn').addEventListener('click',archiveAllCompleted);
       document.getElementById('closeCompletedMetricsBtn').addEventListener('click',()=>document.getElementById('completedMetricsModalBackdrop').classList.remove('open'));
       document.getElementById('completedMetricsRows').addEventListener('click',async e=>{
@@ -6166,10 +6384,8 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           if(state.running||activeTimerKey===key||(activeWorkSession&&activeWorkSession.timerKey===key)){
             const paused=await pauseTimer(key);if(paused===false)throw new Error('Unable to stop the active timer before completing this job.');
           }
-          const data=await apiPost({action:'updateJob',ticketNumber:ticket,status:'Completed',followUpDate:job.followUpDate||''});
-          if(!data.success)throw new Error(data.error||'Unable to move job to Completed');
-          const savedDue=data.dueDate||job.due||job.dueDate||'';
-          job.status='Completed';job.dueDate=savedDue;job.due=savedDue;job.followUpDate=data.followUpDate!==undefined?data.followUpDate:(job.followUpDate||'');job.completedAt=(data.job&&data.job.completedAt)||new Date().toISOString();
+          const proxy=document.createElement('button');proxy.setAttribute('data-move-ticket',ticket);proxy.setAttribute('data-old-status',String(job.status||''));proxy.setAttribute('data-new-status','Completed');
+          const moved=await changeJobStatusFromMenu(proxy);if(!moved)throw new Error('Unable to move job to Completed.');
           document.getElementById('jobFinancialsModalBackdrop').classList.remove('open');jobFinancialsTicket='';jobFinancialsOriginTicket='';jobFinancialsViewTicket='';jobFinancialsOriginDraft=null;clientNotesReturnToFinancial=false;renderQueue();renderBoard();
         }catch(err){alert('Financials were saved, but the job could not be moved to Completed: '+err.message)}finally{moveBtn.disabled=false;moveBtn.textContent='Move to Completed'}
       }
@@ -6355,7 +6571,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('cancelAutoWorkdayHoursBtn').addEventListener('click',()=>document.getElementById('autoWorkdayHoursBackdrop').classList.remove('open'));
       document.getElementById('saveAutoWorkdayHoursBtn').addEventListener('click',saveAutoWorkdayHours);
       document.getElementById('autoWorkdayHoursBackdrop').addEventListener('click',e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove('open')});
-      document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented)return;const notes=document.getElementById('toolsNotesModalBackdrop');if(notes&&notes.classList.contains('open')){e.preventDefault();notes.classList.remove('open');return}const hours=document.getElementById('autoWorkdayHoursBackdrop');if(hours&&hours.classList.contains('open')){e.preventDefault();hours.classList.remove('open')}});
+      document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented)return;const revenue=document.getElementById('revenueCalendarBackdrop');if(revenue&&revenue.classList.contains('open')){e.preventDefault();revenue.classList.remove('open');return}const notes=document.getElementById('toolsNotesModalBackdrop');if(notes&&notes.classList.contains('open')){e.preventDefault();notes.classList.remove('open');return}const hours=document.getElementById('autoWorkdayHoursBackdrop');if(hours&&hours.classList.contains('open')){e.preventDefault();hours.classList.remove('open')}});
       document.addEventListener('click',()=>closeTopToolbarMenus());
       document.getElementById('workdayPunchInBtn').addEventListener('click',e=>addWorkdayPunch('PUNCH_IN',e.currentTarget));
       document.getElementById('lunchOutBtn').addEventListener('click',e=>addWorkdayPunch('LUNCH_OUT',e.currentTarget));
