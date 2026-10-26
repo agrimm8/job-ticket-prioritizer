@@ -2350,10 +2350,14 @@
       let clientNotesReturnToFinancial=false;
       let clientNotesReturnToClients=false;
       let emailQueue=[];
+      let emailQueueLoaded=false;
+      let emailQueueLoading=false;
       let scheduledIntake=[];
       let jobSchedules=[];
       let scheduledDraftIntakeId='';
       let recentEmailSources=[];
+      let d1EmailSourcesLoaded=false;
+      let d1EmailSourcesLoading=false;
       let changeOrderIntakes=[];
       let changeOrderEmailSources=[];
       let emailDraftQueueId='';
@@ -5782,6 +5786,23 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         if(!res.ok||!data.success){if(res.status===401||res.status===403)throw new Error('Job Scheduler authorization expired. Refresh JTP and try again.');throw new Error(data.error||('Job Scheduler request failed ('+res.status+')'))}
         return data
       }
+      async function loadD1EmailSources(){
+        if(d1EmailSourcesLoaded||d1EmailSourcesLoading||!d1FastPathReady())return false;
+        d1EmailSourcesLoading=true;
+        try{
+          const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/email/sources';
+          const response=await fetch(url,{method:'GET',headers:{'Authorization':'Bearer '+d1FastPath.token}});
+          let data={};try{data=await response.json()}catch(ignore){}
+          if(!response.ok||!data.success)throw new Error((data&&data.error)||('D1 email source load failed ('+response.status+')'));
+          recentEmailSources=Array.isArray(data.recentEmailSources)?data.recentEmailSources:[];
+          changeOrderEmailSources=Array.isArray(data.changeOrderEmailSources)?data.changeOrderEmailSources:[];
+          d1EmailSourcesLoaded=true;
+          renderEmailQueue();
+          if(jobDetailsTicket)renderJobDetailsModal();
+          if(changeOrderModalTicket)renderChangeOrderModal();
+          return true;
+        }finally{d1EmailSourcesLoading=false}
+      }
       async function d1RevenueCalendarApi(path){
         if(PREVIEW_MODE)throw new Error('Live Revenue Calendar access is disabled in Preview Mode.');
         if(!d1FastPathReady())throw new Error('D1 Revenue Calendar is not connected yet. Refresh JTP and try again.');
@@ -5844,14 +5865,15 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         emailQueueRefreshBusy=true;
         const before=emailQueueRefreshSignature(emailQueue);
         try{
+          const wasLoaded=emailQueueLoaded;emailQueueLoading=true;renderEmailQueue();
           const data=await apiPost({action:'getEmailQueueUpdates'});
           if(!data.success)return;
           const nextQueue=data.emailQueue||[];
           const after=emailQueueRefreshSignature(nextQueue);
-          emailQueue=nextQueue;
-          if(before!==after)renderEmailQueue();
+          emailQueue=nextQueue;emailQueueLoaded=true;
+          if(before!==after||!wasLoaded)renderEmailQueue();
           else renderEmailQueueBadge();
-        }catch(ignore){}finally{emailQueueRefreshBusy=false}
+        }catch(ignore){}finally{emailQueueLoading=false;emailQueueRefreshBusy=false;if(document.getElementById('emailQueueModalBackdrop')?.classList.contains('open'))renderEmailQueue()}
       }
 
       function renderWarmBoardColumns(){
@@ -5887,9 +5909,10 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         if(PREVIEW_MODE||backendReady||boardBootstrapDataArrived)return false;const cached=readCachedD1BoardAuth();if(!cached)return false;
         try{
           d1FastPath=Object.assign({enabled:true},cached);
+          loadD1EmailSources().catch(error=>console.warn('D1 email source hydration failed:',error));
           const url=String(cached.apiUrl).replace(/\/+$/,'')+'/board/snapshot';const response=await fetch(url,{method:'GET',headers:{'Authorization':'Bearer '+cached.token}});if(response.status===401||response.status===403){try{localStorage.removeItem(D1_BOARD_SESSION_CACHE_KEY)}catch(ignore){}return false}if(!response.ok)return false;const data=await response.json();
           if(!data||!data.success||!Array.isArray(data.jobs)||loadId!==boardStartupLoadId||backendReady||boardBootstrapDataArrived)return false;
-          jobs=data.jobs;statusHistory=Array.isArray(data.statusHistory)?data.statusHistory:statusHistory;workdayPunches=Array.isArray(data.workdayPunches)?data.workdayPunches:workdayPunches;workSessions=Array.isArray(data.workSessions)?data.workSessions:workSessions;workSets=Array.isArray(data.workSets)?data.workSets:workSets;clients=Array.isArray(data.clients)?data.clients:clients;subclients=Array.isArray(data.subclients)?data.subclients:subclients;changeOrderIntakes=Array.isArray(data.changeOrderIntakes)?data.changeOrderIntakes:changeOrderIntakes;jobFinancials=Array.isArray(data.jobFinancials)?data.jobFinancials:jobFinancials;recentEmailSources=Array.isArray(data.recentEmailSources)?data.recentEmailSources:recentEmailSources;changeOrderEmailSources=Array.isArray(data.changeOrderEmailSources)?data.changeOrderEmailSources:changeOrderEmailSources;d1JobDetailsCacheReady=data.jobDetailsCacheReady===true;Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);Object.keys(clientPricingNotes).forEach(k=>delete clientPricingNotes[k]);Object.keys(clientAssociatedEmails).forEach(k=>delete clientAssociatedEmails[k]);clients.forEach(c=>{const key=clientNotesKey(c.id);clientNotes[key]=String(c.notes||'');clientPricingNotes[key]=String(c.pricingNotes||'');clientAssociatedEmails[key]=String(c.associatedEmails||'')});subclients.forEach(s=>{const key=clientNotesKey(s.parentClientId,s.id);clientNotes[key]=String(s.notes||'');clientPricingNotes[key]=String(s.pricingNotes||'');clientAssociatedEmails[key]=String(s.associatedEmails||'')});boardSnapshotAccruedHours=data.accruedHoursByTicket||{};await reconcileOpenWorkSession(data.openWorkSession||null);boardWarmRender=true;boardWarmActive=true;const board=document.getElementById('mainBoard');if(board){board.classList.add('is-warming');board.setAttribute('aria-busy','true')}
+          jobs=data.jobs;statusHistory=Array.isArray(data.statusHistory)?data.statusHistory:statusHistory;workdayPunches=Array.isArray(data.workdayPunches)?data.workdayPunches:workdayPunches;workSessions=Array.isArray(data.workSessions)?data.workSessions:workSessions;workSets=Array.isArray(data.workSets)?data.workSets:workSets;clients=Array.isArray(data.clients)?data.clients:clients;subclients=Array.isArray(data.subclients)?data.subclients:subclients;changeOrderIntakes=Array.isArray(data.changeOrderIntakes)?data.changeOrderIntakes:changeOrderIntakes;jobFinancials=Array.isArray(data.jobFinancials)?data.jobFinancials:jobFinancials;if(Array.isArray(data.recentEmailSources)){recentEmailSources=data.recentEmailSources;d1EmailSourcesLoaded=true}if(Array.isArray(data.changeOrderEmailSources)){changeOrderEmailSources=data.changeOrderEmailSources;d1EmailSourcesLoaded=true}d1JobDetailsCacheReady=data.jobDetailsCacheReady===true;Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);Object.keys(clientPricingNotes).forEach(k=>delete clientPricingNotes[k]);Object.keys(clientAssociatedEmails).forEach(k=>delete clientAssociatedEmails[k]);clients.forEach(c=>{const key=clientNotesKey(c.id);clientNotes[key]=String(c.notes||'');clientPricingNotes[key]=String(c.pricingNotes||'');clientAssociatedEmails[key]=String(c.associatedEmails||'')});subclients.forEach(s=>{const key=clientNotesKey(s.parentClientId,s.id);clientNotes[key]=String(s.notes||'');clientPricingNotes[key]=String(s.pricingNotes||'');clientAssociatedEmails[key]=String(s.associatedEmails||'')});boardSnapshotAccruedHours=data.accruedHoursByTicket||{};await reconcileOpenWorkSession(data.openWorkSession||null);boardWarmRender=true;boardWarmActive=true;const board=document.getElementById('mainBoard');if(board){board.classList.add('is-warming');board.setAttribute('aria-busy','true')}
           try{renderWarmBoardColumns();renderWorkUtilization()}finally{boardWarmRender=false}
           setBackendStatus(false,'Showing the fast D1 board while live data finishes loading.');return true;
         }catch(ignore){return false}
@@ -5899,7 +5922,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const loadId=++boardStartupLoadId;boardBootstrapDataArrived=false;if(!backendReady)warmBoardFromD1(loadId);
         try{
           const data=await apiGet();boardBootstrapDataArrived=true;if(!data.success)throw new Error(data.error||'Backend error');
-          d1FastPath=data.d1FastPath||d1FastPath;cacheD1BoardAuth(d1FastPath);clients=data.clients||[]; subclients=data.subclients||[]; jobs=mergeD1WarmStatusOverrides(data.jobs||[]); statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; workSets=data.workSets||[]; boardSnapshotAccruedHours=null; workdayPunches=data.workdayPunches||[]; autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig; adminSessions=data.adminSessions||[]; activeAdminSession=data.openAdminSession||null; motivatorBankReady=false; motivatorBankServer={active:false,shiftStart:'',shiftStartMs:0,clientWorkSeconds:0,earnedSeconds:0,spentSeconds:0,availableSeconds:0}; holidayCalendar=data.holidayCalendar||[]; jobFinancials=data.jobFinancials||[]; overheadTemplates=data.overheadTemplates||[]; currentMonthlyOverhead=data.currentMonthlyOverhead||{month:currentMonthKey(),entries:[],total:0}; emailQueue=data.emailQueue||[];recentEmailSources=data.recentEmailSources||[];changeOrderIntakes=data.changeOrderIntakes||[];changeOrderEmailSources=data.changeOrderEmailSources||[];emailIntakeConfigured=data.emailIntakeConfigured===true; await reconcileOpenWorkSession(data.openWorkSession||null);
+          d1FastPath=data.d1FastPath||d1FastPath;cacheD1BoardAuth(d1FastPath);clients=data.clients||[]; subclients=data.subclients||[]; jobs=mergeD1WarmStatusOverrides(data.jobs||[]); statusHistory=data.statusHistory||[]; overdueHistory=data.overdueHistory||[]; workSessions=data.workSessions||[]; workSets=data.workSets||[]; boardSnapshotAccruedHours=null; workdayPunches=data.workdayPunches||[]; autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig; adminSessions=data.adminSessions||[]; activeAdminSession=data.openAdminSession||null; motivatorBankReady=false; motivatorBankServer={active:false,shiftStart:'',shiftStartMs:0,clientWorkSeconds:0,earnedSeconds:0,spentSeconds:0,availableSeconds:0}; holidayCalendar=data.holidayCalendar||[]; jobFinancials=data.jobFinancials||[]; overheadTemplates=data.overheadTemplates||[]; currentMonthlyOverhead=data.currentMonthlyOverhead||{month:currentMonthKey(),entries:[],total:0}; if(Array.isArray(data.emailQueue)){emailQueue=data.emailQueue;emailQueueLoaded=true}if(Array.isArray(data.recentEmailSources)){recentEmailSources=data.recentEmailSources;d1EmailSourcesLoaded=true}changeOrderIntakes=data.changeOrderIntakes||[];if(Array.isArray(data.changeOrderEmailSources)){changeOrderEmailSources=data.changeOrderEmailSources;d1EmailSourcesLoaded=true}emailIntakeConfigured=data.emailIntakeConfigured===true; await reconcileOpenWorkSession(data.openWorkSession||null);
           Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);
           Object.keys(clientPricingNotes).forEach(k=>delete clientPricingNotes[k]);
           Object.keys(clientAssociatedEmails).forEach(k=>delete clientAssociatedEmails[k]);
@@ -5909,7 +5932,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           nextId=getNextSequentialId();
           populateClients(); syncNextId(); renderQueue(); renderBoard(); renderWorkUtilization(); refreshMotivatorMenuGateLabels(); setBackendStatus(true,'Live Google Sheets connection');
           boardWarmActive=false;const board=document.getElementById('mainBoard');if(board){board.classList.remove('is-warming');board.removeAttribute('aria-busy')}if(jobDetailsTicket)renderJobDetailsModal();
-          backendReady=true;midnightObservedKey=workdayKey();maybeShowAutoWorkdayMotivator();refreshScheduledIntake().catch(()=>{});
+          backendReady=true;midnightObservedKey=workdayKey();maybeShowAutoWorkdayMotivator();refreshScheduledIntake().catch(()=>{});refreshEmailQueue().catch(()=>{});loadD1EmailSources().catch(error=>console.warn('D1 email source hydration failed:',error));
           if(data.midnightRollover&&data.midnightRollover.busy)checkMidnightRollover(true);
           refreshMotivatorSpent().catch(()=>{});
         }catch(err){backendReady=false;setBackendStatus(false,'Connection failed');alert('Could not load Google Sheets data: '+err.message)}
@@ -6010,8 +6033,8 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       function renderEmailQueue(){
         renderEmailQueueBadge();renderScheduledIntake();const rows=document.getElementById('emailQueueRows');const status=document.getElementById('emailQueueStatus');if(!rows)return;
         const emailCount=document.getElementById('emailIntakeCount');if(emailCount)emailCount.textContent=emailQueue.length?emailQueue.length+' waiting':'';
-        status.textContent=emailIntakeConfigured?'Job Intake is ready. Email requests and scheduled jobs remain review-first; nothing becomes a ticket until you create it.':'Scheduled Job Intake is available. Gmail intake will work after the Email Intake Apps Script is deployed and connected.';
-        if(!emailQueue.length)rows.innerHTML='<div class="muted">No email requests are waiting for a ticket.</div>';
+        status.textContent=emailQueueLoading?'Checking for email requests…':(emailIntakeConfigured?'Job Intake is ready. Email requests and scheduled jobs remain review-first; nothing becomes a ticket until you create it.':'Scheduled Job Intake is available. Gmail intake will work after the Email Intake Apps Script is deployed and connected.');
+        if(!emailQueue.length)rows.innerHTML=emailQueueLoading?'<div class="muted">Checking for email requests…</div>':'<div class="muted">No email requests are waiting for a ticket.</div>';
         else{
           rows.innerHTML=emailQueue.map(item=>{
             const sender=[item.originalSenderName,item.originalSenderEmail].filter(Boolean).join(item.originalSenderName&&item.originalSenderEmail?' · ':'');
@@ -6414,11 +6437,11 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.querySelectorAll('[data-job-search-filter]').forEach(btn=>btn.addEventListener('click',()=>{jobSearchFilter=btn.getAttribute('data-job-search-filter')||'all';renderJobSearchResults()}));
       document.getElementById('jobSearchModalBackdrop').addEventListener('click',e=>{if(e.target===e.currentTarget)closeJobSearch()});
       document.getElementById('jobSearchModalBackdrop').addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();closeJobSearch()}});
-      document.getElementById('emailQueueBtn').addEventListener('click',()=>{renderEmailQueue();document.getElementById('emailQueueModalBackdrop').classList.add('open');refreshScheduledIntake().catch(()=>{})});
+      document.getElementById('emailQueueBtn').addEventListener('click',()=>{renderEmailQueue();document.getElementById('emailQueueModalBackdrop').classList.add('open');if(!emailQueueLoaded)refreshEmailQueue().catch(()=>{});refreshScheduledIntake().catch(()=>{})});
       document.getElementById('closeEmailQueueBtn').addEventListener('click',()=>document.getElementById('emailQueueModalBackdrop').classList.remove('open'));
       document.getElementById('emailAttachInitialCancelBtn').addEventListener('click',()=>{emailAttachQueueId='';document.getElementById('emailAttachInitialModalBackdrop').classList.remove('open');renderEmailQueue();document.getElementById('emailQueueModalBackdrop').classList.add('open')});
       document.getElementById('emailAttachInitialSaveBtn').addEventListener('click',attachEmailToInitialRequest);
-      document.getElementById('scanEmailInboxBtn').addEventListener('click',async()=>{const btn=document.getElementById('scanEmailInboxBtn');btn.disabled=true;btn.textContent='Checking…';try{const data=await apiPost({action:'scanEmailInbox'});if(!data.success)throw new Error(data.error||'Unable to check email inbox');emailQueue=data.emailQueue||[];recentEmailSources=data.recentEmailSources||[];changeOrderIntakes=data.changeOrderIntakes||changeOrderIntakes;changeOrderEmailSources=data.changeOrderEmailSources||changeOrderEmailSources;emailIntakeConfigured=true;renderEmailQueue();if(changeOrderModalTicket)renderChangeOrderModal();if(jobDetailsTicket)renderJobDetailsModal();if(jobNotesTicket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(jobNotesTicket));if(job)renderJobNotesChangeOrders(job)}}catch(err){alert(err.message)}finally{btn.disabled=false;btn.textContent='Check Inbox Now'}});
+      document.getElementById('scanEmailInboxBtn').addEventListener('click',async()=>{const btn=document.getElementById('scanEmailInboxBtn');btn.disabled=true;btn.textContent='Checking…';try{const data=await apiPost({action:'scanEmailInbox'});if(!data.success)throw new Error(data.error||'Unable to check email inbox');emailQueue=data.emailQueue||[];emailQueueLoaded=true;recentEmailSources=data.recentEmailSources||recentEmailSources;d1EmailSourcesLoaded=true;changeOrderIntakes=data.changeOrderIntakes||changeOrderIntakes;changeOrderEmailSources=data.changeOrderEmailSources||changeOrderEmailSources;emailIntakeConfigured=true;renderEmailQueue();if(changeOrderModalTicket)renderChangeOrderModal();if(jobDetailsTicket)renderJobDetailsModal();if(jobNotesTicket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(jobNotesTicket));if(job)renderJobNotesChangeOrders(job)}}catch(err){alert(err.message)}finally{btn.disabled=false;btn.textContent='Check Inbox Now'}});
       document.getElementById('backToEmailQueueBtn').addEventListener('click',()=>{document.getElementById('newJobModalBackdrop').classList.remove('open');renderEmailQueue();document.getElementById('emailQueueModalBackdrop').classList.add('open')});
       document.getElementById('clearEmailDraftNotes').addEventListener('click',()=>{document.getElementById('emailDraftJobNotes').value=''});
       document.getElementById('addIncomeFinancialRowBtn').addEventListener('click',()=>addFinancialRow('Income'));
