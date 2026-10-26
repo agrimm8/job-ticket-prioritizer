@@ -2312,6 +2312,8 @@
       const revenueSnapshotsByMonth={};
       const revenueCalendarLoads=new Map();
       const revenueCalendarErrors={};
+      const revenueCalendarRetryTimers=new Map();
+      const revenueCalendarRetryCounts=new Map();
       let revenueCalendarMonthKey='';
       let revenueCalendarSelectedDate='';
       let d1JobDetailsCacheReady=false;
@@ -2791,7 +2793,7 @@
         const cached=revenueSnapshotsByMonth[monthKey];
         if(!Array.isArray(cached)){
           const loading=revenueCalendarLoads.has(monthKey);
-          const message=revenueCalendarErrors[monthKey]?'Revenue history unavailable':(loading?'Loading revenue history…':'Loading revenue history…');
+          const message=loading?'Loading revenue history…':(revenueCalendarErrors[monthKey]?(revenueCalendarRetryTimers.has(monthKey)?'Revenue history unavailable · retrying…':'Revenue history unavailable'):'Loading revenue history…');
           monthlyEl.textContent='Monthly goal: '+formatCurrency(monthlyTarget);monthProgressEl.textContent=message;dailyEl.textContent='Daily pace: '+formatCurrency(dailyTarget)+' per weekday';todayEl.textContent=message;
           monthFill.style.width='0%';fill.style.width='0%';
           if(!loading&&!revenueCalendarErrors[monthKey])loadRevenueCalendarMonth(monthKey).catch(()=>{});
@@ -2828,11 +2830,23 @@
           try{
             const data=await d1RevenueCalendarApi('/revenue/calendar?month='+encodeURIComponent(key));
             revenueSnapshotsByMonth[key]=Array.isArray(data.entries)?data.entries:[];
+            revenueCalendarErrors[key]='';
+            revenueCalendarRetryCounts.delete(key);
+            const retryTimer=revenueCalendarRetryTimers.get(key);if(retryTimer)clearTimeout(retryTimer);revenueCalendarRetryTimers.delete(key);
             renderAnnualRevenuePaceKpi();
             if(revenueCalendarMonthKey===key&&document.getElementById('revenueCalendarBackdrop').classList.contains('open'))renderRevenueCalendar();
             return revenueSnapshotsByMonth[key];
-          }catch(error){revenueCalendarErrors[key]=String(error&&error.message||error);throw error}
-          finally{revenueCalendarLoads.delete(key);if(key===currentMonthKey())renderAnnualRevenuePaceKpi()}
+          }catch(error){
+            revenueCalendarErrors[key]=String(error&&error.message||error);
+            const retryCount=Number(revenueCalendarRetryCounts.get(key)||0);
+            if(retryCount<2&&!revenueCalendarRetryTimers.has(key)){
+              const delay=retryCount===0?2000:8000;
+              revenueCalendarRetryCounts.set(key,retryCount+1);
+              const timer=setTimeout(()=>{revenueCalendarRetryTimers.delete(key);if(Array.isArray(revenueSnapshotsByMonth[key]))return;delete revenueCalendarErrors[key];if(key===currentMonthKey())renderAnnualRevenuePaceKpi();loadRevenueCalendarMonth(key,{force:true}).catch(()=>{})},delay);
+              revenueCalendarRetryTimers.set(key,timer);
+            }
+            throw error;
+          }finally{revenueCalendarLoads.delete(key);if(key===currentMonthKey())renderAnnualRevenuePaceKpi()}
         })();
         revenueCalendarLoads.set(key,pending);
         return pending;
@@ -5846,11 +5860,28 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       async function d1RevenueCalendarApi(path){
         if(PREVIEW_MODE)throw new Error('Live Revenue Calendar access is disabled in Preview Mode.');
         if(!d1FastPathReady())throw new Error('D1 Revenue Calendar is not connected yet. Refresh JTP and try again.');
-        const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+path;
-        const response=await fetch(url,{method:'GET',headers:{'Authorization':'Bearer '+d1FastPath.token}});
-        let data={};try{data=await response.json()}catch(ignore){}
-        if(!response.ok||!data.success){if(response.status===401||response.status===403)throw new Error('Revenue Calendar authorization expired. Refresh JTP and try again.');throw new Error(data.error||('Revenue Calendar request failed ('+response.status+')'))}
-        return data;
+        let authRetried=false,transientRetried=false;
+        while(true){
+          const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+path;
+          let response;
+          try{response=await fetch(url,{method:'GET',headers:{'Authorization':'Bearer '+d1FastPath.token}})}
+          catch(error){if(!transientRetried){transientRetried=true;await new Promise(resolve=>setTimeout(resolve,350));continue}throw new Error('Revenue history could not be reached. '+(error&&error.message?error.message:''))}
+          let data={};try{data=await response.json()}catch(ignore){}
+          if((response.status===401||response.status===403)&&!authRetried){
+            authRetried=true;
+            try{
+              const bootstrap=await apiGet();
+              if(!bootstrap||bootstrap.success!==true||!bootstrap.d1FastPath||!bootstrap.d1FastPath.enabled)throw new Error('JTP could not refresh D1 authorization.');
+              d1FastPath=bootstrap.d1FastPath;cacheD1BoardAuth(d1FastPath);continue;
+            }catch(error){throw new Error('Revenue Calendar authorization could not be refreshed. '+(error&&error.message?error.message:''))}
+          }
+          if(!response.ok||!data.success){
+            if(response.status>=500&&!transientRetried){transientRetried=true;await new Promise(resolve=>setTimeout(resolve,350));continue}
+            if(response.status===401||response.status===403)throw new Error('Revenue Calendar authorization expired. Refresh JTP and try again.');
+            throw new Error(data.error||('Revenue Calendar request failed ('+response.status+')'))
+          }
+          return data;
+        }
       }
 
       async function apiGet(){if(PREVIEW_MODE)throw new Error('Live backend access is disabled in Preview Mode.');const res=await fetch(API_URL+'?action=bootstrap',{method:'GET'});if(!res.ok)throw new Error('Unable to reach backend');return res.json()}
