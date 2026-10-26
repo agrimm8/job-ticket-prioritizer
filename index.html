@@ -5684,6 +5684,22 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         }
         throw new Error('Unable to reach the fast Job Notes service. Your note was not confirmed; try saving again.');
       }
+      async function d1FastClientProfilePost(profile){
+        if(!d1FastPathReady())return {success:true,skipped:true};
+        const body={primaryClientId:String(profile.primaryClientId||'').trim().toUpperCase(),secondaryClientId:String(profile.secondaryClientId||'').trim().toUpperCase(),name:String(profile.name||'').trim(),type:String(profile.type||''),defaultDueRule:String(profile.defaultDueRule||'')};
+        const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/client/profile';
+        for(let attempt=0;attempt<2;attempt++){
+          let response;
+          try{response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(body)})}
+          catch(err){if(attempt===0)continue;throw new Error('Client was saved, but its D1 sync could not be confirmed. Refresh JTP and retry the job. '+(err&&err.message?err.message:''))}
+          let data={};try{data=await response.json()}catch(ignore){}
+          if(response.ok&&data&&data.success)return data;
+          if(response.status>=500&&attempt===0)continue;
+          if(response.status===401||response.status===403)throw new Error('Client was saved, but D1 authorization expired. Refresh JTP before creating the job.');
+          throw new Error((data&&data.error)||('Client D1 sync failed ('+response.status+')'));
+        }
+        throw new Error('Client was saved, but its D1 sync could not be confirmed. Refresh JTP and retry the job.');
+      }
       async function d1FastClientNotesPost(legacyPayload){
         if(!d1FastPathReady())return apiPost(legacyPayload);
         const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('client-notes-'+Date.now()+'-'+Math.random().toString(36).slice(2));
@@ -5708,13 +5724,26 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const emailSource=source?{queueId:source.queueId,sourceType:'initial',gmailPermalink:source.gmailPermalink||'',receivedAt:source.receivedAt||'',originalSenderName:source.originalSenderName||'',originalSenderEmail:source.originalSenderEmail||'',subject:source.subject||'',cleanSubject:source.cleanSubject||'',body:source.body||'',attachments:Array.isArray(source.attachments)?source.attachments:[]}:null;
         const body={...payload,operationId,emailSource};delete body.action;delete body.queueId;
         const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/job/create';
-        for(let attempt=0;attempt<2;attempt++){
+        for(let attempt=0;attempt<3;attempt++){
           let response;
           try{response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(body)})}
           catch(err){if(attempt===0)continue;throw new Error('Unable to reach D1 Job Create. The ticket was not confirmed; refresh JTP and check the board before trying again.')}
           let data={};try{data=await response.json()}catch(ignore){}
           if(response.ok&&data&&data.success)return data;
-          if(response.status>=500&&attempt===0)continue;
+          const missingClient=/Primary client was not found in D1|Secondary client was not found in D1/i.test(String(data&&data.error||''));
+          if(missingClient&&attempt===0){
+            const primary=clients.find(item=>String(item.id||'').toUpperCase()===String(payload.primaryClientId||'').toUpperCase());
+            if(!primary)throw new Error('This client is missing from D1 and its details are not available in the current page. Refresh JTP and try again.');
+            await d1FastClientProfilePost({primaryClientId:primary.id,name:primary.name,type:primary.type||'',defaultDueRule:primary.defaultDueRule||''});
+            const secondaryId=String(payload.secondaryClientId||'').toUpperCase();
+            if(secondaryId){
+              const secondary=subclients.find(item=>String(item.id||'').toUpperCase()===secondaryId&&String(item.parentClientId||'').toUpperCase()===String(primary.id||'').toUpperCase());
+              if(!secondary)throw new Error('This secondary client is missing from D1 and its details are not available in the current page. Refresh JTP and try again.');
+              await d1FastClientProfilePost({primaryClientId:primary.id,secondaryClientId:secondary.id,name:secondary.name,type:''});
+            }
+            continue;
+          }
+          if(response.status>=500&&attempt<2)continue;
           if(response.status===401||response.status===403)throw new Error('D1 Job Create authorization expired. Refresh JTP and try again; no ticket was created.');
           throw new Error((data&&data.error)||('Job creation failed ('+response.status+')'))
         }
@@ -6192,6 +6221,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const originalHtml=btn.innerHTML;btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Saving…</span>';
         try{
           const data=await apiPost({action:'addClient',clientId:id,clientName:name,clientType:document.getElementById('newClientType').value,defaultDueRule:''}); if(!data.success)throw new Error(data.error||'Unable to save client');
+          if(d1FastPathReady())await d1FastClientProfilePost({primaryClientId:id,name, type:data.client?.type||document.getElementById('newClientType').value,defaultDueRule:data.client?.defaultDueRule||''});
           clients.push(data.client); document.getElementById('clientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; document.getElementById('clientIdAlert').style.display='none'; document.getElementById('clientIdAlert').textContent=''; populateClients(); document.getElementById('primaryClient').value=id; updateSecondaryVisibility(); updateSubs(); syncNextId(); updatePreview();
         }catch(err){alert(err.message)}finally{btn.disabled=false;btn.classList.remove('is-loading');btn.innerHTML=originalHtml}
       });
@@ -6205,6 +6235,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const originalHtml=btn.innerHTML;btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Saving…</span>';
         try{
           const data=await apiPost({action:'addSubclient',parentClientId:parent,subclientId:id,subclientName:name}); if(!data.success)throw new Error(data.error||'Unable to save secondary client');
+          if(d1FastPathReady())await d1FastClientProfilePost({primaryClientId:parent,secondaryClientId:id,name:data.subclient?.name||name,type:''});
           subclients.push(data.subclient); document.getElementById('newSubclientName').value=''; document.getElementById('newSubclientId').value=''; document.getElementById('subclientIdAlert').style.display='none'; document.getElementById('subclientIdAlert').textContent=''; document.getElementById('subclientModal').classList.remove('open'); updateSubs(); document.getElementById('secondaryClient').value=id; updatePreview();
         }catch(err){alert(err.message)}finally{btn.disabled=false;btn.classList.remove('is-loading');btn.innerHTML=originalHtml}
       });
@@ -6337,7 +6368,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('addClientMenuBtn').addEventListener('click',e=>{e.stopPropagation();openAddClientQuick()});
       document.getElementById('closeAddClientQuickBtn').addEventListener('click',closeAddClientQuick);document.getElementById('cancelAddClientQuickBtn').addEventListener('click',closeAddClientQuick);document.getElementById('addClientQuickModalBackdrop').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAddClientQuick()});
       document.getElementById('addClientQuickId').addEventListener('input',e=>{const id=e.currentTarget.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);e.currentTarget.value=id;const a=document.getElementById('addClientQuickIdAlert');if(id.length===3&&clients.some(c=>c.id===id)){a.textContent='That client ID is already in use.';a.style.display='block'}else{a.textContent='';a.style.display='none'}});
-      document.getElementById('saveAddClientQuickBtn').addEventListener('click',async e=>{const name=document.getElementById('addClientQuickName').value.trim();const id=document.getElementById('addClientQuickId').value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);if(!name||id.length!==3){alert('Enter a client name and a unique 3-letter client ID.');return}if(clients.some(c=>c.id===id)){alert('That client ID is already in use.');return}const btn=e.currentTarget;const original=btn.innerHTML;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Adding…</span>';try{const data=await apiPost({action:'addClient',clientId:id,clientName:name,clientType:'Primary Only',defaultDueRule:''});if(!data.success)throw new Error(data.error||'Unable to add client');clients.push(data.client);populateClients();closeAddClientQuick();renderClientsDirectory();showJobFolderToast('Client added')}catch(err){alert(err.message)}finally{btn.disabled=false;btn.innerHTML=original}});
+      document.getElementById('saveAddClientQuickBtn').addEventListener('click',async e=>{const name=document.getElementById('addClientQuickName').value.trim();const id=document.getElementById('addClientQuickId').value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);if(!name||id.length!==3){alert('Enter a client name and a unique 3-letter client ID.');return}if(clients.some(c=>c.id===id)){alert('That client ID is already in use.');return}const btn=e.currentTarget;const original=btn.innerHTML;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Adding…</span>';try{const data=await apiPost({action:'addClient',clientId:id,clientName:name,clientType:'Primary Only',defaultDueRule:''});if(!data.success)throw new Error(data.error||'Unable to add client');if(d1FastPathReady())await d1FastClientProfilePost({primaryClientId:id,name,type:data.client?.type||'Primary Only',defaultDueRule:data.client?.defaultDueRule||''});clients.push(data.client);populateClients();closeAddClientQuick();renderClientsDirectory();showJobFolderToast('Client added')}catch(err){alert(err.message)}finally{btn.disabled=false;btn.innerHTML=original}});
       document.querySelectorAll('#clientNotesModalBackdrop [data-client-tab]').forEach(btn=>btn.addEventListener('click',()=>{setClientDetailTab(btn.dataset.clientTab);if(btn.dataset.clientTab==='utilities')refreshClientPreferredDirectoryUI().catch(()=>{});if(btn.dataset.clientTab==='jobs')renderClientJobsHistory()}));
       document.getElementById('clientJobsNewerBtn').addEventListener('click',()=>{if(clientJobsPage>0){clientJobsPage--;renderClientJobsHistory()}});
       document.getElementById('clientJobsOlderBtn').addEventListener('click',()=>{const total=jobsForClientRecord().length;if((clientJobsPage+1)*CLIENT_JOBS_PAGE_SIZE<total){clientJobsPage++;renderClientJobsHistory()}});
