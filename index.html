@@ -20,13 +20,6 @@
     #job-priority-app .backend-dot{width:8px;height:8px;border-radius:999px;background:#b66a00}
     #job-priority-app .backend-status a{color:inherit;text-decoration:underline;text-underline-offset:2px}
     #job-priority-app .top-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-    #job-priority-app .idle-alarm-control{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:750;white-space:nowrap}
-    #job-priority-app .idle-alarm-switch{position:relative;display:inline-block;width:42px;height:24px}
-    #job-priority-app .idle-alarm-switch input{opacity:0;width:0;height:0}
-    #job-priority-app .idle-alarm-slider{position:absolute;cursor:pointer;inset:0;border-radius:999px;background:light-dark(#b9b9b4,#555);transition:.2s}
-    #job-priority-app .idle-alarm-slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:.2s}
-    #job-priority-app .idle-alarm-switch input:checked+.idle-alarm-slider{background:#b42318}
-    #job-priority-app .idle-alarm-switch input:checked+.idle-alarm-slider:before{transform:translateX(18px)}
     #job-priority-app .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
     #job-priority-app .kpi-strip{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
     #job-priority-app .new-job-panel{grid-column:1}
@@ -366,12 +359,6 @@
     #job-priority-app .timer-modal{width:min(430px,100%);background:light-dark(#fff,#202020);color:inherit;border:1px solid light-dark(#d8d8d4,#444);border-radius:14px;padding:16px;box-shadow:0 18px 50px rgba(0,0,0,.25)}
     #job-priority-app .timer-modal h3{font-size:15px;margin:0 0 8px}
     #job-priority-app .timer-modal p{font-size:12px;line-height:1.4;margin:0}
-    #job-priority-app .idle-warning-modal{border:2px solid #b42318;box-shadow:0 18px 50px rgba(180,35,24,.28)}
-    #job-priority-app .idle-warning-heading{display:flex;align-items:center;gap:8px;color:#b42318}
-    #job-priority-app .idle-warning-icon{font-size:22px;line-height:1}
-    #job-priority-app .idle-warning-box{border:1px solid #b42318;background:light-dark(#fff1f0,#3a1715)}
-    #job-priority-app .idle-warning-box strong,#job-priority-app .idle-warning-box .ticket-title{color:#b42318}
-    #job-priority-app .idle-resume{background:#b42318;color:#fff}
     #job-priority-app .edit-notes-btn{background:#b42318;color:#fff}
     #job-priority-app .notes-box{width:100%;min-height:180px;resize:vertical;padding:9px;border-radius:8px;border:1px solid light-dark(#cfcfca,#444);background:light-dark(#fff,#171717);color:inherit;font:inherit;line-height:1.4}
     #job-priority-app .notes-box[readonly]{opacity:.85;cursor:default}
@@ -723,9 +710,8 @@
     #job-priority-app .clients-letter-buttons{display:flex;flex-wrap:wrap;gap:7px}
     #job-priority-app .clients-directory-btn{min-height:32px;padding:6px 9px;font-size:10px;text-align:left}
     #job-priority-app .clients-directory-empty{padding:24px;text-align:center;border:1px dashed light-dark(#d2d2cc,#444);border-radius:9px;font-size:11px;opacity:.62}
-    #job-priority-app .workday-actions .idle-alarm-control{margin-right:4px;padding-right:8px;border-right:1px solid light-dark(#deded8,#414141)}
     #job-priority-app .auto-workday-control{display:inline-flex;align-items:center;gap:6px;font-size:9px;font-weight:800;white-space:nowrap;margin-right:4px;padding-right:8px;border-right:1px solid light-dark(#deded8,#414141)}
-    @media(max-width:700px){#job-priority-app .workday-actions .idle-alarm-control,#job-priority-app .auto-workday-control{width:100%;margin-right:0;padding-right:0;padding-bottom:6px;border-right:0;border-bottom:1px solid light-dark(#deded8,#414141)}#job-priority-app .clients-directory-btn{flex:1 1 180px}}
+    @media(max-width:700px){#job-priority-app .auto-workday-control{width:100%;margin-right:0;padding-right:0;padding-bottom:6px;border-right:0;border-bottom:1px solid light-dark(#deded8,#414141)}#job-priority-app .clients-directory-btn{flex:1 1 180px}}
     #job-priority-app .financial-dashboard-item{display:flex;gap:6px;align-items:baseline;font-size:12px;font-weight:800}
     #job-priority-app .financial-dashboard-label{opacity:.72}
     #job-priority-app .financial-dashboard-value{font-size:15px;color:light-dark(#111,#f2f2f2)}
@@ -1479,14 +1465,6 @@
           <button class="secondary toolbar-dropdown-launch" id="toolsMenuBtn" type="button" aria-haspopup="menu" aria-expanded="false">Tools <span class="toolbar-dropdown-caret">▾</span></button>
           <div class="toolbar-dropdown-menu" id="toolsMenu" role="menu" aria-label="Tools menu">
             <button type="button" role="menuitem" id="toolsNotesBtn" class="menu-item-with-shortcut"><span>Notes</span><span class="menu-shortcut-label" data-shortcut-mac="⇧⌘E" data-shortcut-other="Ctrl+Shift+E">⇧⌘E</span></button>
-            <div class="menu-separator"></div>
-            <div class="toolbar-submenu" id="idleAlarmSubmenu">
-              <button type="button" role="menuitem" id="toolsIdleAlarmBtn" aria-haspopup="menu" aria-expanded="false"><span id="idleAlarmStateLabel">Idle Alert On</span><span class="toolbar-submenu-caret">▸</span></button>
-              <div class="toolbar-submenu-panel" id="idleAlarmMenu" role="menu" aria-label="Idle Alert setting">
-                <button type="button" role="menuitem" data-idle-alarm="on">On · Show alert + sound</button>
-                <button type="button" role="menuitem" data-idle-alarm="off">Off · Show alert silently</button>
-              </div>
-            </div>
           </div>
         </div>
         <div class="toolbar-dropdown" id="revenueMenuControl">
@@ -1836,16 +1814,6 @@
           <button class="primary" id="includeBlockGapBtn" type="button">Include Missed Time</button>
           <button class="secondary" id="startBlockNowBtn" type="button">Start From Now</button>
           <button class="secondary" id="cancelBlockGapBtn" type="button">Cancel</button>
-        </div>
-      </div>
-    </div>
-    <div class="timer-modal-backdrop" id="idlePauseModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="idlePauseModalTitle">
-      <div class="timer-modal idle-warning-modal">
-        <h3 id="idlePauseModalTitle" class="idle-warning-heading"><span class="idle-warning-icon" aria-hidden="true">⚠</span><span>Idle Activity Detected</span></h3>
-        <p>No computer activity has been detected for at least 3 minutes. Your timer and current punch are still running.</p>
-        <div class="preview idle-warning-box" style="margin-top:12px"><strong>Inactive For</strong><div id="idlePauseDuration" class="ticket-title">3:00</div></div>
-        <div class="actions">
-          <button class="primary" id="acknowledgeIdleBtn" type="button">Continue Timer</button>
         </div>
       </div>
     </div>
@@ -2376,16 +2344,6 @@
       let changeOrderModalTicket='';
       let changeOrderModalIntakeId='';
       let clientNameEditTarget=null;
-      let lastActivityAt=Date.now();
-      let idlePausedTimerKey='';
-      let idlePausedAt=0;
-      let idleConsumedSeconds=0;
-      let idleDurationInterval=null;
-      let systemIdleDetector=null;
-      let systemIdleDetectionState='uninitialized';
-      let systemIdlePermissionRequested=false;
-      let idleAlarmMuted=false;
-      let idleAlarmRepeatInterval=null;
       let timeEditTicket='';
       let timeRecordTicket='';
       let jobDetailsTicket='';
@@ -2719,7 +2677,7 @@
       async function saveTimesheetEntryEdit(){
         if(!timesheetEditTarget)return;const {type,id}=timesheetEditTarget;const btn=document.getElementById('saveTimesheetEntryEditBtn');btn.disabled=true;btn.textContent='Saving…';
         try{
-          if(type==='workday'){const input=document.getElementById('timesheetWorkdayTime');const d=new Date(input.value);if(!input.value||Number.isNaN(d.getTime()))throw new Error('Enter a valid time.');const legacy={action:'editWorkdayPunch',punchId:id,timestampMs:d.getTime()};const data=await d1FastWorkdayPost('/workday/punch/edit',{punchId:id,timestampMs:d.getTime()},legacy);if(!data.success)throw new Error(data.error||'Unable to edit workday punch');const idx=workdayPunches.findIndex(p=>String(p.punchId)===id);if(idx>=0)workdayPunches[idx]=data.punch}
+          if(type==='workday'){const input=document.getElementById('timesheetWorkdayTime');const d=new Date(input.value);if(!input.value||Number.isNaN(d.getTime()))throw new Error('Enter a valid time.');const data=await d1FastWorkdayPost('/workday/punch/edit',{punchId:id,timestampMs:d.getTime()});if(!data.success)throw new Error(data.error||'Unable to edit workday punch');const idx=workdayPunches.findIndex(p=>String(p.punchId)===id);if(idx>=0)workdayPunches[idx]=data.punch}
           else if(type==='client'){const inEl=document.getElementById('timesheetClientIn'),outEl=document.getElementById('timesheetClientOut');const pin=new Date(inEl.value),pout=new Date(outEl.value);if(!inEl.value||!outEl.value||Number.isNaN(pin.getTime())||Number.isNaN(pout.getTime())||pout<=pin)throw new Error('Enter valid Punch In and Punch Out times, with Punch Out later than Punch In.');const data=await apiPost({action:'editWorkSession',sessionId:id,punchInMs:pin.getTime(),punchOutMs:pout.getTime()});if(!data.success)throw new Error(data.error||'Unable to edit client punch');const idx=workSessions.findIndex(s=>String(s.sessionId)===id);if(idx>=0)workSessions[idx]={...workSessions[idx],...data.session};const job=jobs.find(j=>Number(j.ticketNumber)===Number(data.session.ticketNumber));if(job&&data.timeAccruedHours!==undefined)setTimeAccruedHours(job,Number(data.timeAccruedHours||0))}
           else if(type==='admin'){const inEl=document.getElementById('timesheetAdminIn'),outEl=document.getElementById('timesheetAdminOut');const pin=new Date(inEl.value),pout=new Date(outEl.value);if(!inEl.value||!outEl.value||Number.isNaN(pin.getTime())||Number.isNaN(pout.getTime())||pout<=pin)throw new Error('Enter valid Punch In and Punch Out times, with Punch Out later than Punch In.');const data=await apiPost({action:'editAdminSession',adminSessionId:id,punchInMs:pin.getTime(),punchOutMs:pout.getTime(),category:document.getElementById('timesheetAdminCategory').value,description:document.getElementById('timesheetAdminDescription').value.trim()});if(!data.success)throw new Error(data.error||'Unable to edit Admin Work');const idx=adminSessions.findIndex(s=>String(s.adminSessionId)===id);if(idx>=0)adminSessions[idx]=data.session}
           document.getElementById('timesheetEntryEditBackdrop').classList.remove('open');timesheetEditTarget=null;renderProductivityModal();renderWorkUtilization();renderQueue();renderBoard()
@@ -2727,16 +2685,16 @@
       }
       async function endActiveAdminSession(){if(!activeAdminSession||!activeAdminSession.adminSessionId)return true;try{const data=await apiPost({action:'endAdminSession',adminSessionId:activeAdminSession.adminSessionId});if(!data.success)throw new Error(data.error||'Unable to stop Admin Work');const idx=adminSessions.findIndex(s=>s.adminSessionId===activeAdminSession.adminSessionId);if(idx>=0)adminSessions[idx]=data.session;activeAdminSession=null;renderWorkUtilization();return true}catch(err){alert('Admin Work could not be stopped: '+err.message);return false}}
       async function stopActiveProductivityForClockChange(){if(activeWorkSession&&activeWorkSession.sessionId){if(!confirm('A client job is currently running. Stop that job timer before changing your workday clock?'))return false;const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');if(!await pauseTimer(key))return false}if(activeAdminSession){if(!confirm('Admin Work is currently running. Stop the admin session before changing your workday clock?'))return false;if(!await endActiveAdminSession())return false}return true}
-      async function addWorkdayPunch(eventType,button){if((eventType==='LUNCH_OUT'||eventType==='PUNCH_OUT')&&!await stopActiveProductivityForClockChange())return;const old=button.innerHTML;button.disabled=true;button.classList.add('is-loading');button.innerHTML=PUNCH_LOADING_ICON+'<span>Saving…</span>';try{const legacy={action:'addWorkdayPunch',eventType};const punchId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('workday-punch-'+Date.now()+'-'+Math.random().toString(36).slice(2));const data=await d1FastWorkdayPost('/workday/punch',{eventType,punchId,timestampMs:Date.now()},legacy);if(!data.success)throw new Error(data.error||'Unable to save workday punch');workdayPunches.push(data.punch);if(eventType==='PUNCH_IN'){setMotivatorBankServer({active:true,shiftStartMs:new Date(data.punch.timestamp).getTime(),spentSeconds:0});try{localStorage.setItem(autoWorkdaySeenStorageKey(),String(data.punch.punchId||data.punch.timestamp||''))}catch(e){}openMotivatorModal('GO');renderMotivatorGo()}else if(eventType==='PUNCH_OUT')setMotivatorBankServer({active:false,spentSeconds:0});renderWorkUtilization();refreshMotivatorMenuGateLabels()}catch(err){alert('Workday punch could not be saved: '+err.message)}finally{button.disabled=false;button.classList.remove('is-loading');button.innerHTML=old}}
-      async function setAutoWorkdayEnabled(enabled,button){if(button)button.disabled=true;try{const data=await apiPost({action:'setAutoWorkdayEnabled',enabled:!!enabled});if(!data.success)throw new Error(data.error||'Unable to update Auto Workday');autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig;workdayPunches=data.workdayPunches||workdayPunches;renderWorkUtilization();refreshMotivatorMenuGateLabels()}catch(err){alert('Auto Workday could not be updated: '+err.message)}finally{if(button)button.disabled=false}}
+      async function addWorkdayPunch(eventType,button){if((eventType==='LUNCH_OUT'||eventType==='PUNCH_OUT')&&!await stopActiveProductivityForClockChange())return;const old=button.innerHTML;button.disabled=true;button.classList.add('is-loading');button.innerHTML=PUNCH_LOADING_ICON+'<span>Saving…</span>';try{const punchId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('workday-punch-'+Date.now()+'-'+Math.random().toString(36).slice(2));const data=await d1FastWorkdayPost('/workday/punch',{eventType,punchId,timestampMs:Date.now()});if(!data.success)throw new Error(data.error||'Unable to save workday punch');workdayPunches.push(data.punch);if(eventType==='PUNCH_IN'){setMotivatorBankServer({active:true,shiftStartMs:new Date(data.punch.timestamp).getTime(),spentSeconds:0});try{localStorage.setItem(autoWorkdaySeenStorageKey(),String(data.punch.punchId||data.punch.timestamp||''))}catch(e){}openMotivatorModal('GO');renderMotivatorGo()}else if(eventType==='PUNCH_OUT')setMotivatorBankServer({active:false,spentSeconds:0});renderWorkUtilization();refreshMotivatorMenuGateLabels()}catch(err){alert('Workday punch could not be saved: '+err.message)}finally{button.disabled=false;button.classList.remove('is-loading');button.innerHTML=old}}
+      async function setAutoWorkdayEnabled(enabled,button){if(button)button.disabled=true;try{const data=await d1FastWorkdaySettingsPost({enabled:!!enabled});autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig;workdayPunches=data.workdayPunches||workdayPunches;renderWorkUtilization();refreshMotivatorMenuGateLabels();maybeShowAutoWorkdayMotivator()}catch(err){alert('Auto Workday could not be updated: '+err.message)}finally{if(button)button.disabled=false}}
       function autoWorkdayTimeValue(hour,minute){return `${String(Number(hour)||0).padStart(2,'0')}:${String(Number(minute)||0).padStart(2,'0')}`}
       function openAutoWorkdayHours(){document.getElementById('autoWorkdayStartInput').value=autoWorkdayTimeValue(autoWorkdayConfig.startHour,autoWorkdayConfig.startMinute);document.getElementById('autoWorkdayEndInput').value=autoWorkdayTimeValue(autoWorkdayConfig.endHour,autoWorkdayConfig.endMinute);document.getElementById('autoWorkdayHoursBackdrop').classList.add('open')}
       function parseClockInput(value){const parts=String(value||'').split(':');if(parts.length<2)return null;const hour=Number(parts[0]),minute=Number(parts[1]);return Number.isInteger(hour)&&hour>=0&&hour<=23&&Number.isInteger(minute)&&minute>=0&&minute<=59?{hour,minute}:null}
-      async function saveAutoWorkdayHours(){const start=parseClockInput(document.getElementById('autoWorkdayStartInput').value),end=parseClockInput(document.getElementById('autoWorkdayEndInput').value);if(!start||!end){alert('Choose both Punch In and Punch Out times.');return}if(end.hour*60+end.minute<=start.hour*60+start.minute){alert('Punch Out time must be later than Punch In time.');return}const btn=document.getElementById('saveAutoWorkdayHoursBtn'),old=btn.innerHTML;btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Saving…</span>';try{const data=await apiPost({action:'setAutoWorkdaySchedule',startHour:start.hour,startMinute:start.minute,endHour:end.hour,endMinute:end.minute});if(!data.success)throw new Error(data.error||'Unable to save Auto Workday hours');autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig;workdayPunches=data.workdayPunches||workdayPunches;document.getElementById('autoWorkdayHoursBackdrop').classList.remove('open');renderWorkUtilization()}catch(err){alert('Auto Workday hours could not be saved: '+err.message)}finally{btn.disabled=false;btn.classList.remove('is-loading');btn.innerHTML=old}}
+      async function saveAutoWorkdayHours(){const start=parseClockInput(document.getElementById('autoWorkdayStartInput').value),end=parseClockInput(document.getElementById('autoWorkdayEndInput').value);if(!start||!end){alert('Choose both Punch In and Punch Out times.');return}if(end.hour*60+end.minute<=start.hour*60+start.minute){alert('Punch Out time must be later than Punch In time.');return}const btn=document.getElementById('saveAutoWorkdayHoursBtn'),old=btn.innerHTML;btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Saving…</span>';try{const data=await d1FastWorkdaySettingsPost({startHour:start.hour,startMinute:start.minute,endHour:end.hour,endMinute:end.minute});autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig;workdayPunches=data.workdayPunches||workdayPunches;document.getElementById('autoWorkdayHoursBackdrop').classList.remove('open');renderWorkUtilization()}catch(err){alert('Auto Workday hours could not be saved: '+err.message)}finally{btn.disabled=false;btn.classList.remove('is-loading');btn.innerHTML=old}}
       function autoWorkdaySeenStorageKey(){return 'jtp-auto-workday-motivator-punch'}
       function latestScheduledAutoPunch(){if(!autoWorkdayConfig.enabled)return null;const today=workdayKey();const targetMinutes=Number(autoWorkdayConfig.startHour||0)*60+Number(autoWorkdayConfig.startMinute||0);return (workdayPunches||[]).filter(p=>String(p.eventType||'')==='PUNCH_IN').map(p=>({p,date:parseBackendDateTime(p.timestamp)})).filter(x=>x.date&&workdayKey(x.date)===today&&(x.date.getHours()*60+x.date.getMinutes())===targetMinutes).sort((a,b)=>b.date-a.date)[0]?.p||null}
       function maybeShowAutoWorkdayMotivator(){const punch=latestScheduledAutoPunch();if(!punch)return;const id=String(punch.punchId||punch.timestamp||'');let seen='';try{seen=localStorage.getItem(autoWorkdaySeenStorageKey())||''}catch(e){}if(!id||seen===id)return;try{localStorage.setItem(autoWorkdaySeenStorageKey(),id)}catch(e){}motivatorAutoWorkdayLocked=true;openMotivatorModal('GO');renderMotivatorGo(true)}
-      async function syncAutoWorkdayState(){if(!backendReady||!autoWorkdayConfig.enabled||autoWorkdaySyncBusy||PREVIEW_MODE)return;autoWorkdaySyncBusy=true;try{const data=await apiPost({action:'syncAutoWorkday'});if(!data.success)return;autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig;workdayPunches=data.workdayPunches||workdayPunches;renderWorkUtilization();maybeShowAutoWorkdayMotivator()}catch(ignore){}finally{autoWorkdaySyncBusy=false}}
+      async function syncAutoWorkdayState(){if(!backendReady||autoWorkdaySyncBusy||PREVIEW_MODE)return;autoWorkdaySyncBusy=true;try{const data=await d1FastWorkdayClockReconcile();autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig;workdayPunches=data.workdayPunches||workdayPunches;renderWorkUtilization();maybeShowAutoWorkdayMotivator()}catch(ignore){}finally{autoWorkdaySyncBusy=false}}
       async function openAdminWork(){if(currentWorkdayState()!=='WORKING'){alert('Punch in to your workday before starting Admin Work.');return}if(activeAdminSession){await endActiveAdminSession();return}if(activeWorkSession&&activeWorkSession.sessionId){if(!confirm('A client job is currently running. Stop that job timer and switch to Admin Work?'))return;const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');if(!await pauseTimer(key))return}document.getElementById('adminWorkCategory').value='';document.getElementById('adminWorkDescription').value='';document.getElementById('adminWorkModalBackdrop').classList.add('open')}
       async function startAdminWork(){const category=document.getElementById('adminWorkCategory').value||'General';const description=document.getElementById('adminWorkDescription').value.trim();const btn=document.getElementById('startAdminWorkBtn');const old=btn.innerHTML;btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Starting…</span>';try{const data=await apiPost({action:'beginAdminSession',category,description});if(!data.success)throw new Error(data.error||'Unable to start Admin Work');activeAdminSession=data.session;adminSessions.push(data.session);document.getElementById('adminWorkModalBackdrop').classList.remove('open');renderWorkUtilization()}catch(err){alert('Admin Work could not be started: '+err.message)}finally{btn.disabled=false;btn.classList.remove('is-loading');btn.innerHTML=old}}
       function renderKpis({refreshProductivity=true}={}){
@@ -3111,88 +3069,6 @@
       function initializeFocusCountdown(){
         loadFocusCountdownView();const widget=document.getElementById('focusCountdown');if(!widget)return;widget.addEventListener('click',event=>{const view=event.target.closest('[data-focus-view]');if(view){setFocusCountdownView(view.getAttribute('data-focus-view'));return}});document.getElementById('focusCountdownAddTimerBtn').addEventListener('click',()=>widget.classList.toggle('custom-open'));document.getElementById('focusCountdownCustomStartBtn').addEventListener('click',addCustomFocusCountdown);['focusCountdownHours','focusCountdownMinutes','focusCountdownSeconds'].forEach(id=>{const input=document.getElementById(id);if(input)input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();addCustomFocusCountdown()}})});document.getElementById('focusCountdownMiniBtn').addEventListener('click',()=>setFocusCountdownView('compact'));document.getElementById('focusCountdownDragHandle').addEventListener('pointerdown',beginFocusCountdownDrag);window.addEventListener('pointermove',moveFocusCountdownDrag);window.addEventListener('pointerup',endFocusCountdownDrag);window.addEventListener('pointercancel',endFocusCountdownDrag);window.addEventListener('resize',()=>{if(focusCountdownView.mode==='full')applyFocusCountdownPosition()});renderFocusCountdown()
       }
-      function playIdleAlarmBurst(){
-        if(idleAlarmMuted||!activeWorkSession||!activeWorkSession.sessionId)return;
-        try{
-          const AudioContextClass=window.AudioContext||window.webkitAudioContext;if(!AudioContextClass)return;
-          const ctx=new AudioContextClass();const now=ctx.currentTime;
-          [0,.27,.54].forEach(delay=>{const osc=ctx.createOscillator();const gain=ctx.createGain();osc.type='sine';osc.frequency.setValueAtTime(880,now+delay);gain.gain.setValueAtTime(.0001,now+delay);gain.gain.exponentialRampToValueAtTime(.45,now+delay+.012);gain.gain.exponentialRampToValueAtTime(.0001,now+delay+.18);osc.connect(gain);gain.connect(ctx.destination);osc.start(now+delay);osc.stop(now+delay+.2)});
-          setTimeout(()=>ctx.close().catch(()=>{}),1100);
-        }catch(e){}
-      }
-      function stopIdleAlarm(){
-        if(idleAlarmRepeatInterval){clearInterval(idleAlarmRepeatInterval);idleAlarmRepeatInterval=null}
-      }
-      function startIdleAlarm(){
-        stopIdleAlarm();
-        if(idleAlarmMuted||!activeWorkSession||!activeWorkSession.sessionId)return;
-        playIdleAlarmBurst();
-        idleAlarmRepeatInterval=setInterval(()=>{
-          const modalOpen=document.getElementById('idlePauseModalBackdrop').classList.contains('open');
-          if(!modalOpen||idleAlarmMuted||!activeWorkSession||!activeWorkSession.sessionId){stopIdleAlarm();return}
-          playIdleAlarmBurst();
-        },3400);
-      }
-      function updateIdleAlarmControl(){
-        const label=document.getElementById('idleAlarmStateLabel');
-        if(label)label.textContent=idleAlarmMuted?'Idle Alert Off':'Idle Alert On';
-        document.querySelectorAll('[data-idle-alarm]').forEach(btn=>btn.classList.toggle('is-selected',(btn.dataset.idleAlarm==='off')===idleAlarmMuted));
-      }
-      function loadIdleAlarmPreference(){
-        try{idleAlarmMuted=localStorage.getItem('jtp-idle-alarm-off')==='1'}catch(e){idleAlarmMuted=false}
-        updateIdleAlarmControl();
-      }
-      function setIdleAlarmMuted(muted){
-        idleAlarmMuted=Boolean(muted);
-        try{localStorage.setItem('jtp-idle-alarm-off',idleAlarmMuted?'1':'0')}catch(e){}
-        updateIdleAlarmControl();
-        if(idleAlarmMuted)stopIdleAlarm();
-        else if(document.getElementById('idlePauseModalBackdrop').classList.contains('open')&&activeWorkSession&&activeWorkSession.sessionId)startIdleAlarm();
-      }
-      function stopIdleDurationInterval(){if(idleDurationInterval){clearInterval(idleDurationInterval);idleDurationInterval=null}}
-      function updateIdleDuration(){if(!idlePausedAt)return;document.getElementById('idlePauseDuration').textContent=formatCountdown((Date.now()-idlePausedAt)/1000)}
-      function clearIdleWarning(resetActivity=true){
-        stopIdleAlarm();
-        stopIdleDurationInterval();
-        document.getElementById('idlePauseModalBackdrop').classList.remove('open');
-        idlePausedTimerKey='';idlePausedAt=0;idleConsumedSeconds=0;
-        if(resetActivity)lastActivityAt=Date.now();
-      }
-      async function ensureSystemIdleDetection(){
-        if(systemIdleDetectionState==='active'||systemIdleDetectionState==='unavailable')return;
-        if(!('IdleDetector' in window)||!window.isSecureContext){systemIdleDetectionState='unavailable';return}
-        if(systemIdlePermissionRequested)return;
-        systemIdlePermissionRequested=true;
-        try{
-          const permission=await IdleDetector.requestPermission();
-          if(permission!=='granted'){systemIdleDetectionState='unavailable';return}
-          systemIdleDetector=new IdleDetector();
-          systemIdleDetector.addEventListener('change',()=>{
-            const isSystemIdle=systemIdleDetector.userState==='idle'||systemIdleDetector.screenState==='locked';
-            if(!isSystemIdle){lastActivityAt=Date.now();return}
-            if(activeTimerKey&&timerState[activeTimerKey]&&timerState[activeTimerKey].running&&activeWorkSession&&activeWorkSession.sessionId&&activeWorkSession.timerKey===activeTimerKey){
-              lastActivityAt=Date.now()-180000;
-              showIdlePause(activeTimerKey);
-            }
-          });
-          await systemIdleDetector.start({threshold:180000});
-          systemIdleDetectionState='active';
-          lastActivityAt=Date.now();
-        }catch(e){
-          systemIdleDetector=null;
-          systemIdleDetectionState='unavailable';
-        }
-      }
-      function showIdlePause(key){
-        const state=timerState[key];if(!state||!state.running||!activeWorkSession||!activeWorkSession.sessionId||activeWorkSession.timerKey!==key)return;
-        const backdrop=document.getElementById('idlePauseModalBackdrop');
-        if(backdrop.classList.contains('open'))return;
-        const idleSeconds=Math.max(180,Math.floor((Date.now()-lastActivityAt)/1000));
-        idlePausedTimerKey=key;idlePausedAt=lastActivityAt;idleConsumedSeconds=idleSeconds;
-        updateIdleDuration();stopIdleDurationInterval();idleDurationInterval=setInterval(updateIdleDuration,1000);
-        backdrop.classList.add('open');
-        startIdleAlarm();
-      }
       function activeWorkSessionStorageKey(){return 'jtp-active-work-session'}
       function activeTimerSnapshotStorageKey(){return 'jtp-active-timer-snapshot'}
       function saveActiveWorkSession(session){
@@ -3255,7 +3131,7 @@
       }
       let punchOutRequestInFlight=false;
       async function closeActiveWorkSession(punchOutAt){
-        clearIdleWarning(true);closeHourlyWorkReminder();if(!activeWorkSession||!activeWorkSession.sessionId)return true;
+        closeHourlyWorkReminder();if(!activeWorkSession||!activeWorkSession.sessionId)return true;
         if(punchOutRequestInFlight)return false;
         punchOutRequestInFlight=true;
         const pendingTicket=String(activeWorkSession.ticketNumber||'');
@@ -3462,8 +3338,8 @@
       async function stopActiveJobFromDetails(){if(!activeWorkSession)return;const btn=document.getElementById('jobDetailsActiveJobStopBtn');const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');if(!key||!btn||pendingPunchKeys.has(key)||punchOutRequestInFlight)return;const originalHtml=btn.innerHTML;btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Punching Out…</span>';try{const stopped=await pauseTimer(key);if(stopped){renderActiveJobBar();if(jobDetailsTicket)renderJobDetailsModal()}}finally{if(document.body.contains(btn)){btn.disabled=false;btn.classList.remove('is-loading');btn.innerHTML=originalHtml}}}
       async function startTimerInternal(key,resumeExisting=false){
         if(activeTimerKey&&activeTimerKey!==key&&timerState[activeTimerKey])timerState[activeTimerKey].running=false;
-        stopTimerInterval();activeTimerKey=key;if(!timerState[key])return;lastActivityAt=Date.now();resetNoJobTimer();const state=timerState[key];state.running=true;renderQueue();renderBoard();renderActiveJobBar();
-        await ensureSystemIdleDetection();if(!resumeExisting)state.committedSeconds=0;saveTimerSnapshot(key);
+        stopTimerInterval();activeTimerKey=key;if(!timerState[key])return;resetNoJobTimer();const state=timerState[key];state.running=true;renderQueue();renderBoard();renderActiveJobBar();
+        if(!resumeExisting)state.committedSeconds=0;saveTimerSnapshot(key);
         activeTimerInterval=setInterval(()=>{const state=timerState[key];if(!state||!state.running)return;saveTimerSnapshot(key);updateActiveJobBarTimers()},1000);updateActiveJobBarTimers();
       }
       async function pauseTimer(key,{render=true}={}){
@@ -5611,6 +5487,8 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         try{
           const data=await apiPost({action:'rolloverMidnight'});
           if(!data.success)throw new Error(data.error||'Unable to roll the workday forward');
+          const d1Clock=await d1FastWorkdayClockReconcile();
+          data.workdayPunches=d1Clock.workdayPunches||workdayPunches;data.autoWorkday=d1Clock.autoWorkday||autoWorkdayConfig;
           if(applyMidnightRolloverResponse(data,oldWorkSession,oldAdminSession))midnightObservedKey=currentKey;
         }catch(err){console.warn('Midnight rollover will retry:',err)}finally{midnightRolloverInFlight=false}
       }
@@ -5738,11 +5616,27 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         return d1FastWritePost('/job/financials',payload,legacyPayload,'Job Financials');
       }
 
-      async function d1FastWorkdayPost(path,payload,legacyPayload){
-        if(!d1FastPathReady())return apiPost(legacyPayload);
+      function showWorkdaySyncNotice(message){const toast=document.getElementById('copyToast');if(!toast)return;toast.textContent=message;toast.classList.add('show');if(copyToastTimer)clearTimeout(copyToastTimer);copyToastTimer=setTimeout(()=>{toast.classList.remove('show');toast.textContent='Job Ticket Title Copied!'},3000)}
+      async function d1FastWorkdayPost(path,payload){
+        if(!d1FastPathReady())throw new Error('The D1 workday clock is not connected. Refresh JTP and try again.');
         const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('workday-'+Date.now()+'-'+Math.random().toString(36).slice(2));
-        return d1FastWritePost(path,{...payload,operationId},legacyPayload,'Workday Punch');
+        const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+path;
+        const options={method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify({...payload,operationId})};
+        for(let attempt=0;attempt<2;attempt++){
+          let response;
+          try{response=await fetch(url,options)}catch(err){if(attempt===0)continue;throw new Error('Unable to reach D1. The punch was not confirmed; refresh JTP and check the clock before retrying.')}
+          let data={};try{data=await response.json()}catch(ignore){}
+          if(response.ok&&data&&data.success)return data;
+          if(response.status===401||response.status===403)throw new Error('The D1 workday connection expired. Refresh JTP to renew it, then check the clock before retrying.');
+          const error=new Error((data&&data.error)||('D1 Workday Punch failed ('+response.status+')'));
+          if(response.status>=500&&attempt===0)continue;
+          throw error;
+        }
+        throw new Error('Unable to reach D1. The punch was not confirmed; refresh JTP and check the clock before retrying.');
       }
+      async function d1FastWorkdaySettingsGet(){if(!d1FastPathReady())throw new Error('The D1 workday clock is not connected. Refresh JTP and try again.');const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/workday/settings';const response=await fetch(url,{method:'GET',headers:{'Authorization':'Bearer '+d1FastPath.token}});let data={};try{data=await response.json()}catch(ignore){}if(!response.ok||!data.success){if(response.status===401||response.status===403)throw new Error('The D1 workday connection expired. Refresh JTP to renew it.');throw new Error((data&&data.error)||('D1 Workday settings failed ('+response.status+')'))}return data}
+      async function d1FastWorkdayClockReconcile(){if(!d1FastPathReady())throw new Error('The D1 workday clock is not connected. Refresh JTP and try again.');const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/workday/clock/reconcile';const response=await fetch(url,{method:'POST',headers:{'Authorization':'Bearer '+d1FastPath.token,'Content-Type':'application/json'},body:'{}'});let data={};try{data=await response.json()}catch(ignore){}if(!response.ok||!data.success){if(response.status===401||response.status===403)throw new Error('The D1 workday connection expired. Refresh JTP to renew it.');throw new Error((data&&data.error)||('D1 Workday clock refresh failed ('+response.status+')'))}return data}
+      async function d1FastWorkdaySettingsPost(payload){if(!d1FastPathReady())throw new Error('The D1 workday clock is not connected. Refresh JTP and try again.');const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/workday/settings';const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)});let data={};try{data=await response.json()}catch(ignore){}if(!response.ok||!data.success){if(response.status===401||response.status===403)throw new Error('The D1 workday connection expired. Refresh JTP to renew it.');throw new Error((data&&data.error)||('D1 Workday settings failed ('+response.status+')'))}return data}
 
       async function d1FastJobFieldsPost(payload,legacyPayload){if(!d1FastPathReady())return apiPost(legacyPayload);const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('job-fields-'+Date.now()+'-'+Math.random().toString(36).slice(2));return d1FastWritePost('/job/fields',{...payload,operationId},legacyPayload,'Job Fields')}
       async function d1FastCreateJobPost(payload){
@@ -5984,7 +5878,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           loadD1Overhead().catch(error=>console.warn('D1 Monthly Overhead hydration failed:',error));
           const url=String(cached.apiUrl).replace(/\/+$/,'')+'/board/snapshot';const response=await fetch(url,{method:'GET',headers:{'Authorization':'Bearer '+cached.token}});if(response.status===401||response.status===403){try{localStorage.removeItem(D1_BOARD_SESSION_CACHE_KEY)}catch(ignore){}return false}if(!response.ok)return false;const data=await response.json();
           if(!data||!data.success||!Array.isArray(data.jobs)||loadId!==boardStartupLoadId||backendReady||boardBootstrapDataArrived)return false;
-          jobs=data.jobs;statusHistory=Array.isArray(data.statusHistory)?data.statusHistory:statusHistory;workdayPunches=Array.isArray(data.workdayPunches)?data.workdayPunches:workdayPunches;workSessions=Array.isArray(data.workSessions)?data.workSessions:workSessions;workSets=Array.isArray(data.workSets)?data.workSets:workSets;clients=Array.isArray(data.clients)?data.clients:clients;subclients=Array.isArray(data.subclients)?data.subclients:subclients;changeOrderIntakes=Array.isArray(data.changeOrderIntakes)?data.changeOrderIntakes:changeOrderIntakes;jobFinancials=Array.isArray(data.jobFinancials)?data.jobFinancials:jobFinancials;if(Array.isArray(data.holidayCalendar)){holidayCalendar=data.holidayCalendar;d1HolidayCalendarLoaded=true}if(Array.isArray(data.recentEmailSources)){recentEmailSources=data.recentEmailSources;d1EmailSourcesLoaded=true}if(Array.isArray(data.changeOrderEmailSources)){changeOrderEmailSources=data.changeOrderEmailSources;d1EmailSourcesLoaded=true}d1JobDetailsCacheReady=data.jobDetailsCacheReady===true;Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);Object.keys(clientPricingNotes).forEach(k=>delete clientPricingNotes[k]);Object.keys(clientAssociatedEmails).forEach(k=>delete clientAssociatedEmails[k]);clients.forEach(c=>{const key=clientNotesKey(c.id);clientNotes[key]=String(c.notes||'');clientPricingNotes[key]=String(c.pricingNotes||'');clientAssociatedEmails[key]=String(c.associatedEmails||'')});subclients.forEach(s=>{const key=clientNotesKey(s.parentClientId,s.id);clientNotes[key]=String(s.notes||'');clientPricingNotes[key]=String(s.pricingNotes||'');clientAssociatedEmails[key]=String(s.associatedEmails||'')});boardSnapshotAccruedHours=data.accruedHoursByTicket||{};await reconcileOpenWorkSession(data.openWorkSession||null);d1BoardSnapshotLoaded=true;boardWarmRender=true;boardWarmActive=true;const board=document.getElementById('mainBoard');if(board){board.classList.add('is-warming');board.setAttribute('aria-busy','true')}
+          jobs=data.jobs;statusHistory=Array.isArray(data.statusHistory)?data.statusHistory:statusHistory;workdayPunches=Array.isArray(data.workdayPunches)?data.workdayPunches:workdayPunches;if(data.autoWorkday)autoWorkdayConfig=data.autoWorkday;workSessions=Array.isArray(data.workSessions)?data.workSessions:workSessions;workSets=Array.isArray(data.workSets)?data.workSets:workSets;clients=Array.isArray(data.clients)?data.clients:clients;subclients=Array.isArray(data.subclients)?data.subclients:subclients;changeOrderIntakes=Array.isArray(data.changeOrderIntakes)?data.changeOrderIntakes:changeOrderIntakes;jobFinancials=Array.isArray(data.jobFinancials)?data.jobFinancials:jobFinancials;if(Array.isArray(data.holidayCalendar)){holidayCalendar=data.holidayCalendar;d1HolidayCalendarLoaded=true}if(Array.isArray(data.recentEmailSources)){recentEmailSources=data.recentEmailSources;d1EmailSourcesLoaded=true}if(Array.isArray(data.changeOrderEmailSources)){changeOrderEmailSources=data.changeOrderEmailSources;d1EmailSourcesLoaded=true}d1JobDetailsCacheReady=data.jobDetailsCacheReady===true;Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);Object.keys(clientPricingNotes).forEach(k=>delete clientPricingNotes[k]);Object.keys(clientAssociatedEmails).forEach(k=>delete clientAssociatedEmails[k]);clients.forEach(c=>{const key=clientNotesKey(c.id);clientNotes[key]=String(c.notes||'');clientPricingNotes[key]=String(c.pricingNotes||'');clientAssociatedEmails[key]=String(c.associatedEmails||'')});subclients.forEach(s=>{const key=clientNotesKey(s.parentClientId,s.id);clientNotes[key]=String(s.notes||'');clientPricingNotes[key]=String(s.pricingNotes||'');clientAssociatedEmails[key]=String(s.associatedEmails||'')});boardSnapshotAccruedHours=data.accruedHoursByTicket||{};await reconcileOpenWorkSession(data.openWorkSession||null);d1BoardSnapshotLoaded=true;boardWarmRender=true;boardWarmActive=true;const board=document.getElementById('mainBoard');if(board){board.classList.add('is-warming');board.setAttribute('aria-busy','true')}
           try{renderWarmBoardColumns();renderWorkUtilization()}finally{boardWarmRender=false}
           setBackendStatus(false,'Showing the fast D1 board while live data finishes loading.');return true;
         }catch(ignore){return false}
@@ -5995,7 +5889,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         try{
           const data=await apiGet();boardBootstrapDataArrived=true;if(!data.success)throw new Error(data.error||'Backend error');
           d1FastPath=data.d1FastPath||d1FastPath;cacheD1BoardAuth(d1FastPath);if(!d1HolidayCalendarLoaded){try{await loadD1HolidayCalendar()}catch(error){console.warn('D1 Holiday Calendar load failed:',error)}}if(!d1OverheadLoaded){try{await loadD1Overhead()}catch(error){console.warn('D1 Monthly Overhead load failed:',error)}}
-          if(!d1BoardSnapshotLoaded){clients=data.clients||[];subclients=data.subclients||[];jobs=mergeD1WarmStatusOverrides(data.jobs||[]);statusHistory=data.statusHistory||[];workSessions=data.workSessions||[];workSets=data.workSets||[];boardSnapshotAccruedHours=null;workdayPunches=data.workdayPunches||[];jobFinancials=data.jobFinancials||[];changeOrderIntakes=data.changeOrderIntakes||[];await reconcileOpenWorkSession(data.openWorkSession||null)}
+          if(!d1BoardSnapshotLoaded){clients=data.clients||[];subclients=data.subclients||[];jobs=mergeD1WarmStatusOverrides(data.jobs||[]);statusHistory=data.statusHistory||[];workSessions=data.workSessions||[];workSets=data.workSets||[];boardSnapshotAccruedHours=null;workdayPunches=data.workdayPunches||[];if(data.autoWorkday)autoWorkdayConfig=data.autoWorkday;jobFinancials=data.jobFinancials||[];changeOrderIntakes=data.changeOrderIntakes||[];await reconcileOpenWorkSession(data.openWorkSession||null)}
           overdueHistory=data.overdueHistory||[];autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig;adminSessions=data.adminSessions||[];activeAdminSession=data.openAdminSession||null;motivatorBankReady=false;motivatorBankServer={active:false,shiftStart:'',shiftStartMs:0,clientWorkSeconds:0,earnedSeconds:0,spentSeconds:0,availableSeconds:0};if(!d1OverheadLoaded){overheadTemplates=data.overheadTemplates||[];currentMonthlyOverhead=data.currentMonthlyOverhead||{month:currentMonthKey(),entries:[],total:0}}if(Array.isArray(data.emailQueue)){emailQueue=data.emailQueue;emailQueueLoaded=true}if(Array.isArray(data.recentEmailSources)&&!d1EmailSourcesLoaded){recentEmailSources=data.recentEmailSources;d1EmailSourcesLoaded=true}if(Array.isArray(data.changeOrderEmailSources)&&!d1EmailSourcesLoaded){changeOrderEmailSources=data.changeOrderEmailSources;d1EmailSourcesLoaded=true}emailIntakeConfigured=data.emailIntakeConfigured===true;
           Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);
           Object.keys(clientPricingNotes).forEach(k=>delete clientPricingNotes[k]);
@@ -6684,7 +6578,6 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       });
       document.getElementById('hourlyWorkReminderContinueBtn').addEventListener('click',()=>closeHourlyWorkReminder());
       document.getElementById('hourlyWorkReminderStopBtn').addEventListener('click',async()=>{if(!activeWorkSession||!activeWorkSession.sessionId){closeHourlyWorkReminder();return}const btn=document.getElementById('hourlyWorkReminderStopBtn');const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');if(!key){closeHourlyWorkReminder();return}const original=btn.innerHTML;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Stopping…</span>';try{const stopped=await pauseTimer(key);if(stopped)closeHourlyWorkReminder()}finally{if(document.body.contains(btn)){btn.disabled=false;btn.innerHTML=original}}});
-      document.getElementById('acknowledgeIdleBtn').addEventListener('click',()=>clearIdleWarning(true));
       document.addEventListener('click',e=>{if(!e.target.closest('#job-priority-app .job-details-due-wrap'))closeJobDetailsDuePopovers()});
       document.addEventListener('keydown',e=>{if(e.key==='Escape')closeJobDetailsDuePopovers()});
       document.getElementById('cancelDueDateBtn').addEventListener('click',()=>{dueDateEditTicket='';document.getElementById('dueDateModalBackdrop').classList.remove('open')});
@@ -6746,11 +6639,9 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       }
       updateMotivatorTrustIndicator();
 
-      const closeTopToolbarMenus=(except='')=>{[['appMenuBtn','appMenu'],['timeMenuBtn','timeMenu'],['jobsMenuBtn','jobsMenu'],['clientsMenuBtn','clientsMenu'],['toolsMenuBtn','toolsMenu'],['revenueMenuBtn','revenueMenu'],['motivatorBtn','motivatorMenu']].forEach(([btnId,menuId])=>{if(menuId===except)return;const btn=document.getElementById(btnId),menu=document.getElementById(menuId);if(menu){menu.classList.remove('open');if(btn)btn.setAttribute('aria-expanded','false')}});const idleSub=document.getElementById('idleAlarmSubmenu'),idleBtn=document.getElementById('toolsIdleAlarmBtn');if(idleSub){idleSub.classList.remove('open');if(idleBtn)idleBtn.setAttribute('aria-expanded','false')}};
+      const closeTopToolbarMenus=(except='')=>{[['appMenuBtn','appMenu'],['timeMenuBtn','timeMenu'],['jobsMenuBtn','jobsMenu'],['clientsMenuBtn','clientsMenu'],['toolsMenuBtn','toolsMenu'],['revenueMenuBtn','revenueMenu'],['motivatorBtn','motivatorMenu']].forEach(([btnId,menuId])=>{if(menuId===except)return;const btn=document.getElementById(btnId),menu=document.getElementById(menuId);if(menu){menu.classList.remove('open');if(btn)btn.setAttribute('aria-expanded','false')}})};
       const wireToolbarDropdown=(btnId,menuId)=>{const btn=document.getElementById(btnId),menu=document.getElementById(menuId);if(!btn||!menu)return;btn.addEventListener('click',e=>{e.stopPropagation();const opening=!menu.classList.contains('open');closeTopToolbarMenus(menuId);menu.classList.toggle('open',opening);btn.setAttribute('aria-expanded',opening?'true':'false')})};
       wireToolbarDropdown('appMenuBtn','appMenu');wireToolbarDropdown('timeMenuBtn','timeMenu');wireToolbarDropdown('jobsMenuBtn','jobsMenu');wireToolbarDropdown('clientsMenuBtn','clientsMenu');wireToolbarDropdown('toolsMenuBtn','toolsMenu');wireToolbarDropdown('revenueMenuBtn','revenueMenu');
-      const toolsIdleAlarmBtn=document.getElementById('toolsIdleAlarmBtn'),idleAlarmSubmenu=document.getElementById('idleAlarmSubmenu');if(toolsIdleAlarmBtn&&idleAlarmSubmenu){toolsIdleAlarmBtn.addEventListener('click',e=>{e.stopPropagation();const opening=!idleAlarmSubmenu.classList.contains('open');idleAlarmSubmenu.classList.toggle('open',opening);toolsIdleAlarmBtn.setAttribute('aria-expanded',opening?'true':'false')})}
-      document.querySelectorAll('[data-idle-alarm]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const muted=e.currentTarget.dataset.idleAlarm==='off';setIdleAlarmMuted(muted);closeTopToolbarMenus()}));
       document.getElementById('timeAutoWorkdayBtn').addEventListener('click',async e=>{e.stopPropagation();const enabled=!autoWorkdayConfig.enabled;closeTopToolbarMenus();await setAutoWorkdayEnabled(enabled,e.currentTarget)});
       document.getElementById('editAutoWorkdayHoursBtn').addEventListener('click',e=>{e.stopPropagation();closeTopToolbarMenus();openAutoWorkdayHours()});
       document.getElementById('viewTodayTimesheetBtn').addEventListener('click',e=>{e.stopPropagation();closeTopToolbarMenus();openProductivityModal(workdayKey())});
@@ -6959,10 +6850,6 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           if(pendingScheduledIntakeId){try{const scheduleData=await schedulerApi('/scheduler/intake/complete',{method:'POST',body:{intakeId:pendingScheduledIntakeId,ticketNumber:data.job.ticketNumber}});scheduledIntake=scheduleData.intake||[]}catch(syncErr){console.warn('Scheduled intake completion sync failed:',syncErr);alert('The ticket was created, but JTP could not clear the scheduled intake item. Refresh JTP, then skip that duplicate intake item.')}}if(emailDraftQueueId){const source=emailQueueItem(emailDraftQueueId);if(source)recentEmailSources.unshift({...source,ticketNumber:data.job.ticketNumber,deleteAfter:data.deleteAfter||''});emailQueue=emailQueue.filter(item=>String(item.queueId||'')!==String(emailDraftQueueId))}clearEmailDraftState();clearScheduledDraftState();renderEmailQueue(); renderQueue(); renderBoard(); document.getElementById('jobForm').reset(); document.getElementById('dueOverrideCheck').checked=false; document.getElementById('dueOverrideDate').value=''; syncDueOverrideUI(); document.getElementById('clientModal').classList.remove('open'); document.getElementById('subclientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; document.getElementById('clientIdAlert').style.display='none'; document.getElementById('clientIdAlert').textContent=''; document.getElementById('newSubclientName').value=''; document.getElementById('newSubclientId').value=''; document.getElementById('subclientIdAlert').style.display='none'; document.getElementById('subclientIdAlert').textContent=''; populateClients(); syncNextId(); document.getElementById('ticketPreview').style.display='none'; document.getElementById('jobNumberWrap').style.display='none'; document.getElementById('newJobModalBackdrop').classList.remove('open');
         }catch(err){alert(err.message)}finally{if(createBtn){createBtn.classList.remove('is-loading');createBtn.innerHTML=originalCreateHtml;validateJobNumber()}}
       });
-      const markActivity=()=>{if(systemIdleDetectionState==='active')lastActivityAt=Date.now()};
-      ['mousemove','mousedown','keydown','touchstart','scroll'].forEach(eventName=>document.addEventListener(eventName,markActivity,{passive:true}));
-      // System-level IdleDetector is the sole source for idle warnings.
-      // If unavailable or permission is denied, no idle warning is triggered.
       setInterval(()=>{if(completedTimerKey)renderNotificationTray()},30000);
       setInterval(()=>{renderWorkUtilization();if(document.getElementById('productivityModalBackdrop').classList.contains('open'))renderProductivityModal()},60000);
       setInterval(checkMidnightRollover,5000);
@@ -6973,7 +6860,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.addEventListener('click',()=>document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open')));
       document.addEventListener('scroll',closeBoardMoveMenus,true);
       window.addEventListener('beforeunload',event=>{if(!activeWorkSession||!activeWorkSession.sessionId)return;if(activeTimerKey)saveTimerSnapshot(activeTimerKey);saveActiveWorkSession(activeWorkSession);event.preventDefault();event.returnValue=''});
-      loadIdleAlarmPreference();initializeFocusCountdown();populateClients();wireBoardColumnSortControls();renderQueue();renderBoard();renderActiveJobBar();renderNotificationTray();renderEmailQueue();renderWorkUtilization();
+      initializeFocusCountdown();populateClients();wireBoardColumnSortControls();renderQueue();renderBoard();renderActiveJobBar();renderNotificationTray();renderEmailQueue();renderWorkUtilization();
       if(PREVIEW_MODE){
         setBackendStatus(false,'Preview Mode — live sync paused');
       }else{
