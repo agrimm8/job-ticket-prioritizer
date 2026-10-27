@@ -2696,7 +2696,7 @@
       function autoWorkdaySeenStorageKey(){return 'jtp-auto-workday-motivator-punch'}
       function latestScheduledAutoPunch(){if(!autoWorkdayConfig.enabled)return null;const today=workdayKey();const targetMinutes=Number(autoWorkdayConfig.startHour||0)*60+Number(autoWorkdayConfig.startMinute||0);return (workdayPunches||[]).filter(p=>String(p.eventType||'')==='PUNCH_IN').map(p=>({p,date:parseBackendDateTime(p.timestamp)})).filter(x=>x.date&&workdayKey(x.date)===today&&(x.date.getHours()*60+x.date.getMinutes())===targetMinutes).sort((a,b)=>b.date-a.date)[0]?.p||null}
       function maybeShowAutoWorkdayMotivator(){const punch=latestScheduledAutoPunch();if(!punch)return;const id=String(punch.punchId||punch.timestamp||'');let seen='';try{seen=localStorage.getItem(autoWorkdaySeenStorageKey())||''}catch(e){}if(!id||seen===id)return;try{localStorage.setItem(autoWorkdaySeenStorageKey(),id)}catch(e){}motivatorAutoWorkdayLocked=true;openMotivatorModal('GO');renderMotivatorGo(true)}
-      async function syncAutoWorkdayState(){if(!backendReady||autoWorkdaySyncBusy||PREVIEW_MODE)return;autoWorkdaySyncBusy=true;try{const data=await d1FastWorkdayClockReconcile();autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig;workdayPunches=data.workdayPunches||workdayPunches;renderWorkUtilization();maybeShowAutoWorkdayMotivator()}catch(ignore){}finally{autoWorkdaySyncBusy=false}}
+      async function syncAutoWorkdayState(){if(!d1BoardSnapshotLoaded||!d1AdminSessionsLoaded||!d1FastPathReady()||autoWorkdaySyncBusy||PREVIEW_MODE)return;autoWorkdaySyncBusy=true;const oldWork=activeWorkSession?{...activeWorkSession}:null;const oldAdmin=activeAdminSession?{...activeAdminSession}:null;try{const data=await d1FastWorkdayClockReconcile();autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig;workdayPunches=data.workdayPunches||workdayPunches;data.rollover=data.scheduler&&data.scheduler.rollover?data.scheduler.rollover:(data.rollover||{didRollover:false,segments:[]});if(Array.isArray(data.workSessions))workSessions=data.workSessions;if(Array.isArray(data.adminSessions))adminSessions=data.adminSessions;if(data.rollover.didRollover){applyMidnightRolloverResponse(data,oldWork,oldAdmin);midnightObservedKey=workdayKey()}else{activeAdminSession=data.openAdminSession||null;renderWorkUtilization()}maybeShowAutoWorkdayMotivator()}catch(ignore){}finally{autoWorkdaySyncBusy=false}}
       async function openAdminWork(){if(!legacyBootstrapReady){alert('Admin session status is still loading. Please try again in a moment.');return}if(currentWorkdayState()!=='WORKING'){alert('Punch in to your workday before starting Admin Work.');return}if(activeAdminSession){await endActiveAdminSession();return}if(activeWorkSession&&activeWorkSession.sessionId){if(!confirm('A client job is currently running. Stop that job timer and switch to Admin Work?'))return;const key=activeWorkSession.timerKey||activeTimerKey||String(activeWorkSession.ticketNumber||'');if(!await pauseTimer(key))return}document.getElementById('adminWorkCategory').value='';document.getElementById('adminWorkDescription').value='';document.getElementById('adminWorkModalBackdrop').classList.add('open')}
       async function startAdminWork(){const category=document.getElementById('adminWorkCategory').value||'General';const description=document.getElementById('adminWorkDescription').value.trim();const btn=document.getElementById('startAdminWorkBtn');const old=btn.innerHTML;btn.disabled=true;btn.classList.add('is-loading');btn.innerHTML=PUNCH_LOADING_ICON+'<span>Starting…</span>';try{const adminSessionId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('admin-session-'+Date.now()+'-'+Math.random().toString(36).slice(2));const data=await d1FastAdminWorkPost('/admin/work/start',{adminSessionId,category,description});if(!data.success)throw new Error(data.error||'Unable to start Admin Work');activeAdminSession=data.session;adminSessions.push(data.session);document.getElementById('adminWorkModalBackdrop').classList.remove('open');renderWorkUtilization()}catch(err){alert('Admin Work could not be started: '+err.message)}finally{btn.disabled=false;btn.classList.remove('is-loading');btn.innerHTML=old}}
       function renderKpis({refreshProductivity=true}={}){
@@ -5469,7 +5469,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         adminSessions=data.adminSessions||adminSessions;
         const nextOpenWork=data.openWorkSession||null;
         const nextOpenAdmin=data.openAdminSession||null;
-        if(oldWorkSession&&nextOpenWork&&midnightWorkSessionWasContinued(oldWorkSession,nextOpenWork,data.rollover)){
+        if(oldWorkSession&&nextOpenWork){
           const key=oldWorkSession.timerKey||activeTimerKey||String(oldWorkSession.ticketNumber||'');
           applyWorkSessionContext(nextOpenWork,key);saveActiveWorkSession({...nextOpenWork,timerKey:key});
           if(activeTimerKey===key&&timerState[key])saveTimerSnapshot(key);
@@ -5481,7 +5481,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         return true;
       }
       async function checkMidnightRollover(force=false){
-        if(!backendReady||midnightRolloverInFlight||PREVIEW_MODE)return;
+        if(!d1BoardSnapshotLoaded||!d1AdminSessionsLoaded||!d1FastPathReady()||midnightRolloverInFlight||PREVIEW_MODE)return;
         const currentKey=workdayKey();
         if(!midnightObservedKey)midnightObservedKey=currentKey;
         if(!force&&currentKey===midnightObservedKey)return;
@@ -5489,12 +5489,11 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const oldWorkSession=activeWorkSession?{...activeWorkSession}:null;
         const oldAdminSession=activeAdminSession?{...activeAdminSession}:null;
         try{
-          const data=await apiPost({action:'rolloverMidnight'});
-          if(!data.success)throw new Error(data.error||'Unable to roll the workday forward');
-          const d1Clock=await d1FastWorkdayClockReconcile();
-          data.workdayPunches=d1Clock.workdayPunches||workdayPunches;data.autoWorkday=d1Clock.autoWorkday||autoWorkdayConfig;
-          const rolloverAdminSessions=[];const seenAdminIds=new Set();(data.rollover&&Array.isArray(data.rollover.segments)?data.rollover.segments:[]).forEach(segment=>[segment.closedAdminSession,segment.newAdminSession].forEach(session=>{if(!session||!session.adminSessionId||seenAdminIds.has(String(session.adminSessionId)))return;seenAdminIds.add(String(session.adminSessionId));const copy={...session};['punchIn','punchOut'].forEach(key=>{if(copy[key]){const parsed=parseBackendDateTime(copy[key]);if(parsed)copy[key]=parsed.toISOString()}});rolloverAdminSessions.push(copy)}));
-          if(rolloverAdminSessions.length){const d1Admin=await d1FastAdminWorkPost('/admin/work/rollover-sync',{sessions:rolloverAdminSessions});data.adminSessions=d1Admin.adminSessions||adminSessions;data.openAdminSession=d1Admin.openAdminSession||null}
+          const data=await d1FastWorkdayClockReconcile();
+          if(!data.success)throw new Error(data.error||'Unable to roll the D1 workday forward');
+          data.rollover=data.scheduler&&data.scheduler.rollover?data.scheduler.rollover:(data.rollover||{didRollover:false,segments:[]});
+          data.workdayPunches=data.workdayPunches||workdayPunches;data.autoWorkday=data.autoWorkday||autoWorkdayConfig;
+          workSessions=Array.isArray(data.workSessions)?data.workSessions:workSessions;adminSessions=Array.isArray(data.adminSessions)?data.adminSessions:adminSessions;
           if(applyMidnightRolloverResponse(data,oldWorkSession,oldAdminSession))midnightObservedKey=currentKey;
         }catch(err){console.warn('Midnight rollover will retry:',err)}finally{midnightRolloverInFlight=false}
       }
@@ -5892,7 +5891,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         }catch(ignore){return false}
       }
       function setD1BoardStatus(text){const label=document.getElementById('backendText');const dots=[document.getElementById('backendDot'),document.getElementById('backendMenuDot')].filter(Boolean);const btn=document.getElementById('appMenuBtn');if(label)label.textContent='D1 Ready';if(btn){btn.title=String(text||'D1 board is ready.');btn.setAttribute('aria-label','Job Ticket Prioritizer. D1 board ready.')}dots.forEach(dot=>{dot.style.background='#1f7a4d';dot.style.boxShadow='0 0 0 3px rgba(31,122,77,.14)'})}
-      function activateD1Board(){boardWarmActive=false;legacyBootstrapReady=d1AdminSessionsLoaded;const board=document.getElementById('mainBoard');if(board){board.classList.remove('is-warming');board.removeAttribute('aria-busy')}renderQueue();renderBoard();renderWorkUtilization();refreshMotivatorMenuGateLabels();if(jobDetailsTicket)renderJobDetailsModal();setD1BoardStatus('D1 board is ready. Google-only services are loading in the background.')}
+      function activateD1Board(){boardWarmActive=false;legacyBootstrapReady=d1AdminSessionsLoaded;const board=document.getElementById('mainBoard');if(board){board.classList.remove('is-warming');board.removeAttribute('aria-busy')}renderQueue();renderBoard();renderWorkUtilization();refreshMotivatorMenuGateLabels();if(jobDetailsTicket)renderJobDetailsModal();setD1BoardStatus('D1 board is ready. Google-only services are loading in the background.');syncAutoWorkdayState().catch(()=>{})}
       async function loadGoogleOnlyBootstrap(loadId){
         try{
           const data=await apiGet();if(loadId!==boardStartupLoadId)return;if(!data.success)throw new Error(data.error||'Backend error');boardBootstrapDataArrived=true;
