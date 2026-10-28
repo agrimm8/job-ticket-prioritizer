@@ -5644,6 +5644,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       async function d1FastWorkdayClockReconcile(){if(!d1FastPathReady())throw new Error('The D1 workday clock is not connected. Refresh JTP and try again.');const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/workday/clock/reconcile';const response=await fetch(url,{method:'POST',headers:{'Authorization':'Bearer '+d1FastPath.token,'Content-Type':'application/json'},body:'{}'});let data={};try{data=await response.json()}catch(ignore){}if(!response.ok||!data.success){if(response.status===401||response.status===403)throw new Error('The D1 workday connection expired. Refresh JTP to renew it.');throw new Error((data&&data.error)||('D1 Workday clock refresh failed ('+response.status+')'))}return data}
       async function d1FastWorkdaySettingsPost(payload){if(!d1FastPathReady())throw new Error('The D1 workday clock is not connected. Refresh JTP and try again.');const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/workday/settings';const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)});let data={};try{data=await response.json()}catch(ignore){}if(!response.ok||!data.success){if(response.status===401||response.status===403)throw new Error('The D1 workday connection expired. Refresh JTP to renew it.');throw new Error((data&&data.error)||('D1 Workday settings failed ('+response.status+')'))}return data}
 
+      async function d1FastJobTitlePost(ticketNumber,displayTitle){if(!d1FastPathReady())throw new Error('D1 Job Title update is not connected. Refresh JTP; the title was not sent to Google.');const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('job-title-'+Date.now()+'-'+Math.random().toString(36).slice(2));const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/job/fields';const payload={operationId,scope:'job',ticketNumber:Number(ticketNumber),displayTitle:String(displayTitle||'').trim()};for(let attempt=0;attempt<2;attempt++){let response;try{response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)})}catch(err){if(attempt===0)continue;throw new Error('Unable to reach D1. The title update is unconfirmed; refresh JTP and check the title before retrying.')}let data={};try{data=await response.json()}catch(ignore){}if(response.ok&&data&&data.success)return data;if(response.status===401||response.status===403)throw new Error('D1 Job Title authorization expired. Refresh JTP and check the title before retrying.');if(response.status>=500&&attempt===0)continue;throw new Error((data&&data.error)||('D1 Job Title update failed ('+response.status+'). Refresh JTP and check the title before retrying.'))}throw new Error('Unable to reach D1. The title update is unconfirmed; refresh JTP and check the title before retrying.')}
       async function d1FastJobFieldsPost(payload,legacyPayload){if(!d1FastPathReady())return apiPost(legacyPayload);const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('job-fields-'+Date.now()+'-'+Math.random().toString(36).slice(2));return d1FastWritePost('/job/fields',{...payload,operationId},legacyPayload,'Job Fields')}
       async function d1FastCreateJobPost(payload){
         if(!d1FastPathReady())throw new Error('D1 Job Create is not connected. Refresh JTP and try again; no ticket was created.');
@@ -6606,21 +6607,20 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('saveJobTitleBtn').addEventListener('click',async()=>{
         const job=jobs.find(j=>String(j.ticketNumber||'')===jobTitleEditTicket);
         const newTitle=document.getElementById('jobTitleModalInput').value.trim();
+        const saveBtn=document.getElementById('saveJobTitleBtn');
         if(!job||!newTitle)return;
+        const oldText=saveBtn.textContent;saveBtn.disabled=true;saveBtn.textContent='Saving…';
         try{
-          const data=await apiPost({
-            action:'updateJob',
-            ticketNumber:job.ticketNumber,
-            displayTitle:newTitle
-          });
-          if(!data.success)throw new Error(data.error||'Unable to update job title');
-          job.displayTitle=newTitle;
-          job.title=newTitle;
+          const data=await d1FastJobTitlePost(job.ticketNumber,newTitle);
+          const saved=data.job||{};
+          job.displayTitle=String(saved.displayTitle||newTitle);
+          job.title=job.displayTitle;
           document.getElementById('jobTitleModalBackdrop').classList.remove('open');
           jobTitleEditTicket='';
           renderQueue();
           renderBoard();
-        }catch(err){alert(err.message)}
+          if(jobDetailsTicket&&String(jobDetailsTicket)===String(job.ticketNumber))renderJobDetailsModal();
+        }catch(err){alert(err.message)}finally{saveBtn.disabled=false;saveBtn.textContent=oldText}
       });
       document.getElementById('cancelFollowUpDateBtn').addEventListener('click',()=>{followUpDateEditTicket='';document.getElementById('followUpDateModalBackdrop').classList.remove('open')});
       document.getElementById('clientReviewEtrSelect').addEventListener('change',updateClientReviewSubmitState);
