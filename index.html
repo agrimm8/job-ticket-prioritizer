@@ -4065,11 +4065,12 @@
       }
       function renderChangeOrderModal(){
         const job=jobs.find(j=>String(j.ticketNumber||'')===String(changeOrderModalTicket));if(!job)return;const record=changeOrderModalIntakeId?changeOrderIntakes.find(item=>item.changeOrderIntakeId===changeOrderModalIntakeId):pendingChangeOrderIntakeForJob(job);if(record)changeOrderModalIntakeId=record.changeOrderIntakeId;
-        document.getElementById('changeOrderModalTitle').textContent=record?`Change Order #${record.changeOrderNumber}`:'Create Change Order';document.getElementById('changeOrderModalJob').textContent=job.title||job.displayTitle||'';document.getElementById('changeOrderWorkloadScore').value=record&&normalizeWorkloadScore(record.workloadScore)?String(record.workloadScore):'';const input=document.getElementById('changeOrderNotesInput');input.value=record?String(record.manualNotes||''):String(job.pendingChangeOrderNotes||'');
+        document.getElementById('changeOrderModalTitle').textContent=record?`Change Order #${record.changeOrderNumber}`:'Create Change Order';document.getElementById('changeOrderModalJob').textContent=job.title||job.displayTitle||'';const scoreInput=document.getElementById('changeOrderWorkloadScore');scoreInput.value=record&&normalizeWorkloadScore(record.workloadScore)?String(record.workloadScore):'';scoreInput.dataset.initialValue=scoreInput.value;const input=document.getElementById('changeOrderNotesInput');input.value=record?String(record.manualNotes||''):String(job.pendingChangeOrderNotes||'');input.dataset.initialValue=input.value;
         const box=document.getElementById('changeOrderEmailBox');const address=document.getElementById('changeOrderEmailAddress');const sources=document.getElementById('changeOrderModalSources');const save=document.getElementById('saveChangeOrderBtn');
         if(record){box.classList.add('show');address.textContent=record.emailAddress||'';save.textContent='Save Notes';const sourceItems=changeOrderEmailSourcesForIntake(record);sources.innerHTML=sourceItems.length?sourceItems.map(changeOrderSourceMarkup).join(''):'<div class="muted">No emailed notes or files have arrived for this Change Order yet.</div>';wireChangeOrderSourceActions(sources)}else{box.classList.remove('show');address.textContent='';sources.innerHTML='';save.textContent='Create Change Order'}
       }
       function openChangeOrderModal(ticket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket));if(!job)return;changeOrderModalTicket=String(ticket);const pending=pendingChangeOrderIntakeForJob(job);changeOrderModalIntakeId=pending?pending.changeOrderIntakeId:'';renderChangeOrderModal();document.getElementById('changeOrderModalBackdrop').classList.add('open');document.querySelectorAll('#job-priority-app .move-menu.open').forEach(m=>m.classList.remove('open'))}
+      function renderChangeOrderModalIfOpenForTicket(ticket){const backdrop=document.getElementById('changeOrderModalBackdrop');if(!backdrop||!backdrop.classList.contains('open')||String(changeOrderModalTicket||'')!==String(ticket||''))return;renderChangeOrderModal()}
       async function saveChangeOrderModal(){
         const job=jobs.find(j=>String(j.ticketNumber||'')===String(changeOrderModalTicket));if(!job)return;const notes=document.getElementById('changeOrderNotesInput').value.trim();const workloadScore=normalizeWorkloadScore(document.getElementById('changeOrderWorkloadScore').value);if(!workloadScore){alert('Select a Workload Score from 1 to 5.');return}const btn=document.getElementById('saveChangeOrderBtn');btn.disabled=true;const oldText=btn.textContent;const mutation=changeOrderModalIntakeId?'update':'create';btn.textContent=mutation==='update'?'Saving…':'Creating…';
         try{const legacyPayload=changeOrderModalIntakeId?{action:'updateChangeOrderIntake',changeOrderIntakeId:changeOrderModalIntakeId,notes,workloadScore}:{action:'createChangeOrderIntake',ticketNumber:job.ticketNumber,notes,workloadScore};const d1Payload=changeOrderModalIntakeId?{changeOrderIntakeId:changeOrderModalIntakeId,notes,workloadScore}:{ticketNumber:job.ticketNumber,notes,workloadScore};const data=await d1FastChangeOrderPost(mutation,d1Payload,legacyPayload);if(!data.success)throw new Error(data.error||'Unable to save Change Order');const record=data.changeOrderIntake;if(!record)throw new Error('D1 did not return the saved Change Order. Refresh JTP and check the ticket before retrying.');const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===record.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=record;else changeOrderIntakes.push(record);changeOrderModalIntakeId=record.changeOrderIntakeId;job.pendingChangeOrderNotes=String(record.manualNotes||'');renderChangeOrderModal();renderQueue();renderBoard();if(jobNotesTicket===String(job.ticketNumber))renderJobNotesChangeOrders(job)}catch(err){alert(err.message)}finally{btn.disabled=false;if(btn.textContent==='Creating…'||btn.textContent==='Saving…')btn.textContent=oldText}}
@@ -5986,9 +5987,18 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const sources=changeOrderEmailSources.filter(item=>intakeIds.has(String(item.changeOrderIntakeId||''))).map(item=>({id:String(item.queueId||item.messageId||''),intakeId:String(item.changeOrderIntakeId||''),body:String(item.body||''),subject:String(item.cleanSubject||item.subject||''),attachments:Array.isArray(item.attachments)?item.attachments.map(att=>[String(att.name||''),Number(att.size||0),String(att.kind||'')]):[],deleted:String(item.sourceDeletedAt||'')}));
         return JSON.stringify({intakes,sources});
       }
-      function jobDetailsIsActivelyEditing(){
+      function jobDetailsHasUnsavedEditsForRefresh(){
         if(jobDetailsClientEditing||jobDetailsFinancialsDirty)return true;
-        return Array.from(document.querySelectorAll('#jobDetailsBody .job-details-save-btn,#jobDetailsSaveClientNotesBtn')).some(btn=>!btn.disabled);
+        const body=document.getElementById('jobDetailsBody');if(!body)return false;
+        const selectors=['#jobDetailsSaveGeneralNotesBtn','#jobDetailsSavePricingNotesBtn','#jobDetailsSaveJobNotesBtn','#jobDetailsSaveInvoiceNotesBtn','[data-job-details-save-notes]','[data-job-details-save-actions]','[data-job-details-financial-save]'];
+        return Array.from(body.querySelectorAll(selectors.join(','))).some(btn=>!btn.disabled);
+      }
+      function changeOrderModalHasUnsavedEdits(ticket){
+        if(String(changeOrderModalTicket||'')!==String(ticket||''))return false;
+        const backdrop=document.getElementById('changeOrderModalBackdrop');if(!backdrop||!backdrop.classList.contains('open'))return false;
+        const notesInput=document.getElementById('changeOrderNotesInput');const scoreInput=document.getElementById('changeOrderWorkloadScore');
+        const record=changeOrderIntakes.find(item=>String(item.changeOrderIntakeId||'')===String(changeOrderModalIntakeId||''));
+        return !!(notesInput&&notesInput.value!==String(notesInput.dataset.initialValue||'')||scoreInput&&scoreInput.value!==String(scoreInput.dataset.initialValue||''));
       }
       async function refreshChangeOrderDetails(){
         if(changeOrderRefreshBusy)return;
@@ -6009,12 +6019,15 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           changeOrderIntakes=[...changeOrderIntakes.filter(item=>Number(item.ticketNumber)!==ticketNumber),...refreshedIntakes];
           changeOrderEmailSources=[...changeOrderEmailSources.filter(item=>Number(item.ticketNumber||0)!==ticketNumber&&!currentIntakeIds.has(String(item.changeOrderIntakeId||''))),...(Array.isArray(data.changeOrderEmailSources)?data.changeOrderEmailSources:[])];
           const after=changeOrderRefreshSignatureForTicket(ticket);
-          if(before!==after&&!jobDetailsIsActivelyEditing()){
-            const leftPane=document.querySelector('#jobDetailsBody .job-details-pane-left');const rightPane=document.querySelector('#jobDetailsBody .job-details-pane-right');
-            const leftScroll=leftPane?leftPane.scrollTop:0;const rightScroll=rightPane?rightPane.scrollTop:0;
-            renderJobDetailsModal();
-            const refreshedLeft=document.querySelector('#jobDetailsBody .job-details-pane-left');const refreshedRight=document.querySelector('#jobDetailsBody .job-details-pane-right');
-            if(refreshedLeft)refreshedLeft.scrollTop=leftScroll;if(refreshedRight)refreshedRight.scrollTop=rightScroll;
+          if(before!==after){
+            if(!jobDetailsHasUnsavedEditsForRefresh()){
+              const leftPane=document.querySelector('#jobDetailsBody .job-details-pane-left');const rightPane=document.querySelector('#jobDetailsBody .job-details-pane-right');
+              const leftScroll=leftPane?leftPane.scrollTop:0;const rightScroll=rightPane?rightPane.scrollTop:0;
+              renderJobDetailsModal();
+              const refreshedLeft=document.querySelector('#jobDetailsBody .job-details-pane-left');const refreshedRight=document.querySelector('#jobDetailsBody .job-details-pane-right');
+              if(refreshedLeft)refreshedLeft.scrollTop=leftScroll;if(refreshedRight)refreshedRight.scrollTop=rightScroll;
+            }
+            if(!changeOrderModalHasUnsavedEdits(ticket))renderChangeOrderModalIfOpenForTicket(ticket);
           }
         }catch(ignore){}finally{changeOrderRefreshBusy=false}
       }
