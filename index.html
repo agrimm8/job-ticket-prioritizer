@@ -4328,7 +4328,15 @@
       async function loadJobActivity(details){
         if(!details||details.dataset.loading==='1')return;const ticket=String(details.getAttribute('data-ticket')||'');const body=details.querySelector('[data-job-activity-body]');if(!ticket||!body)return;
         details.dataset.loading='1';body.innerHTML='<div class="job-activity-loading">Loading activity…</div>';
-        try{let data=null;if(boardWarmActive&&d1FastPath&&d1FastPath.apiUrl&&d1FastPath.token){try{const base=String(d1FastPath.apiUrl).replace(/\/+$/,'');const response=await fetch(base+'/job-activity/'+encodeURIComponent(ticket),{method:'GET',headers:{Authorization:'Bearer '+d1FastPath.token}});if(response.ok){const fast=await response.json();if(fast&&fast.success)data=fast}}catch(ignore){}}if(!data)data=await apiPost({action:'getJobActivity',ticketNumber:Number(ticket)});if(!data.success)throw new Error(data.error||'Unable to load job activity');body.innerHTML=renderJobActivityRows(data.activity)}catch(err){body.innerHTML='<div class="job-activity-error">Unable to load activity: '+escapeHtml(err&&err.message?err.message:'Unknown error')+'</div>'}finally{details.dataset.loading='0';details.dataset.loaded='1'}
+        let loaded=false;
+        try{
+          const data=await d1JobActivityGet(ticket);
+          body.innerHTML=renderJobActivityRows(data.activity);
+          loaded=true;
+        }catch(err){
+          body.innerHTML='<div class="job-activity-error">Unable to load activity from D1: '+escapeHtml(err&&err.message?err.message:'Unknown error')+' <button class="secondary" type="button" data-job-activity-retry>Retry</button></div>';
+          body.onclick=function(event){const retry=event.target&&event.target.closest?event.target.closest('[data-job-activity-retry]'):null;if(retry){event.preventDefault();loadJobActivity(details)}};
+        }finally{details.dataset.loading='0';details.dataset.loaded=loaded?'1':'0'}
       }
       function renderJobDetailsModal(){
         const body=document.getElementById('jobDetailsBody');const job=jobs.find(item=>String(item.ticketNumber||'')===String(jobDetailsTicket));if(!body||!job)return;
@@ -5950,6 +5958,29 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         if(!d1FastPathReady())return apiPost(legacyPayload);
         const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('overhead-'+Date.now()+'-'+Math.random().toString(36).slice(2));
         return d1FastWritePost(path,{...payload,operationId},legacyPayload,'Monthly Overhead');
+      }
+      async function d1JobActivityGet(ticketNumber){
+        if(!d1FastPathReady())throw new Error('D1 Activity is not connected. Refresh JTP and try again.');
+        let authRetried=false,transientRetried=false;
+        while(true){
+          const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/job-activity/'+encodeURIComponent(String(ticketNumber||''));
+          let response;
+          try{response=await fetch(url,{method:'GET',headers:{'Authorization':'Bearer '+d1FastPath.token}})}
+          catch(error){if(!transientRetried){transientRetried=true;await new Promise(resolve=>setTimeout(resolve,350));continue}throw new Error('D1 Activity could not be reached. '+(error&&error.message?error.message:''))}
+          let data={};try{data=await response.json()}catch(ignore){}
+          if((response.status===401||response.status===403)&&!authRetried){
+            authRetried=true;
+            const bootstrap=await apiGet();
+            if(!bootstrap||bootstrap.success!==true||!bootstrap.d1FastPath||!bootstrap.d1FastPath.enabled)throw new Error('JTP could not refresh D1 authorization.');
+            d1FastPath=bootstrap.d1FastPath;cacheD1BoardAuth(d1FastPath);continue;
+          }
+          if(!response.ok||!data.success){
+            if(response.status>=500&&!transientRetried){transientRetried=true;await new Promise(resolve=>setTimeout(resolve,350));continue}
+            if(response.status===401||response.status===403)throw new Error('D1 Activity authorization expired. Refresh JTP and try again.');
+            throw new Error((data&&data.error)||('D1 Activity request failed ('+response.status+')'))
+          }
+          return data;
+        }
       }
       async function d1RevenueCalendarApi(path){
         if(PREVIEW_MODE)throw new Error('Live Revenue Calendar access is disabled in Preview Mode.');
