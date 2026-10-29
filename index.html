@@ -5850,6 +5850,26 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         throw new Error('Unable to reach D1 Job Create. The ticket was not confirmed; refresh JTP and check the board before trying again.')
       }
       async function d1FastChangeOrderPost(mutation,payload,legacyPayload){if(!d1FastPathReady())throw new Error('D1 Change Orders are not connected. Refresh JTP; the change was not sent to Google.');const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('change-order-'+Date.now()+'-'+Math.random().toString(36).slice(2));return d1FastWritePost('/change-orders',{...payload,mutation,operationId},legacyPayload,'Change Order',false)}
+      async function d1FastChangeOrderUpdatesGet(ticketNumber){
+        if(!d1FastPathReady())throw new Error('D1 Change Order Updates are not connected. Refresh JTP and try again.');
+        let authRetried=false,transientRetried=false;
+        while(true){
+          const base=String(d1FastPath.apiUrl||'').replace(/\/+$/,'');
+          const url=base+'/change-orders/updates?ticketNumber='+encodeURIComponent(String(ticketNumber||''));
+          let response;
+          try{response=await fetch(url,{method:'GET',headers:{'Authorization':'Bearer '+d1FastPath.token}})}
+          catch(error){if(!transientRetried){transientRetried=true;await new Promise(resolve=>setTimeout(resolve,350));continue}throw error}
+          let data={};try{data=await response.json()}catch(ignore){}
+          if((response.status===401||response.status===403)&&!authRetried){
+            authRetried=true;
+            const bootstrap=await apiGet();
+            if(!bootstrap||bootstrap.success!==true||!bootstrap.d1FastPath||!bootstrap.d1FastPath.enabled)throw new Error('JTP could not refresh D1 authorization.');
+            d1FastPath=bootstrap.d1FastPath;cacheD1BoardAuth(d1FastPath);continue;
+          }
+          if(!response.ok||!data.success){if(response.status>=500&&!transientRetried){transientRetried=true;await new Promise(resolve=>setTimeout(resolve,350));continue}throw new Error((data&&data.error)||('D1 Change Order Updates request failed ('+response.status+')'))}
+          return data;
+        }
+      }
       async function d1FastWritePost(path,payload,legacyPayload,label,allowLegacyFallback=true){
         const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+path;
         const options={method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)};
@@ -5978,10 +5998,16 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const ticket=String(jobDetailsTicket);
         const before=changeOrderRefreshSignatureForTicket(ticket);
         try{
-          const data=await apiPost({action:'getChangeOrderUpdates'});
+          if(!d1FastPathReady())return;
+          const data=await d1FastChangeOrderUpdatesGet(ticket);
           if(!data.success)return;
-          changeOrderIntakes=data.changeOrderIntakes||changeOrderIntakes;
-          changeOrderEmailSources=data.changeOrderEmailSources||changeOrderEmailSources;
+          const ticketNumber=Number(ticket);
+          const previousIntakeIds=new Set(changeOrderIntakesForJob({ticketNumber}).map(item=>String(item.changeOrderIntakeId||'')));
+          const refreshedIntakes=Array.isArray(data.changeOrderIntakes)?data.changeOrderIntakes:[];
+          const refreshedIntakeIds=new Set(refreshedIntakes.map(item=>String(item.changeOrderIntakeId||'')));
+          const currentIntakeIds=new Set([...previousIntakeIds,...refreshedIntakeIds]);
+          changeOrderIntakes=[...changeOrderIntakes.filter(item=>Number(item.ticketNumber)!==ticketNumber),...refreshedIntakes];
+          changeOrderEmailSources=[...changeOrderEmailSources.filter(item=>Number(item.ticketNumber||0)!==ticketNumber&&!currentIntakeIds.has(String(item.changeOrderIntakeId||''))),...(Array.isArray(data.changeOrderEmailSources)?data.changeOrderEmailSources:[])];
           const after=changeOrderRefreshSignatureForTicket(ticket);
           if(before!==after&&!jobDetailsIsActivelyEditing()){
             const leftPane=document.querySelector('#jobDetailsBody .job-details-pane-left');const rightPane=document.querySelector('#jobDetailsBody .job-details-pane-right');
