@@ -4780,13 +4780,13 @@
       async function archiveCompletedJob(ticket,button=null){
         const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket||''));if(!job||job.status!=='Completed'||job.archived===true)return;
         const old=button?button.innerHTML:'';if(button){button.disabled=true;button.innerHTML=PUNCH_LOADING_ICON}
-        try{const data=await apiPost({action:'setJobArchived',ticketNumber:job.ticketNumber,archived:true});if(!data.success)throw new Error(data.error||'Unable to archive job');job.archived=true;renderBoard();if(document.getElementById('archivedJobsModalBackdrop').classList.contains('open'))renderArchivedJobs();showJobFolderToast('Job Archived')}
+        try{const data=await d1FastArchivePost({ticketNumber:job.ticketNumber,archived:true});if(!data.success)throw new Error(data.error||'Unable to archive job');job.archived=true;renderBoard();if(document.getElementById('archivedJobsModalBackdrop').classList.contains('open'))renderArchivedJobs();showJobFolderToast('Job Archived')}
         catch(err){alert('Job could not be archived: '+err.message)}finally{if(button&&document.body.contains(button)){button.disabled=false;button.innerHTML=old}}
       }
       async function unarchiveCompletedJob(ticket,button=null){
         const job=jobs.find(j=>String(j.ticketNumber||'')===String(ticket||''));if(!job||job.status!=='Completed'||job.archived!==true)return;
         const old=button?button.innerHTML:'';if(button){button.disabled=true;button.innerHTML=PUNCH_LOADING_ICON+'<span>Restoring...</span>'}
-        try{const data=await apiPost({action:'setJobArchived',ticketNumber:job.ticketNumber,archived:false});if(!data.success)throw new Error(data.error||'Unable to unarchive job');job.archived=false;renderBoard();if(document.getElementById('archivedJobsModalBackdrop').classList.contains('open'))renderArchivedJobs();showJobFolderToast('Job Restored to Completed')}
+        try{const data=await d1FastArchivePost({ticketNumber:job.ticketNumber,archived:false});if(!data.success)throw new Error(data.error||'Unable to unarchive job');job.archived=false;renderBoard();if(document.getElementById('archivedJobsModalBackdrop').classList.contains('open'))renderArchivedJobs();showJobFolderToast('Job Restored to Completed')}
         catch(err){alert('Job could not be unarchived: '+err.message)}finally{if(button&&document.body.contains(button)){button.disabled=false;button.innerHTML=old}}
       }
       async function archiveAllCompleted(){
@@ -4795,7 +4795,7 @@
 
 They will remain available through Search and can be unarchived there.`);if(!ok)return;
         const btn=document.getElementById('archiveAllCompletedBtn');const old=btn.innerHTML;btn.disabled=true;btn.innerHTML=PUNCH_LOADING_ICON+'<span>Archiving...</span>';
-        try{const data=await apiPost({action:'archiveAllCompleted'});if(!data.success)throw new Error(data.error||'Unable to archive completed jobs');const set=new Set((data.archivedTickets||[]).map(String));jobs.forEach(job=>{if(set.has(String(job.ticketNumber||'')))job.archived=true});renderBoard();if(document.getElementById('archivedJobsModalBackdrop').classList.contains('open'))renderArchivedJobs();showJobFolderToast(`${Number(data.count||set.size)} Job${Number(data.count||set.size)===1?'':'s'} Archived`)}
+        try{const data=await d1FastArchivePost({archiveAll:true});if(!data.success)throw new Error(data.error||'Unable to archive completed jobs');const set=new Set((data.archivedTickets||[]).map(String));if(data.noChange)visible.forEach(job=>set.add(String(job.ticketNumber||'')));jobs.forEach(job=>{if(set.has(String(job.ticketNumber||'')))job.archived=true});renderBoard();if(document.getElementById('archivedJobsModalBackdrop').classList.contains('open'))renderArchivedJobs();showJobFolderToast(`${Number(data.count||set.size)} Job${Number(data.count||set.size)===1?'':'s'} Archived`)}
         catch(err){alert('Completed jobs could not be archived: '+err.message)}finally{btn.disabled=false;btn.innerHTML=old}
       }
       function renderDueAttentionSummary(){
@@ -5523,6 +5523,23 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         return ()=>{if(!document.body.contains(btn))return;delete btn.dataset.autoBusy;btn.disabled=originalDisabled;btn.classList.remove('is-loading');btn.innerHTML=originalHtml};
       }
       function d1FastPathReady(){return !!(d1FastPath&&d1FastPath.enabled&&d1FastPath.apiUrl&&d1FastPath.token)}
+      async function d1FastArchivePost(payload){
+        if(!d1FastPathReady())throw new Error('D1 archive service is not connected. Refresh JTP; the archive change was not sent to Google.');
+        const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('archive-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+        const body=Object.assign({operationId},payload||{});
+        const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/job/archive';
+        for(let attempt=0;attempt<2;attempt++){
+          let response;
+          try{response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(body)})}
+          catch(err){if(attempt===0)continue;throw new Error('Unable to reach D1. The archive result is unconfirmed. Refresh JTP and check the board before retrying.')}
+          let data={};try{data=await response.json()}catch(ignore){}
+          if(response.ok&&data&&data.success)return data;
+          if(response.status===401||response.status===403)throw new Error('D1 archive authorization expired. Refresh JTP and check the board before retrying.');
+          if(response.status>=500&&attempt===0)continue;
+          throw new Error((data&&data.error)||('D1 archive update failed ('+response.status+').'));
+        }
+        throw new Error('Unable to reach D1. The archive result is unconfirmed. Refresh JTP and check the board before retrying.');
+      }
       async function d1FastPunchFetch(path,payload){
         if(!d1FastPathReady())throw new Error('D1 task punch is not connected. Refresh JTP; the punch was not sent to Google.');
         const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+path;
