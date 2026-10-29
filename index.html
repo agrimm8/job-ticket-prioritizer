@@ -356,7 +356,6 @@
     #job-priority-app #punchInModalBackdrop{z-index:10050}
     #job-priority-app .timer-modal-backdrop.open{display:flex}
     #job-priority-app #dueDateModalBackdrop,#job-priority-app #returnToDoDueDateBackdrop{z-index:10060}
-    #job-priority-app #followUpDateModalBackdrop{z-index:10070}
     #job-priority-app .timer-modal{width:min(430px,100%);background:light-dark(#fff,#202020);color:inherit;border:1px solid light-dark(#d8d8d4,#444);border-radius:14px;padding:16px;box-shadow:0 18px 50px rgba(0,0,0,.25)}
     #job-priority-app .timer-modal h3{font-size:15px;margin:0 0 8px}
     #job-priority-app .timer-modal p{font-size:12px;line-height:1.4;margin:0}
@@ -3155,6 +3154,16 @@
             if(String(session.sessionId||'')===String(localSession.sessionId||'')){session.punchOut=closedAt;session.durationMinutes=closedMinutes;matched=true}
           });
           if(!matched)workSessions.push({...localSession,punchOut:closedAt,durationMinutes:closedMinutes});
+          const accruedJob=jobs.find(job=>Number(job.ticketNumber)===Number(localSession.ticketNumber));
+          if(accruedJob&&data.timeAccruedHours!==undefined){
+            const totalHours=Math.max(0,Number(data.timeAccruedHours)||0);
+            setTimeAccruedHours(accruedJob,totalHours);
+            boardSnapshotAccruedHours=boardSnapshotAccruedHours||{};
+            boardSnapshotAccruedHours[String(accruedJob.ticketNumber)]={
+              sessionCount:workSessions.filter(item=>Number(item.ticketNumber)===Number(accruedJob.ticketNumber)).length,
+              hours:totalHours
+            };
+          }
           rememberRecentlyClosedWorkSession(localSession.sessionId);
           saveActiveWorkSession(null);clearTimerSnapshot();
           renderActiveJobBar();renderWorkUtilization();renderNotificationTray();
@@ -3288,16 +3297,6 @@
       async function reconcileOpenWorkSession(openSession){
         if(!openSession){saveActiveWorkSession(null);clearTimerSnapshot();return}await adoptBackendWorkSession(openSession)
       }
-      async function commitElapsedTime(key){
-        const job=jobs.find(j=>timerKeyFor(j)===key);const state=timerState[key];if(!job||!state||!activeWorkSession||activeWorkSession.timerKey!==key||!activeWorkSession.punchIn)return;
-        const startedAt=new Date(activeWorkSession.punchIn).getTime();if(!Number.isFinite(startedAt))return;
-        const sessionElapsed=Math.max(0,Math.floor((Date.now()-startedAt)/1000));
-        const alreadyCommitted=Math.max(0,Number(state.committedSeconds||0));
-        const elapsed=Math.max(0,sessionElapsed-alreadyCommitted);if(elapsed<=0)return;
-        const newAccrued=getTimeAccruedHours(job)+(elapsed/3600);
-        setTimeAccruedHours(job,newAccrued);state.committedSeconds=alreadyCommitted+elapsed;
-        try{const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,timeAccruedHours:newAccrued});if(!data.success)throw new Error(data.error||'Unable to save elapsed time')}catch(err){alert(err.message)}
-      }
       function renderNotificationTray(){
         const tray=document.getElementById('notificationTray');if(!tray)return;
         const block=document.getElementById('blockCompleteNotification');
@@ -3360,7 +3359,6 @@
         try{
           state.running=false;
           if(activeTimerKey===key){stopTimerInterval();activeTimerKey=''}
-          await commitElapsedTime(key);
           const closed=await closeActiveWorkSession();
           if(!closed){
             if(wasRunning)await startTimerInternal(key,true);
@@ -4357,7 +4355,7 @@
         renderActiveJobBar();document.querySelectorAll('#job-priority-app .move-menu.open').forEach(menu=>menu.classList.remove('open'))
       }
       async function saveJobDetailsClientNotes(job,scope){const ids=jobDetailsClientIds(job);if(!ids.primaryClientId)return;const key=clientNotesKey(ids.primaryClientId,ids.secondaryClientId);const generalField=document.getElementById('jobDetailsClientGeneral');const pricingField=document.getElementById('jobDetailsClientPricing');const notes=generalField?generalField.value:String(clientNotes[key]||'');const pricingNotes=pricingField?pricingField.value:String(clientPricingNotes[key]||'');const associatedEmails=String(clientAssociatedEmails[key]||'');const btn=document.getElementById(scope==='pricing'?'jobDetailsSavePricingNotesBtn':'jobDetailsSaveGeneralNotesBtn');if(btn){btn.disabled=true;btn.textContent='Saving…'}try{const payload=ids.secondaryClientId?{action:'updateSubclientNotes',parentClientId:ids.primaryClientId,subclientId:ids.secondaryClientId,notes,pricingNotes,associatedEmails}:{action:'updateClientNotes',clientId:ids.primaryClientId,notes,pricingNotes,associatedEmails};const data=await d1FastClientNotesPost(payload);if(!data.success)throw new Error(data.error||'Unable to save client notes');clientNotes[key]=notes;clientPricingNotes[key]=pricingNotes;clientAssociatedEmails[key]=associatedEmails;const record=ids.secondaryClientId?subclients.find(item=>item.parentClientId===ids.primaryClientId&&item.id===ids.secondaryClientId):clients.find(item=>item.id===ids.primaryClientId);if(record){record.notes=notes;record.pricingNotes=pricingNotes;record.associatedEmails=associatedEmails}jobDetailsClientEditing=false;renderJobDetailsModal();renderQueue();renderBoard()}catch(err){alert(err.message)}finally{if(btn&&document.body.contains(btn)){btn.disabled=false;btn.textContent='Save'}}}
-      async function saveJobDetailsSectionNotes(job,key){const area=document.querySelector(`#jobDetailsBody [data-job-details-notes="${key}"]`);const btn=document.querySelector(`#jobDetailsBody [data-job-details-save-notes="${key}"]`);if(!area||!btn||btn.disabled)return;btn.disabled=true;btn.textContent='Saving…';try{if(key==='initial'){const notes=area.value;const data=await d1FastJobNotesPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,timeAccruedHours:getTimeAccruedHours(job),notes});if(!data.success)throw new Error(data.error||'Unable to save Initial Request notes');job.notes=notes}else{const number=Number(String(key).replace('co-',''));const record=changeOrderIntakesForJob(job).find(item=>Number(item.changeOrderNumber||0)===number);if(!record)throw new Error('This legacy Change Order does not have an editable Change Order record.');const legacy={action:'updateChangeOrderIntake',changeOrderIntakeId:record.changeOrderIntakeId,notes:area.value};const data=await d1FastChangeOrderPost('update',{changeOrderIntakeId:record.changeOrderIntakeId,notes:area.value},legacy);if(!data.success)throw new Error(data.error||'Unable to save Change Order notes');const updated=data.changeOrderIntake||record;const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===record.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=updated;job.pendingChangeOrderNotes=updated.status==='Pending'?String(updated.manualNotes||''):String(job.pendingChangeOrderNotes||'')}renderJobDetailsModal();renderQueue();renderBoard()}catch(err){alert(err.message);btn.disabled=false}finally{if(document.body.contains(btn))btn.textContent='Save'}}
+      async function saveJobDetailsSectionNotes(job,key){const area=document.querySelector(`#jobDetailsBody [data-job-details-notes="${key}"]`);const btn=document.querySelector(`#jobDetailsBody [data-job-details-save-notes="${key}"]`);if(!area||!btn||btn.disabled)return;btn.disabled=true;btn.textContent='Saving…';try{if(key==='initial'){const notes=area.value;const data=await d1FastJobNotesPost({action:'updateJob',ticketNumber:job.ticketNumber,notes});if(!data.success)throw new Error(data.error||'Unable to save Initial Request notes');job.notes=notes}else{const number=Number(String(key).replace('co-',''));const record=changeOrderIntakesForJob(job).find(item=>Number(item.changeOrderNumber||0)===number);if(!record)throw new Error('This legacy Change Order does not have an editable Change Order record.');const legacy={action:'updateChangeOrderIntake',changeOrderIntakeId:record.changeOrderIntakeId,notes:area.value};const data=await d1FastChangeOrderPost('update',{changeOrderIntakeId:record.changeOrderIntakeId,notes:area.value},legacy);if(!data.success)throw new Error(data.error||'Unable to save Change Order notes');const updated=data.changeOrderIntake||record;const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===record.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=updated;job.pendingChangeOrderNotes=updated.status==='Pending'?String(updated.manualNotes||''):String(job.pendingChangeOrderNotes||'')}renderJobDetailsModal();renderQueue();renderBoard()}catch(err){alert(err.message);btn.disabled=false}finally{if(document.body.contains(btn))btn.textContent='Save'}}
       async function saveJobDetailsActionItems(job,key){const btn=document.querySelector(`#jobDetailsBody [data-job-details-save-actions="${key}"]`);if(!btn||btn.disabled)return;const value=serializeActionItemsEditor(key);btn.disabled=true;btn.textContent='Saving…';try{if(key==='initial'){const data=await d1FastJobNotesPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,initialActionItems:value});if(!data.success)throw new Error(data.error||'Unable to save Initial Request action items');job.initialActionItems=value}else{const number=Number(String(key).replace('co-',''));const record=changeOrderIntakesForJob(job).find(item=>Number(item.changeOrderNumber||0)===number);if(!record)throw new Error('This Change Order does not have an editable record.');const legacy={action:'updateChangeOrderIntake',changeOrderIntakeId:record.changeOrderIntakeId,actionItems:value};const data=await d1FastChangeOrderPost('update',{changeOrderIntakeId:record.changeOrderIntakeId,actionItems:value},legacy);if(!data.success)throw new Error(data.error||'Unable to save Change Order action items');const updated=data.changeOrderIntake||record;const idx=changeOrderIntakes.findIndex(item=>item.changeOrderIntakeId===record.changeOrderIntakeId);if(idx>=0)changeOrderIntakes[idx]=updated}renderJobDetailsModal()}catch(err){alert(err.message);btn.disabled=false}finally{if(document.body.contains(btn))btn.textContent='Save'}}
       async function cancelJobDetailsChangeOrder(btn){
         const intakeId=String(btn.getAttribute('data-job-details-cancel-co')||'');const record=changeOrderIntakes.find(item=>String(item.changeOrderIntakeId||'')===intakeId);if(!record)return;
@@ -6500,16 +6498,9 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('notificationTrayMinimizeBtn').addEventListener('click',()=>{notificationTrayMinimized=true;renderNotificationTray()});
       document.getElementById('notificationTrayCollapsedBtn').addEventListener('click',()=>{notificationTrayMinimized=false;renderNotificationTray()});
       async function applyRecoveredGapToJob(key,recoveredSeconds){
-        const seconds=Math.max(0,Number(recoveredSeconds)||0);if(!seconds)return true;
-        const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return false;
-        const recoveredHours=seconds/3600;
-        const newAccrued=getTimeAccruedHours(job)+recoveredHours;
-        setTimeAccruedHours(job,newAccrued);
-        try{
-          const data=await apiPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,timeAccruedHours:newAccrued});
-          if(!data.success)throw new Error(data.error||'Unable to save recovered time');
-          return true;
-        }catch(err){alert('Recovered time was added to the punch, but Time Accrued could not be updated: '+err.message);return false}
+        // The recovered gap is already covered by the resumed D1 session's Punch In time.
+        // Accrued time is recalculated from closed D1 sessions when that session is punched out.
+        return !!jobs.find(job=>timerKeyFor(job)===key);
       }
       async function continueCompletedBlock(includeGap=false){
         if(!completedTimerKey)return;
@@ -6796,7 +6787,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('jobDetailsModalBackdrop').addEventListener('click',e=>{if(e.target!==e.currentTarget)return;requestCloseJobDetailsModal()});
       document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented)return;const backdrop=document.getElementById('jobDetailsModalBackdrop');if(!backdrop||!backdrop.classList.contains('open'))return;e.preventDefault();requestCloseJobDetailsModal()},true);
       document.getElementById('closeClientNotesBtn').addEventListener('click',()=>{const returnToFinancial=clientNotesReturnToFinancial;const returnToClients=clientNotesReturnToClients;clientNotesTarget=null;clientNotesReturnToFinancial=false;clientNotesReturnToClients=false;document.getElementById('clientNotesModalBackdrop').classList.remove('open');if(returnToFinancial&&jobFinancialsViewTicket)document.getElementById('jobFinancialsModalBackdrop').classList.add('open');else if(returnToClients){renderClientsDirectory();document.getElementById('clientsModalBackdrop').classList.add('open')}});
-      document.getElementById('doneJobNotesBtn').addEventListener('click',async()=>{const job=jobs.find(j=>String(j.ticketNumber||'')===jobNotesTicket);if(!job)return;const textarea=document.getElementById('jobNotesTextarea');const notes=textarea.value;const btn=document.getElementById('doneJobNotesBtn');btn.disabled=true;btn.textContent='Saving…';try{const data=await d1FastJobNotesPost({action:'updateJob',ticketNumber:job.ticketNumber,status:job.status,timeAccruedHours:getTimeAccruedHours(job),notes});if(!data.success)throw new Error(data.error||'Unable to save job notes');job.notes=notes;textarea.dataset.initialValue=textarea.value;btn.disabled=true}catch(err){alert(err.message);btn.disabled=textarea.value===String(textarea.dataset.initialValue||'')}finally{btn.textContent='Save'}});
+      document.getElementById('doneJobNotesBtn').addEventListener('click',async()=>{const job=jobs.find(j=>String(j.ticketNumber||'')===jobNotesTicket);if(!job)return;const textarea=document.getElementById('jobNotesTextarea');const notes=textarea.value;const btn=document.getElementById('doneJobNotesBtn');btn.disabled=true;btn.textContent='Saving…';try{const data=await d1FastJobNotesPost({action:'updateJob',ticketNumber:job.ticketNumber,notes});if(!data.success)throw new Error(data.error||'Unable to save job notes');job.notes=notes;textarea.dataset.initialValue=textarea.value;btn.disabled=true}catch(err){alert(err.message);btn.disabled=textarea.value===String(textarea.dataset.initialValue||'')}finally{btn.textContent='Save'}});
       document.getElementById('closeTimeRecordBtn').addEventListener('click',()=>{timeRecordTicket='';document.getElementById('timeRecordModalBackdrop').classList.remove('open')});
       document.getElementById('cancelPunchEditBtn').addEventListener('click',()=>{editPunchSessionId='';document.getElementById('editPunchModalBackdrop').classList.remove('open')});
       document.getElementById('savePunchEditBtn').addEventListener('click',async()=>{
