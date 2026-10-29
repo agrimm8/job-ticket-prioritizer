@@ -5651,6 +5651,23 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         }
         throw new Error('Unable to confirm D1 client creation. Refresh JTP and check the client directory before trying again.');
       }
+      async function d1FastClientNamePost(payload){
+        if(!d1FastPathReady())throw new Error('D1 client rename is not connected. Refresh JTP and try again; the name was not changed.');
+        const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('client-name-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+        const body={operationId,primaryClientId:String(payload.primaryClientId||'').trim().toUpperCase(),secondaryClientId:String(payload.secondaryClientId||'').trim().toUpperCase(),name:String(payload.name||'').trim()};
+        const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/client/name';
+        for(let attempt=0;attempt<3;attempt++){
+          let response;
+          try{response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(body)})}
+          catch(err){if(attempt<2)continue;throw new Error('Unable to confirm the D1 client rename. Refresh JTP and check the directory before trying again.')}
+          let data={};try{data=await response.json()}catch(ignore){}
+          if(response.ok&&data&&data.success)return data;
+          if(response.status===401||response.status===403)throw new Error('D1 client rename authorization expired. Refresh JTP and check the directory before trying again.');
+          if(response.status>=500&&attempt<2)continue;
+          throw new Error((data&&data.error)||('D1 client rename failed ('+response.status+')'));
+        }
+        throw new Error('Unable to confirm the D1 client rename. Refresh JTP and check the directory before trying again.');
+      }
       async function d1FastDuplicateJobPost(sourceTicketNumber,workloadScore){
         if(!d1FastPathReady())throw new Error('D1 Duplicate Job is not connected. Refresh JTP and try again.');
         const retryKey='jtp-job-duplicate-pending-'+String(sourceTicketNumber);
@@ -6343,15 +6360,15 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         if(!newName){alert('Client Name cannot be blank.');return}
         const saveBtn=document.getElementById('saveClientNameBtn');saveBtn.disabled=true;
         try{
-          const payload=clientNameEditTarget.secondaryClientId
-            ?{action:'updateSubclientName',parentClientId:clientNameEditTarget.primaryClientId,subclientId:clientNameEditTarget.secondaryClientId,subclientName:newName}
-            :{action:'updateClientName',clientId:clientNameEditTarget.primaryClientId,clientName:newName};
-          const data=await apiPost(payload);if(!data.success)throw new Error(data.error||'Unable to update client name');
+          const identity={primaryClientId:clientNameEditTarget.primaryClientId,secondaryClientId:clientNameEditTarget.secondaryClientId||'',name:newName};
+          const data=await d1FastClientNamePost(identity);
+          const savedName=String(data.profile&&data.profile.name||newName);
           if(clientNameEditTarget.secondaryClientId){
-            const record=subclients.find(item=>item.parentClientId===clientNameEditTarget.primaryClientId&&item.id===clientNameEditTarget.secondaryClientId);if(record)record.name=newName;
+            const record=subclients.find(item=>item.parentClientId===clientNameEditTarget.primaryClientId&&item.id===clientNameEditTarget.secondaryClientId);if(record)record.name=savedName;
           }else{
-            const record=clients.find(item=>item.id===clientNameEditTarget.primaryClientId);if(record)record.name=newName;
+            const record=clients.find(item=>item.id===clientNameEditTarget.primaryClientId);if(record)record.name=savedName;
           }
+          (data.jobs||[]).forEach(saved=>{const job=jobs.find(item=>Number(item.ticketNumber)===Number(saved.ticketNumber));if(job){job.title=saved.title||saved.displayTitle||job.title;job.displayTitle=saved.displayTitle||saved.title||job.displayTitle}});
           document.getElementById('editClientNameModalBackdrop').classList.remove('open');
           clientNameEditTarget=null;
           refreshClientNameDisplays();
