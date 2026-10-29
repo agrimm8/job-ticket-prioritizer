@@ -6890,16 +6890,19 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const textarea=document.getElementById('clientNotesTextarea');
         const pricingTextarea=document.getElementById('clientPricingNotesTextarea');
         const associatedEmailsTextarea=document.getElementById('clientAssociatedEmailsTextarea');
+        const saveBtn=document.getElementById('doneClientNotesBtn');
+        const originalHtml=saveBtn.innerHTML;
         const notes=textarea.value;
         const pricingNotes=pricingTextarea.value;
         const associatedEmails=associatedEmailsTextarea.value;
         const {primaryClientId,secondaryClientId}=clientNotesTarget;
         const key=clientNotesKey(primaryClientId,secondaryClientId);
+        saveBtn.disabled=true;saveBtn.classList.add('is-loading');saveBtn.innerHTML=PUNCH_LOADING_ICON+'<span>Saving…</span>';
         try{
           const payload=secondaryClientId
             ?{action:'updateSubclientNotes',parentClientId:primaryClientId,subclientId:secondaryClientId,notes,pricingNotes,associatedEmails}
             :{action:'updateClientNotes',clientId:primaryClientId,notes,pricingNotes,associatedEmails};
-          const data=await apiPost(payload);
+          const data=await d1FastClientNotesPost(payload);
           if(!data.success)throw new Error(data.error||'Unable to save client notes');
           clientNotes[key]=notes;
           clientPricingNotes[key]=pricingNotes;
@@ -6911,12 +6914,17 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
             const client=clients.find(c=>c.id===primaryClientId);
             if(client){client.notes=notes;client.pricingNotes=pricingNotes;client.associatedEmails=associatedEmails}
           }
-          textarea.dataset.initialValue=textarea.value;pricingTextarea.dataset.initialValue=pricingTextarea.value;associatedEmailsTextarea.dataset.initialValue=associatedEmailsTextarea.value;document.getElementById('doneClientNotesBtn').disabled=true;
+          textarea.dataset.initialValue=textarea.value;pricingTextarea.dataset.initialValue=pricingTextarea.value;associatedEmailsTextarea.dataset.initialValue=associatedEmailsTextarea.value;
           if(jobFinancialsViewTicket){
             const financialJob=jobs.find(j=>String(j.ticketNumber||'')===String(jobFinancialsViewTicket));
             if(financialJob)updateJobFinancialsClientNotesLink(financialJob);
           }
         }catch(err){alert(err.message)}
+        finally{
+          saveBtn.classList.remove('is-loading');saveBtn.innerHTML=originalHtml;
+          const dirty=[textarea,pricingTextarea,associatedEmailsTextarea].some(field=>field.value!==String(field.dataset.initialValue||''));
+          saveBtn.disabled=!dirty;
+        }
       });
       document.getElementById('jobDetailsAddChangeOrderBtn').addEventListener('click',addJobDetailsChangeOrder);
       function jobDetailsHasUnsavedEdits(){if(jobDetailsClientEditing||jobDetailsFinancialsDirty)return true;return Array.from(document.querySelectorAll('#jobDetailsBody .job-details-save-btn,#jobDetailsSaveClientNotesBtn')).some(btn=>!btn.disabled)}
