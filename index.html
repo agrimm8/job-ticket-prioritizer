@@ -2904,11 +2904,13 @@
           if(choice===null)return;
           reason=String(choice||'').trim();
         }
-        const data=await apiPost({action:'setCompletedMetricsExclusion',ticketNumber:job.ticketNumber,excluded:!currentlyExcluded,reason});
+        const data=await d1FastCompletedMetricsPost({ticketNumber:job.ticketNumber,excluded:!currentlyExcluded,reason});
         if(!data.success)throw new Error(data.error||'Unable to update completed metrics');
         job.excludeFromCompletedMetrics=!!data.excluded;
         job.completedMetricsExclusionReason=String(data.reason||'');
-        renderKpis();renderFinancialDashboard();renderCompletedMetricsModal();renderBoard();
+        Object.values(revenueSnapshotsByMonth).forEach(entries=>{if(Array.isArray(entries))entries.forEach(entry=>{if(String(entry.ticketNumber||'')===String(job.ticketNumber||''))entry.excluded=job.excludeFromCompletedMetrics})});
+        renderKpis();renderFinancialDashboard();renderCompletedMetricsModal();renderAnnualRevenuePaceKpi();renderBoard();
+        if(document.getElementById('revenueCalendarBackdrop').classList.contains('open'))renderRevenueCalendar();
       }
       function rawDueDate(j){return String(j.due||j.dueDate||'')}
       function isOverdueJob(j){const dueAt=rawDueAt(j);if(!dueAt||['Client Review','In Production / Awaiting Vendor','Completed'].includes(j.status))return false;const d=new Date(dueAt);return !Number.isNaN(d.getTime())&&d.getTime()<Date.now()}
@@ -4673,7 +4675,9 @@
         const snapshot={
           status:job.status,dueDate:job.dueDate,due:job.due,dueAt:job.dueAt,dueDateSource:job.dueDateSource,
           dateReceived:job.dateReceived,workloadScore:job.workloadScore,
-          followUpDate:job.followUpDate,completedAt:job.completedAt,archived:job.archived
+          followUpDate:job.followUpDate,completedAt:job.completedAt,archived:job.archived,
+          excludeFromCompletedMetrics:job.excludeFromCompletedMetrics,
+          completedMetricsExclusionReason:job.completedMetricsExclusionReason
         };
         const newFollowUp=newStatus==='Client Review'&&oldStatus!=='Client Review'
           ?defaultFollowUpDate()
@@ -4692,6 +4696,10 @@
         job.followUpDate=newFollowUp;
         if(requiresFreshDueDate){job.dueDate=selectedDueDate;job.due=selectedDueDate;job.dueAt='';job.dueDateSource='Manual Override'}
         job.archived=false;
+        if(newStatus!=='Completed'||oldStatus!=='Completed'){
+          job.excludeFromCompletedMetrics=false;
+          job.completedMetricsExclusionReason='';
+        }
         job.workloadScore=nextWorkloadScore;
         if(newStatus==='Completed')job.completedAt=job.completedAt||clientTimestamp;
         else if(oldStatus==='Completed')job.completedAt='';
@@ -4725,7 +4733,9 @@
             workloadScore:snapshot.workloadScore,
             followUpDate:snapshot.followUpDate,
             completedAt:snapshot.completedAt,
-            archived:snapshot.archived
+            archived:snapshot.archived,
+            excludeFromCompletedMetrics:snapshot.excludeFromCompletedMetrics,
+            completedMetricsExclusionReason:snapshot.completedMetricsExclusionReason
           });
           const data=await d1FastStatusPost({
             operationId,
@@ -4753,10 +4763,12 @@
           else job.workloadScore=nextWorkloadScore;
           job.followUpDate=saved.followUpDate!==undefined?saved.followUpDate:newFollowUp;
           job.archived=saved.archived!==undefined?saved.archived:false;
+          job.excludeFromCompletedMetrics=saved.excludeFromCompletedMetrics!==undefined?!!saved.excludeFromCompletedMetrics:false;
+          job.completedMetricsExclusionReason=String(saved.completedMetricsExclusionReason||'');
           if(newStatus==='Completed')job.completedAt=saved.completedAt||data.completedAt||job.completedAt||clientTimestamp;
           else if(oldStatus==='Completed')job.completedAt='';
 
-          const committedStatusFields={status:job.status,dueDate:job.dueDate,due:job.due,dueAt:job.dueAt,dueDateSource:job.dueDateSource,followUpDate:job.followUpDate,workloadScore:job.workloadScore,completedAt:job.completedAt,archived:job.archived};
+          const committedStatusFields={status:job.status,dueDate:job.dueDate,due:job.due,dueAt:job.dueAt,dueDateSource:job.dueDateSource,followUpDate:job.followUpDate,workloadScore:job.workloadScore,completedAt:job.completedAt,archived:job.archived,excludeFromCompletedMetrics:job.excludeFromCompletedMetrics,completedMetricsExclusionReason:job.completedMetricsExclusionReason};
           if(startedWarm)d1WarmStatusOverrides.set(String(ticket),{savedAt:Date.now(),fields:committedStatusFields});
           const liveJob=jobs.find(item=>String(item.ticketNumber||'')===String(ticket));if(liveJob&&liveJob!==job)Object.assign(liveJob,committedStatusFields);
           if(data.revenueSnapshot)upsertRevenueCompletionSnapshot(data.revenueSnapshot,job);
@@ -5539,6 +5551,23 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           throw new Error((data&&data.error)||('D1 archive update failed ('+response.status+').'));
         }
         throw new Error('Unable to reach D1. The archive result is unconfirmed. Refresh JTP and check the board before retrying.');
+      }
+      async function d1FastCompletedMetricsPost(payload){
+        if(!d1FastPathReady())throw new Error('D1 completed-metrics service is not connected. Refresh JTP; the change was not sent to Google.');
+        const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('metrics-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+        const body=Object.assign({operationId},payload||{});
+        const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/job/completed-metrics-exclusion';
+        for(let attempt=0;attempt<2;attempt++){
+          let response;
+          try{response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(body)})}
+          catch(err){if(attempt===0)continue;throw new Error('Unable to reach D1. The metrics change is unconfirmed. Refresh JTP and check the job before retrying.')}
+          let data={};try{data=await response.json()}catch(ignore){}
+          if(response.ok&&data&&data.success)return data;
+          if(response.status===401||response.status===403)throw new Error('D1 completed-metrics authorization expired. Refresh JTP and check the job before retrying.');
+          if(response.status>=500&&attempt===0)continue;
+          throw new Error((data&&data.error)||('Completed-metrics update failed ('+response.status+').'));
+        }
+        throw new Error('Unable to reach D1. The metrics change is unconfirmed. Refresh JTP and check the job before retrying.');
       }
       async function d1FastPunchFetch(path,payload){
         if(!d1FastPathReady())throw new Error('D1 task punch is not connected. Refresh JTP; the punch was not sent to Google.');
