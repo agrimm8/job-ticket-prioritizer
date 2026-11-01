@@ -753,6 +753,19 @@
     #job-priority-app .revenue-calendar-entry-amount{font-weight:850;white-space:nowrap}
     #job-priority-app .revenue-calendar-legacy-note{margin-top:9px;padding:7px 9px;border-radius:7px;background:light-dark(#f5f0df,#3b3628);font-size:9px;line-height:1.4;opacity:.8}
     @media(max-width:600px){#job-priority-app .revenue-calendar-modal{padding:12px}#job-priority-app .revenue-calendar-day{min-height:54px;padding:4px}#job-priority-app .revenue-calendar-day-total{font-size:8px}#job-priority-app .revenue-calendar-day-count{font-size:7px}}
+    #job-priority-app .backup-modal{width:min(720px,calc(100vw - 32px));max-height:90vh;overflow:auto}
+    #job-priority-app .backup-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:10px 0}
+    #job-priority-app .backup-calendar-weekday{text-align:center;padding:5px;font-size:9px;font-weight:800;opacity:.58}
+    #job-priority-app .backup-calendar-day{min-height:43px;border:1px solid light-dark(#deded8,#414141);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:750;position:relative}
+    #job-priority-app .backup-calendar-day.has-backup{background:light-dark(#edf5ee,#24352a);border-color:light-dark(#9fc7a5,#42664a)}
+    #job-priority-app .backup-calendar-day.latest-backup{box-shadow:inset 0 0 0 2px light-dark(#398257,#6fb985)}
+    #job-priority-app .backup-calendar-day.has-backup:after{content:'';position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%;background:light-dark(#398257,#6fb985)}
+    #job-priority-app .backup-calendar-blank{min-height:43px}
+    #job-priority-app .backup-status-card{padding:10px 12px;border:1px solid light-dark(#deded8,#414141);border-radius:9px;background:light-dark(#f7f8f6,#252925);font-size:11px;line-height:1.5}
+    #job-priority-app .backup-history{max-height:130px;overflow:auto;margin-top:8px;font-size:9px;opacity:.75}
+    #job-priority-app .backup-history-row{padding:4px 0;border-bottom:1px solid light-dark(#e1e3df,#3a3d3a)}
+    #job-priority-app .backup-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:12px}
+    #job-priority-app .backup-message{min-height:18px;margin-top:8px;font-size:10px;line-height:1.4}
     #job-priority-app .overhead-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
     #job-priority-app .overhead-summary-card{border:1px solid light-dark(#dfe5ec,#454545);border-radius:9px;padding:9px 10px;background:light-dark(#fbfcfd,#292929)}
     #job-priority-app .overhead-summary-label{font-size:9px;font-weight:800;opacity:.65;text-transform:uppercase;letter-spacing:.04em}
@@ -1476,6 +1489,7 @@
           <button class="secondary toolbar-dropdown-launch" id="toolsMenuBtn" type="button" aria-haspopup="menu" aria-expanded="false">Tools <span class="toolbar-dropdown-caret">▾</span></button>
           <div class="toolbar-dropdown-menu" id="toolsMenu" role="menu" aria-label="Tools menu">
             <button type="button" role="menuitem" id="toolsNotesBtn" class="menu-item-with-shortcut"><span>Notes</span><span class="menu-shortcut-label" data-shortcut-mac="⇧⌘E" data-shortcut-other="Ctrl+Shift+E">⇧⌘E</span></button>
+            <button type="button" role="menuitem" id="downloadBackupBtn">Download Backup</button>
             <button type="button" role="menuitem" id="modifyMotivatorSayingsBtn">Modify Motivator Sayings</button>
           </div>
         </div>
@@ -2148,6 +2162,17 @@
         <div class="revenue-calendar-day-details" id="revenueCalendarDayDetails" aria-live="polite"></div>
         <div class="revenue-calendar-legacy-note">Older completed jobs are initialized from the income currently on file because their original completion-time amounts weren’t recorded. New completions are saved as fixed snapshots.</div>
         <div class="actions"><button class="secondary" id="closeRevenueCalendarFooterBtn" type="button">Close</button></div>
+      </div>
+    </div>
+    <div class="timer-modal-backdrop" id="backupModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="backupModalTitle">
+      <div class="timer-modal backup-modal">
+        <div class="revenue-calendar-heading"><div><h3 id="backupModalTitle">Download Backup</h3><p class="muted" style="margin-top:4px">Download a full backup first, then only changes since your last confirmed backup.</p></div><button class="job-search-close" id="closeBackupModalBtn" type="button" aria-label="Close Download Backup" title="Close">×</button></div>
+        <div class="revenue-calendar-month-nav"><button class="secondary" id="backupCalendarPreviousBtn" type="button" aria-label="Previous month">‹</button><strong id="backupCalendarMonthLabel">—</strong><button class="secondary" id="backupCalendarNextBtn" type="button" aria-label="Next month">›</button></div>
+        <div class="backup-calendar" id="backupCalendarGrid" role="grid"></div>
+        <div class="backup-status-card" id="backupStatusCard" aria-live="polite">Checking backup history…</div>
+        <div class="backup-history" id="backupHistoryList"></div>
+        <div class="backup-message" id="backupMessage" aria-live="polite"></div>
+        <div class="backup-actions"><button class="secondary" id="closeBackupFooterBtn" type="button">Close</button><button class="primary" id="downloadBackupFileBtn" type="button" disabled>Download Backup</button><button class="primary" id="confirmBackupSavedBtn" type="button" hidden>Confirm File Saved</button></div>
       </div>
     </div>
     <div class="timer-modal-backdrop" id="timeRecordModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="timeRecordModalTitle">
@@ -2839,6 +2864,56 @@
       function revenueCalendarMonthDate(monthKey){const [year,month]=String(monthKey||'').split('-').map(Number);return new Date(year,month-1,1)}
       function revenueCalendarMonthLabel(monthKey){return revenueCalendarMonthDate(monthKey).toLocaleDateString(undefined,{month:'long',year:'numeric'})}
       function shiftRevenueCalendarMonth(monthKey,delta){const d=revenueCalendarMonthDate(monthKey);d.setMonth(d.getMonth()+delta);return monthKeyFromDate(d)}
+      let backupCalendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);
+      let backupUiState=null,backupUiPendingId='';
+      function backupMonthKey(date){return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')}
+      function backupMonthLabel(date){return date.toLocaleDateString(undefined,{month:'long',year:'numeric'})}
+      function shiftBackupMonth(delta){backupCalendarMonth=new Date(backupCalendarMonth.getFullYear(),backupCalendarMonth.getMonth()+delta,1);renderBackupCalendar()}
+      function renderBackupCalendar(){
+        const label=document.getElementById('backupCalendarMonthLabel'),grid=document.getElementById('backupCalendarGrid');if(!label||!grid)return;
+        label.textContent=backupMonthLabel(backupCalendarMonth);
+        const marked=new Set((backupUiState&&backupUiState.history||[]).map(item=>{const d=new Date(item.confirmedAt||item.createdAt);return Number.isNaN(d.getTime())?'':backupMonthKey(d)+'-'+String(d.getDate()).padStart(2,'0')}));
+        const latest=backupUiState&&backupUiState.lastConfirmedAt?new Date(backupUiState.lastConfirmedAt):null;
+        const latestKey=latest&&!Number.isNaN(latest.getTime())?backupMonthKey(latest)+'-'+String(latest.getDate()).padStart(2,'0'):'';
+        const weekdays=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];let html=weekdays.map(day=>'<div class="backup-calendar-weekday">'+day+'</div>').join('');
+        const first=new Date(backupCalendarMonth.getFullYear(),backupCalendarMonth.getMonth(),1),count=new Date(backupCalendarMonth.getFullYear(),backupCalendarMonth.getMonth()+1,0).getDate();
+        for(let i=0;i<first.getDay();i++)html+='<div class="backup-calendar-blank" aria-hidden="true"></div>';
+        for(let day=1;day<=count;day++){const key=backupMonthKey(backupCalendarMonth)+'-'+String(day).padStart(2,'0'),classes=['backup-calendar-day'];if(marked.has(key))classes.push('has-backup');if(key===latestKey)classes.push('latest-backup');html+='<div class="'+classes.join(' ')+'" title="'+(marked.has(key)?'Confirmed backup':'')+'">'+day+'</div>'}
+        grid.innerHTML=html;
+      }
+      function renderBackupStatus(){
+        const card=document.getElementById('backupStatusCard'),history=document.getElementById('backupHistoryList'),download=document.getElementById('downloadBackupFileBtn'),confirm=document.getElementById('confirmBackupSavedBtn');
+        if(!backupUiState){card.textContent='Loading backup history…';download.disabled=true;return}
+        const last=backupUiState.lastConfirmedAt?new Date(backupUiState.lastConfirmedAt).toLocaleString():'No backup confirmed yet';
+        const pending=backupUiState.pending;
+        card.innerHTML='<strong>Last confirmed backup:</strong> '+escapeHtml(last)+(pending?'<br><strong>Pending file:</strong> '+(pending.backupType==='full'?'Full backup':'Changes since the last confirmed backup')+' · created '+escapeHtml(new Date(pending.createdAt).toLocaleString())+'<br>Download it again if needed. The checkpoint advances only after you confirm the file is saved.':backupUiState.baselineConfirmed?'<br>Next download includes all changes since that backup.':'<br>Your first download will contain the full database.');
+        history.innerHTML=(backupUiState.history||[]).length?'<strong>Confirmed downloads</strong>'+backupUiState.history.map(item=>'<div class="backup-history-row">'+escapeHtml(new Date(item.confirmedAt||item.createdAt).toLocaleString())+' · '+(item.backupType==='full'?'Full backup':'Incremental backup')+'</div>').join(''):'No confirmed backups yet.';
+        download.disabled=false;download.textContent=pending?'Download Again':backupUiState.baselineConfirmed?'Download Changes':'Download Full Backup';
+        confirm.hidden=!backupUiPendingId;renderBackupCalendar();
+      }
+      async function backupApiRequest(path,method='GET',payload=null){
+        if(!d1FastPathReady())throw new Error('D1 Backup is not connected. Refresh JTP and try again.');
+        for(let attempt=0;attempt<2;attempt++){
+          const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+path,options={method,headers:{'Authorization':'Bearer '+d1FastPath.token}};
+          if(payload){options.headers['Content-Type']='application/json';options.body=JSON.stringify(payload)}
+          let response;try{response=await fetch(url,options)}catch(error){if(attempt===0)continue;throw new Error('Unable to reach D1 Backup. Try again when JTP is connected.')}
+          if((response.status===401||response.status===403)&&attempt===0){await refreshD1Authorization(true);continue}
+          let data={};try{data=await response.json()}catch(ignore){}
+          if(!response.ok||!data.success)throw new Error(data.error||('D1 Backup request failed ('+response.status+')'));
+          return data
+        }
+        throw new Error('D1 Backup authorization could not be refreshed. Refresh JTP and try again.')
+      }
+      async function loadBackupStatus(){backupUiState=await backupApiRequest('/backup/status');backupUiPendingId='';renderBackupStatus()}
+      function openBackupModal(){closeTopToolbarMenus();document.getElementById('backupModalBackdrop').classList.add('open');document.getElementById('backupMessage').textContent='';backupCalendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);backupUiState=null;backupUiPendingId='';renderBackupStatus();renderBackupCalendar();loadBackupStatus().catch(error=>{document.getElementById('backupStatusCard').textContent=error.message;document.getElementById('downloadBackupFileBtn').disabled=true})}
+      async function downloadBackupFile(){
+        const button=document.getElementById('downloadBackupFileBtn'),message=document.getElementById('backupMessage');button.disabled=true;message.textContent='Preparing the backup file…';
+        try{const data=await backupApiRequest('/backup/download','POST',{});if(!data.sql||!data.backup||!data.backup.backupId)throw new Error('D1 returned an incomplete backup file.');
+          const blob=new Blob([data.sql],{type:'application/sql;charset=utf-8'}),url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download=data.fileName||'JTP_Backup.sql';document.body.appendChild(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+          backupUiPendingId=String(data.backup.backupId);message.textContent='The download was started. Confirm only after you can see the file in your downloads.';await loadBackupStatus();backupUiPendingId=String(data.backup.backupId);renderBackupStatus();
+        }catch(error){message.textContent=error.message}finally{button.disabled=false}
+      }
+      async function confirmBackupFileSaved(){const id=backupUiPendingId;if(!id)return;const button=document.getElementById('confirmBackupSavedBtn');button.disabled=true;document.getElementById('backupMessage').textContent='Recording this backup point…';try{await backupApiRequest('/backup/confirm','POST',{backupId:id});backupUiPendingId='';document.getElementById('backupMessage').textContent='Backup confirmed. The next download will include changes made after this backup point.';await loadBackupStatus()}catch(error){document.getElementById('backupMessage').textContent=error.message}finally{button.disabled=false}}
       function openRevenueCalendar(){
         closeTopToolbarMenus();
         revenueCalendarMonthKey=currentMonthKey();
@@ -6524,6 +6599,14 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('clearBtn').addEventListener('click',()=>{document.getElementById('jobForm').reset();document.getElementById('dueOverrideCheck').checked=false;document.getElementById('dueOverrideDate').value='';syncDueOverrideUI();clearEmailDraftState();clearScheduledDraftState();document.getElementById('clientModal').classList.remove('open');document.getElementById('subclientModal').classList.remove('open');populateClients();syncNextId();document.getElementById('ticketPreview').style.display='none';document.getElementById('jobNumberWrap').style.display='none'});
       document.getElementById('viewCompletedJobsBtn').addEventListener('click',openCompletedMetricsModal);
       document.getElementById('annualRevenueGoalSelect').addEventListener('change',e=>{try{if(e.currentTarget.value)localStorage.setItem(annualGrossRevenueGoalStorageKey(),e.currentTarget.value);else localStorage.removeItem(annualGrossRevenueGoalStorageKey())}catch(ignore){}e.currentTarget.dataset.initialized='1';renderAnnualRevenuePaceKpi()});
+      document.getElementById('downloadBackupBtn').addEventListener('click',e=>{e.stopPropagation();openBackupModal()});
+      document.getElementById('backupCalendarPreviousBtn').addEventListener('click',()=>shiftBackupMonth(-1));
+      document.getElementById('backupCalendarNextBtn').addEventListener('click',()=>shiftBackupMonth(1));
+      document.getElementById('downloadBackupFileBtn').addEventListener('click',downloadBackupFile);
+      document.getElementById('confirmBackupSavedBtn').addEventListener('click',confirmBackupFileSaved);
+      document.getElementById('closeBackupModalBtn').addEventListener('click',()=>document.getElementById('backupModalBackdrop').classList.remove('open'));
+      document.getElementById('closeBackupFooterBtn').addEventListener('click',()=>document.getElementById('backupModalBackdrop').classList.remove('open'));
+      document.getElementById('backupModalBackdrop').addEventListener('click',e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove('open')});
       document.getElementById('revenueCalendarBtn').addEventListener('click',openRevenueCalendar);
       document.getElementById('revenueCalendarPreviousBtn').addEventListener('click',()=>{revenueCalendarMonthKey=shiftRevenueCalendarMonth(revenueCalendarMonthKey,-1);revenueCalendarSelectedDate=revenueCalendarMonthKey+'-01';renderRevenueCalendar();loadRevenueCalendarMonth(revenueCalendarMonthKey).catch(error=>{renderRevenueCalendar();alert(error.message)})});
       document.getElementById('revenueCalendarNextBtn').addEventListener('click',()=>{revenueCalendarMonthKey=shiftRevenueCalendarMonth(revenueCalendarMonthKey,1);revenueCalendarSelectedDate=revenueCalendarMonthKey+'-01';renderRevenueCalendar();loadRevenueCalendarMonth(revenueCalendarMonthKey).catch(error=>{renderRevenueCalendar();alert(error.message)})});
@@ -6913,7 +6996,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('saveAutoWorkdayHoursBtn').addEventListener('click',saveAutoWorkdayHours);
       document.getElementById('autoWorkdayHoursBackdrop').addEventListener('click',e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove('open')});
       document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented)return;const crop=document.querySelector('#job-priority-app .motivator-crop-backdrop');if(crop){e.preventDefault();closeMotivatorCropper();return}const preview=document.querySelector('#job-priority-app .motivator-edit-preview-backdrop');if(preview){e.preventDefault();closeMotivatorEditPreview();return}const target=e.target;if(target&&target.closest&&target.closest('input,textarea,select,[contenteditable="true"]'))return;const upload=document.getElementById('motivatorUploadBatchStatus');if(upload&&upload.dataset.uploadActive==='true')return;const motivator=document.getElementById('motivatorModalBackdrop');if(motivator&&motivator.classList.contains('open')){e.preventDefault();closeMotivatorModal();return}},true);
-      document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented)return;const revenue=document.getElementById('revenueCalendarBackdrop');if(revenue&&revenue.classList.contains('open')){e.preventDefault();revenue.classList.remove('open');return}const notes=document.getElementById('toolsNotesModalBackdrop');if(notes&&notes.classList.contains('open')){e.preventDefault();notes.classList.remove('open');return}const hours=document.getElementById('autoWorkdayHoursBackdrop');if(hours&&hours.classList.contains('open')){e.preventDefault();hours.classList.remove('open')}});
+      document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented)return;const backup=document.getElementById('backupModalBackdrop');if(backup&&backup.classList.contains('open')){e.preventDefault();backup.classList.remove('open');return}const revenue=document.getElementById('revenueCalendarBackdrop');if(revenue&&revenue.classList.contains('open')){e.preventDefault();revenue.classList.remove('open');return}const notes=document.getElementById('toolsNotesModalBackdrop');if(notes&&notes.classList.contains('open')){e.preventDefault();notes.classList.remove('open');return}const hours=document.getElementById('autoWorkdayHoursBackdrop');if(hours&&hours.classList.contains('open')){e.preventDefault();hours.classList.remove('open')}});
       document.addEventListener('click',()=>closeTopToolbarMenus());
       document.getElementById('workdayPunchInBtn').addEventListener('click',e=>addWorkdayPunch('PUNCH_IN',e.currentTarget));
       document.getElementById('lunchOutBtn').addEventListener('click',e=>addWorkdayPunch('LUNCH_OUT',e.currentTarget));
