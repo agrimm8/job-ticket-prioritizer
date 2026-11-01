@@ -3293,13 +3293,11 @@
         if(orphanPunchCheckInFlight)return;orphanPunchCheckInFlight=true;
         try{
           let data=null;
-          if(d1FastPathReady()){
-            const base=String(d1FastPath.apiUrl||'').replace(/\/+$/,'');
-            const res=await fetch(base+'/punch/open',{method:'GET',headers:{Authorization:'Bearer '+d1FastPath.token}});
-            if(!res.ok)return;data=await res.json();
-          }else{
-            const res=await fetch(API_URL+'?action=openWorkSession',{method:'GET'});if(!res.ok)return;data=await res.json();
-          }
+          if(!d1FastPathReady())return;
+          const base=String(d1FastPath.apiUrl||'').replace(/\/+$/,'');
+          const res=await fetch(base+'/punch/open',{method:'GET',headers:{Authorization:'Bearer '+d1FastPath.token}});
+          if(!res.ok)throw new Error('D1 active punch check failed ('+res.status+').');
+          data=await res.json();
           if(!data||!data.success)return;
           if(Array.isArray(data.workdayPunches))workdayPunches=data.workdayPunches;if(data.autoWorkday)autoWorkdayConfig=data.autoWorkday;
           const open=data.openWorkSession||null;const activeId=activeWorkSession&&activeWorkSession.sessionId?String(activeWorkSession.sessionId):'';const backendId=open&&open.sessionId?String(open.sessionId):'';
@@ -5701,7 +5699,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         throw new Error('Unable to reach D1. The punch result is unconfirmed. Refresh JTP and check the current session before retrying.');
       }
       async function d1FastStatusPost(payload,legacyPayload){
-        if(!d1FastPathReady())return apiPost(legacyPayload);
+        if(!d1FastPathReady())throw new Error('D1 Job Status is not connected. Refresh JTP; the status change was not sent to Google.');
         const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/job/status';
         const options={method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)};
         for(let attempt=0;attempt<2;attempt++){
@@ -5714,8 +5712,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           }
           let data={};try{data=await response.json()}catch(ignore){}
           if(response.ok&&data&&data.success)return data;
-          if(data&&data.fallbackToGoogle===true)return apiPost(legacyPayload);
-          if(response.status===401||response.status===403)return apiPost(legacyPayload);
+          if(response.status===401||response.status===403)throw new Error('D1 Job Status authorization expired. Refresh JTP; the status change was not sent to Google.');
           const error=new Error((data&&data.error)||('Fast status update failed ('+response.status+')'));
           if(response.status>=500&&attempt===0)continue;
           throw error;
@@ -5732,7 +5729,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         return result;
       }
       async function d1FastJobNotesPost(legacyPayload){
-        if(!d1FastPathReady())return apiPost(legacyPayload);
+        if(!d1FastPathReady())throw new Error('D1 Job Notes are not connected. Refresh JTP; the note was not sent to Google.');
         const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('notes-'+Date.now()+'-'+Math.random().toString(36).slice(2));
         const field=Object.prototype.hasOwnProperty.call(legacyPayload,'initialActionItems')?'initialActionItems':(Object.prototype.hasOwnProperty.call(legacyPayload,'invoiceNotes')?'invoiceNotes':'notes');const value=legacyPayload[field];const payload={operationId,ticketNumber:legacyPayload.ticketNumber,field,value:String(value==null?'':value)};
         const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/job/notes';
@@ -5742,7 +5739,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           try{response=await fetch(url,options)}catch(err){if(attempt===0)continue;throw new Error('Unable to reach the fast Job Notes service. Your note was not confirmed; try saving again.')}
           let data={};try{data=await response.json()}catch(ignore){}
           if(response.ok&&data&&data.success)return data;
-          if(response.status===401||response.status===403)return apiPost(legacyPayload);
+          if(response.status===401||response.status===403)throw new Error('D1 Job Notes authorization expired. Refresh JTP; the note was not sent to Google.');
           if(response.status>=500&&attempt===0)continue;
           throw new Error((data&&data.error)||('Job Notes save failed ('+response.status+')'));
         }
@@ -5827,13 +5824,13 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const primary=String(legacyPayload.primaryClientId||legacyPayload.parentClientId||legacyPayload.clientId||'');
         const profileKey=secondary?'secondary:'+primary+':'+secondary:'primary:'+primary;
         const payload={operationId,profileKey,primaryClientId:primary,secondaryClientId:secondary,notes:String(legacyPayload.notes||''),pricingNotes:String(legacyPayload.pricingNotes||''),associatedEmails:String(legacyPayload.associatedEmails||'')};
-        return d1FastWritePost('/client/notes',payload,legacyPayload,'Client Notes',false);
+        return d1FastWritePost('/client/notes',payload,'Client Notes');
       }
       async function d1FastFinancialsPost(ticketNumber,entries,legacyPayload){
-        if(!d1FastPathReady())return apiPost(legacyPayload);
+        if(!d1FastPathReady())throw new Error('D1 Job Financials are not connected. Refresh JTP; the financial change was not sent to Google.');
         const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('job-financials-'+Date.now()+'-'+Math.random().toString(36).slice(2));
         const payload={operationId,ticketNumber:Number(ticketNumber),entries};
-        return d1FastWritePost('/job/financials',payload,legacyPayload,'Job Financials');
+        return d1FastWritePost('/job/financials',payload,'Job Financials');
       }
 
       function showWorkdaySyncNotice(message){const toast=document.getElementById('copyToast');if(!toast)return;toast.textContent=message;toast.classList.add('show');if(copyToastTimer)clearTimeout(copyToastTimer);copyToastTimer=setTimeout(()=>{toast.classList.remove('show');toast.textContent='Job Ticket Title Copied!'},3000)}
@@ -5865,7 +5862,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
 
       async function d1FastFollowUpDatePost(ticketNumber,followUpDate){if(!d1FastPathReady())throw new Error('D1 Follow Up Date update is not connected. Refresh JTP; the date was not sent to Google.');const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('job-follow-up-'+Date.now()+'-'+Math.random().toString(36).slice(2));const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/job/fields';const payload={operationId,scope:'job',ticketNumber:Number(ticketNumber),followUpDate:String(followUpDate||'')};for(let attempt=0;attempt<2;attempt++){let response;try{response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)})}catch(err){if(attempt===0)continue;throw new Error('Unable to reach D1. The Follow Up Date update is unconfirmed; refresh JTP and check the date before retrying.')}let data={};try{data=await response.json()}catch(ignore){}if(response.ok&&data&&data.success)return data;if(response.status===401||response.status===403)throw new Error('D1 Follow Up Date authorization expired. Refresh JTP and check the date before retrying.');if(response.status>=500&&attempt===0)continue;throw new Error((data&&data.error)||('D1 Follow Up Date update failed ('+response.status+'). Refresh JTP and check the date before retrying.'))}throw new Error('Unable to reach D1. The Follow Up Date update is unconfirmed; refresh JTP and check the date before retrying.')}
       async function d1FastJobTitlePost(ticketNumber,displayTitle){if(!d1FastPathReady())throw new Error('D1 Job Title update is not connected. Refresh JTP; the title was not sent to Google.');const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('job-title-'+Date.now()+'-'+Math.random().toString(36).slice(2));const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/job/fields';const payload={operationId,scope:'job',ticketNumber:Number(ticketNumber),displayTitle:String(displayTitle||'').trim()};for(let attempt=0;attempt<2;attempt++){let response;try{response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)})}catch(err){if(attempt===0)continue;throw new Error('Unable to reach D1. The title update is unconfirmed; refresh JTP and check the title before retrying.')}let data={};try{data=await response.json()}catch(ignore){}if(response.ok&&data&&data.success)return data;if(response.status===401||response.status===403)throw new Error('D1 Job Title authorization expired. Refresh JTP and check the title before retrying.');if(response.status>=500&&attempt===0)continue;throw new Error((data&&data.error)||('D1 Job Title update failed ('+response.status+'). Refresh JTP and check the title before retrying.'))}throw new Error('Unable to reach D1. The title update is unconfirmed; refresh JTP and check the title before retrying.')}
-      async function d1FastJobFieldsPost(payload,legacyPayload){if(!d1FastPathReady())return apiPost(legacyPayload);const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('job-fields-'+Date.now()+'-'+Math.random().toString(36).slice(2));return d1FastWritePost('/job/fields',{...payload,operationId},legacyPayload,'Job Fields')}
+      async function d1FastJobFieldsPost(payload,legacyPayload){if(!d1FastPathReady())throw new Error('D1 Job Fields are not connected. Refresh JTP; the change was not sent to Google.');const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('job-fields-'+Date.now()+'-'+Math.random().toString(36).slice(2));return d1FastWritePost('/job/fields',{...payload,operationId},'Job Fields')}
       async function d1FastCreateJobPost(payload){
         if(!d1FastPathReady())throw new Error('D1 Job Create is not connected. Refresh JTP and try again; no ticket was created.');
         const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('job-create-'+Date.now()+'-'+Math.random().toString(36).slice(2));
@@ -5898,7 +5895,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         }
         throw new Error('Unable to reach D1 Job Create. The ticket was not confirmed; refresh JTP and check the board before trying again.')
       }
-      async function d1FastChangeOrderPost(mutation,payload,legacyPayload){if(!d1FastPathReady())throw new Error('D1 Change Orders are not connected. Refresh JTP; the change was not sent to Google.');const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('change-order-'+Date.now()+'-'+Math.random().toString(36).slice(2));return d1FastWritePost('/change-orders',{...payload,mutation,operationId},legacyPayload,'Change Order',false)}
+      async function d1FastChangeOrderPost(mutation,payload,legacyPayload){if(!d1FastPathReady())throw new Error('D1 Change Orders are not connected. Refresh JTP; the change was not sent to Google.');const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('change-order-'+Date.now()+'-'+Math.random().toString(36).slice(2));return d1FastWritePost('/change-orders',{...payload,mutation,operationId},'Change Order')}
       async function d1FastChangeOrderUpdatesGet(ticketNumber){
         if(!d1FastPathReady())throw new Error('D1 Change Order Updates are not connected. Refresh JTP and try again.');
         let authRetried=false,transientRetried=false;
@@ -5917,7 +5914,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           return data;
         }
       }
-      async function d1FastWritePost(path,payload,legacyPayload,label,allowLegacyFallback=true){
+      async function d1FastWritePost(path,payload,label){
         const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+path;
         const options={method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)};
         for(let attempt=0;attempt<2;attempt++){
@@ -5925,7 +5922,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           try{response=await fetch(url,options)}catch(err){if(attempt===0)continue;throw new Error('Unable to reach the fast '+label+' service. The save was not confirmed; try again.')}
           let data={};try{data=await response.json()}catch(ignore){}
           if(response.ok&&data&&data.success)return data;
-          if(response.status===401||response.status===403){if(allowLegacyFallback)return apiPost(legacyPayload);throw new Error((data&&data.error)||(label+' authorization expired. Refresh JTP; the save was not sent to Google.'))}
+          if(response.status===401||response.status===403)throw new Error((data&&data.error)||(label+' authorization expired. Refresh JTP; the save was not sent to Google.'))
           if(response.status>=500&&attempt===0)continue;
           throw new Error((data&&data.error)||(label+' save failed ('+response.status+')'));
         }
@@ -5993,9 +5990,9 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         try{return await d1OverheadLoadPromise}finally{d1OverheadLoadPromise=null}
       }
       async function d1FastOverheadPost(path,payload,legacyPayload){
-        if(!d1FastPathReady())return apiPost(legacyPayload);
+        if(!d1FastPathReady())throw new Error('D1 Monthly Overhead is not connected. Refresh JTP; the change was not sent to Google.');
         const operationId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('overhead-'+Date.now()+'-'+Math.random().toString(36).slice(2));
-        return d1FastWritePost(path,{...payload,operationId},legacyPayload,'Monthly Overhead');
+        return d1FastWritePost(path,{...payload,operationId},'Monthly Overhead');
       }
       async function d1JobActivityGet(ticketNumber){
         if(!d1FastPathReady())throw new Error('D1 Activity is not connected. Refresh JTP and try again.');
@@ -6189,7 +6186,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           if(!d1AdminSessionsLoaded){try{await d1FastAdminSnapshot()}catch(error){console.warn('D1 Admin Work snapshot load failed:',error)}}
           if(!d1HolidayCalendarLoaded){try{await loadD1HolidayCalendar()}catch(error){console.warn('D1 Holiday Calendar load failed:',error)}}
           if(!d1OverheadLoaded){try{await loadD1Overhead()}catch(error){console.warn('D1 Monthly Overhead load failed:',error)}}
-          overdueHistory=data.overdueHistory||[];if(!d1AdminSessionsLoaded){adminSessions=data.adminSessions||[];activeAdminSession=data.openAdminSession||null}motivatorBankReady=false;motivatorBankServer={active:false,shiftStart:'',shiftStartMs:0,clientWorkSeconds:0,earnedSeconds:0,spentSeconds:0,availableSeconds:0};
+          overdueHistory=data.overdueHistory||[];motivatorBankReady=false;motivatorBankServer={active:false,shiftStart:'',shiftStartMs:0,clientWorkSeconds:0,earnedSeconds:0,spentSeconds:0,availableSeconds:0};
           if(Array.isArray(data.emailQueue)){emailQueue=data.emailQueue;emailQueueLoaded=true}if(Array.isArray(data.recentEmailSources)&&!d1EmailSourcesLoaded){recentEmailSources=data.recentEmailSources;d1EmailSourcesLoaded=true}if(Array.isArray(data.changeOrderEmailSources)&&!d1EmailSourcesLoaded){changeOrderEmailSources=data.changeOrderEmailSources;d1EmailSourcesLoaded=true}emailIntakeConfigured=data.emailIntakeConfigured===true;
           renderEmailQueue();nextId=getNextSequentialId();populateClients();syncNextId();legacyBootstrapReady=d1AdminSessionsLoaded;backendReady=true;renderQueue();renderBoard();renderWorkUtilization();refreshMotivatorMenuGateLabels();setBackendStatus(true,'D1 board ready; Google-only services connected.');if(jobDetailsTicket)renderJobDetailsModal();midnightObservedKey=workdayKey();maybeShowAutoWorkdayMotivator();refreshScheduledIntake().catch(()=>{});refreshEmailQueue().catch(()=>{});loadD1EmailSources().catch(error=>console.warn('D1 email source hydration failed:',error));if(data.midnightRollover&&data.midnightRollover.busy)checkMidnightRollover(true);refreshMotivatorSpent().catch(()=>{});
         }catch(err){if(loadId!==boardStartupLoadId)return;backendReady=false;legacyBootstrapReady=false;setD1BoardStatus('D1 board is ready, but Google-only services are unavailable.');renderWorkUtilization();console.warn('Google Sheets bootstrap failed after D1 board became interactive:',err)}
