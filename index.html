@@ -2261,6 +2261,7 @@
     (()=>{
       const root=document.getElementById('job-priority-app'); if(!root||root.dataset.ready) return; root.dataset.ready='1';
       const API_URL='https://script.google.com/macros/s/AKfycbzYSX6Lhyd2mwmYA1Qv1ozEM8_hd0vGndpVwv4lvzy-OUKNkFyElLVmKkfq9sGfMB5PeQ/exec';
+      const D1_API_URL='https://job-ticket-prioritizer.andrew-grimm85.workers.dev';
       const PREVIEW_MODE=(()=>{try{const h=String(location.hostname||'').toLowerCase();const deployed=/andrew-grimm85\.workers\.dev$/.test(h);const embedded=window.self!==window.top;const previewHost=/preview|sandbox|usercontent|chatgpt|openai/.test(h);return !deployed&&(embedded||previewHost||location.protocol==='file:')}catch(e){return false}})();
       let clients=[];
       let subclients=[];
@@ -5910,9 +5911,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           let data={};try{data=await response.json()}catch(ignore){}
           if((response.status===401||response.status===403)&&!authRetried){
             authRetried=true;
-            const bootstrap=await apiGet();
-            if(!bootstrap||bootstrap.success!==true||!bootstrap.d1FastPath||!bootstrap.d1FastPath.enabled)throw new Error('JTP could not refresh D1 authorization.');
-            d1FastPath=bootstrap.d1FastPath;cacheD1BoardAuth(d1FastPath);continue;
+            await refreshD1Authorization(true);continue;
           }
           if(!response.ok||!data.success){if(response.status>=500&&!transientRetried){transientRetried=true;await new Promise(resolve=>setTimeout(resolve,350));continue}throw new Error((data&&data.error)||('D1 Change Order Updates request failed ('+response.status+')'))}
           return data;
@@ -6009,9 +6008,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           let data={};try{data=await response.json()}catch(ignore){}
           if((response.status===401||response.status===403)&&!authRetried){
             authRetried=true;
-            const bootstrap=await apiGet();
-            if(!bootstrap||bootstrap.success!==true||!bootstrap.d1FastPath||!bootstrap.d1FastPath.enabled)throw new Error('JTP could not refresh D1 authorization.');
-            d1FastPath=bootstrap.d1FastPath;cacheD1BoardAuth(d1FastPath);continue;
+            await refreshD1Authorization(true);continue;
           }
           if(!response.ok||!data.success){
             if(response.status>=500&&!transientRetried){transientRetried=true;await new Promise(resolve=>setTimeout(resolve,350));continue}
@@ -6034,9 +6031,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           if((response.status===401||response.status===403)&&!authRetried){
             authRetried=true;
             try{
-              const bootstrap=await apiGet();
-              if(!bootstrap||bootstrap.success!==true||!bootstrap.d1FastPath||!bootstrap.d1FastPath.enabled)throw new Error('JTP could not refresh D1 authorization.');
-              d1FastPath=bootstrap.d1FastPath;cacheD1BoardAuth(d1FastPath);continue;
+              await refreshD1Authorization(true);continue;
             }catch(error){throw new Error('Revenue Calendar authorization could not be refreshed. '+(error&&error.message?error.message:''))}
           }
           if(!response.ok||!data.success){
@@ -6158,10 +6153,25 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       function cacheD1BoardAuth(config){
         try{if(config&&config.enabled&&config.apiUrl&&config.token&&config.expiresAt)localStorage.setItem(D1_BOARD_SESSION_CACHE_KEY,JSON.stringify({apiUrl:config.apiUrl,token:config.token,expiresAt:config.expiresAt}));else localStorage.removeItem(D1_BOARD_SESSION_CACHE_KEY)}catch(ignore){}
       }
+      async function refreshD1Authorization(force=false){
+        if(PREVIEW_MODE)throw new Error('Live D1 access is disabled in Preview Mode.');
+        if(!force&&d1FastPathReady())return d1FastPath;
+        const response=await fetch(D1_API_URL+'/auth/session',{method:'GET',cache:'no-store'});
+        let data={};try{data=await response.json()}catch(ignore){}
+        if(!response.ok||!data||!data.success||!data.token||!data.expiresAt)throw new Error((data&&data.error)||('D1 authorization request failed ('+response.status+')'));
+        const apiUrl=String(data.apiUrl||D1_API_URL).replace(/\/+$/,'');
+        if(new URL(apiUrl).origin!==new URL(D1_API_URL).origin)throw new Error('D1 returned an unexpected API address.');
+        d1FastPath={enabled:true,apiUrl,token:String(data.token),expiresAt:String(data.expiresAt)};
+        cacheD1BoardAuth(d1FastPath);
+        return d1FastPath;
+      }
       async function warmBoardFromD1(loadId){
-        if(PREVIEW_MODE||backendReady||boardBootstrapDataArrived)return false;const cached=readCachedD1BoardAuth();if(!cached)return false;
+        if(PREVIEW_MODE||backendReady||boardBootstrapDataArrived)return false;
         try{
-          d1FastPath=Object.assign({enabled:true},cached);
+          const cached=readCachedD1BoardAuth();
+          if(cached)d1FastPath=Object.assign({enabled:true},cached);
+          else await refreshD1Authorization(true);
+          if(!d1FastPathReady())return false;
           loadD1EmailSources().catch(error=>console.warn('D1 email source hydration failed:',error));
           loadD1Overhead().catch(error=>console.warn('D1 Monthly Overhead hydration failed:',error));
           const url=String(cached.apiUrl).replace(/\/+$/,'')+'/board/snapshot';const response=await fetch(url,{method:'GET',headers:{'Authorization':'Bearer '+cached.token}});if(response.status===401||response.status===403){try{localStorage.removeItem(D1_BOARD_SESSION_CACHE_KEY)}catch(ignore){}return false}if(!response.ok)return false;const data=await response.json();
@@ -6176,7 +6186,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       async function loadGoogleOnlyBootstrap(loadId){
         try{
           const data=await apiGet();if(loadId!==boardStartupLoadId)return;if(!data.success)throw new Error(data.error||'Backend error');boardBootstrapDataArrived=true;
-          d1FastPath=data.d1FastPath||d1FastPath;cacheD1BoardAuth(d1FastPath);if(!d1AdminSessionsLoaded){try{await d1FastAdminSnapshot()}catch(error){console.warn('D1 Admin Work snapshot load failed:',error)}}
+          if(!d1AdminSessionsLoaded){try{await d1FastAdminSnapshot()}catch(error){console.warn('D1 Admin Work snapshot load failed:',error)}}
           if(!d1HolidayCalendarLoaded){try{await loadD1HolidayCalendar()}catch(error){console.warn('D1 Holiday Calendar load failed:',error)}}
           if(!d1OverheadLoaded){try{await loadD1Overhead()}catch(error){console.warn('D1 Monthly Overhead load failed:',error)}}
           overdueHistory=data.overdueHistory||[];if(!d1AdminSessionsLoaded){adminSessions=data.adminSessions||[];activeAdminSession=data.openAdminSession||null}motivatorBankReady=false;motivatorBankServer={active:false,shiftStart:'',shiftStartMs:0,clientWorkSeconds:0,earnedSeconds:0,spentSeconds:0,availableSeconds:0};
@@ -6189,7 +6199,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         if(warmLoaded){activateD1Board();loadGoogleOnlyBootstrap(loadId);return}
         try{
           const data=await apiGet();boardBootstrapDataArrived=true;if(!data.success)throw new Error(data.error||'Backend error');
-          d1FastPath=data.d1FastPath||d1FastPath;cacheD1BoardAuth(d1FastPath);if(!d1AdminSessionsLoaded){try{await d1FastAdminSnapshot()}catch(error){console.warn('D1 Admin Work snapshot load failed:',error)}}if(!d1HolidayCalendarLoaded){try{await loadD1HolidayCalendar()}catch(error){console.warn('D1 Holiday Calendar load failed:',error)}}if(!d1OverheadLoaded){try{await loadD1Overhead()}catch(error){console.warn('D1 Monthly Overhead load failed:',error)}}
+          if(!d1AdminSessionsLoaded){try{await d1FastAdminSnapshot()}catch(error){console.warn('D1 Admin Work snapshot load failed:',error)}}if(!d1HolidayCalendarLoaded){try{await loadD1HolidayCalendar()}catch(error){console.warn('D1 Holiday Calendar load failed:',error)}}if(!d1OverheadLoaded){try{await loadD1Overhead()}catch(error){console.warn('D1 Monthly Overhead load failed:',error)}}
           if(!d1BoardSnapshotLoaded){clients=data.clients||[];subclients=data.subclients||[];jobs=mergeD1WarmStatusOverrides(data.jobs||[]);statusHistory=data.statusHistory||[];workSessions=data.workSessions||[];workSets=data.workSets||[];boardSnapshotAccruedHours=null;workdayPunches=data.workdayPunches||[];if(data.autoWorkday)autoWorkdayConfig=data.autoWorkday;jobFinancials=data.jobFinancials||[];changeOrderIntakes=data.changeOrderIntakes||[];await reconcileOpenWorkSession(data.openWorkSession||null)}
           overdueHistory=data.overdueHistory||[];autoWorkdayConfig=data.autoWorkday||autoWorkdayConfig;adminSessions=data.adminSessions||[];activeAdminSession=data.openAdminSession||null;legacyBootstrapReady=d1AdminSessionsLoaded;motivatorBankReady=false;motivatorBankServer={active:false,shiftStart:'',shiftStartMs:0,clientWorkSeconds:0,earnedSeconds:0,spentSeconds:0,availableSeconds:0};if(!d1OverheadLoaded){overheadTemplates=data.overheadTemplates||[];currentMonthlyOverhead=data.currentMonthlyOverhead||{month:currentMonthKey(),entries:[],total:0}}if(Array.isArray(data.emailQueue)){emailQueue=data.emailQueue;emailQueueLoaded=true}if(Array.isArray(data.recentEmailSources)&&!d1EmailSourcesLoaded){recentEmailSources=data.recentEmailSources;d1EmailSourcesLoaded=true}if(Array.isArray(data.changeOrderEmailSources)&&!d1EmailSourcesLoaded){changeOrderEmailSources=data.changeOrderEmailSources;d1EmailSourcesLoaded=true}emailIntakeConfigured=data.emailIntakeConfigured===true;
           Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);Object.keys(clientPricingNotes).forEach(k=>delete clientPricingNotes[k]);Object.keys(clientAssociatedEmails).forEach(k=>delete clientAssociatedEmails[k]);clients.forEach(c=>{const key=clientNotesKey(c.id);clientNotes[key]=String(c.notes||c.clientNotes||'');clientPricingNotes[key]=String(c.pricingNotes||'');clientAssociatedEmails[key]=String(c.associatedEmails||'')});subclients.forEach(s=>{const key=clientNotesKey(s.parentClientId,s.id);clientNotes[key]=String(s.notes||s.clientNotes||'');clientPricingNotes[key]=String(s.pricingNotes||'');clientAssociatedEmails[key]=String(s.associatedEmails||'')});
