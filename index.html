@@ -2744,7 +2744,7 @@
         timesheetSelectedDateKey=String(dateKey||workdayKey());
         // Reconcile today's task punch with D1 before calculating the KPI or
         // listing timesheet activity. This is a single small read on demand.
-        if(timesheetSelectedDateKey===workdayKey())await checkForOrphanPunch();
+        if(timesheetSelectedDateKey===workdayKey())await checkForOrphanPunch(true);
         renderProductivityModal();document.getElementById('productivityModalBackdrop').classList.add('open')
       }
       function openPastTimesheetPicker(){const d=new Date();d.setDate(d.getDate()-1);document.getElementById('pastTimesheetDateInput').value=productivityDateKey(d);document.getElementById('pastTimesheetDateInput').max=workdayKey();document.getElementById('pastTimesheetPickerBackdrop').classList.add('open')}
@@ -3459,11 +3459,14 @@
         activeWorkSession=null;stopTimerInterval();renderActiveJobBar();renderWorkUtilization();renderNotificationTray()
       }
       function scheduleOrphanPunchCheck(delay=1000){setTimeout(()=>{checkForOrphanPunch().then(()=>renderNotificationTray()).catch(()=>{})},delay)}
-      async function checkForOrphanPunch(){
+      async function checkForOrphanPunch(refreshAuth=false){
         if(orphanPunchCheckInFlight)return;orphanPunchCheckInFlight=true;
         try{
           let data=null;
-          if(!d1FastPathReady())return;
+          if(!d1FastPathReady()){
+            if(!refreshAuth)return;
+            await refreshD1Authorization(true);
+          }
           const base=String(d1FastPath.apiUrl||'').replace(/\/+$/,'');
           const res=await fetch(base+'/punch/open',{method:'GET',headers:{Authorization:'Bearer '+d1FastPath.token}});
           if(!res.ok)throw new Error('D1 active punch check failed ('+res.status+').');
@@ -5038,7 +5041,7 @@
           if(jobDetailsTicket&&String(jobDetailsTicket)===String(ticket))renderJobDetailsModal();
           // Status changes can stop a task timer. Recheck D1 immediately so a
           // stale browser-only open session cannot take over Work Utilization.
-          await checkForOrphanPunch();
+          await checkForOrphanPunch(true);
           return true;
         }catch(err){
           Object.assign(job,snapshot);
@@ -5898,14 +5901,25 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         throw new Error('Unable to reach D1. The metrics change is unconfirmed. Refresh JTP and check the job before retrying.');
       }
       async function d1FastPunchFetch(path,payload){
-        if(!d1FastPathReady())throw new Error('D1 task punch is not connected. Refresh JTP; the punch was not sent to Google.');
-        const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+path;
-        const options={method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)};
+        // A cached D1 token may be absent or expired after a long-lived tab.
+        // Renew it on demand before refusing a user-requested punch action.
+        if(!d1FastPathReady()){
+          try{await refreshD1Authorization(true)}
+          catch(error){throw new Error('JTP could not reconnect to D1. The punch was not sent anywhere. '+String(error&&error.message||error))}
+        }
+        let refreshed=false;
         for(let attempt=0;attempt<2;attempt++){
           let res;
+          const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+path;
+          const options={method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)};
           try{res=await fetch(url,options)}catch(err){if(attempt===0)continue;throw new Error('Unable to reach D1. The punch result is unconfirmed. Refresh JTP and check the current session before retrying.')}
           let data={};try{data=await res.json()}catch(ignore){}
           if(res.ok&&data&&data.success)return data;
+          if((res.status===401||res.status===403)&&!refreshed){
+            refreshed=true;
+            try{await refreshD1Authorization(true);continue}
+            catch(error){throw new Error('D1 authorization could not be renewed. The punch was not saved. Refresh JTP and check the session before retrying.')}
+          }
           if(res.status===401||res.status===403)throw new Error('D1 task punch authorization expired. Refresh JTP and check the session before retrying.');
           if(res.status>=500&&attempt===0)continue;
           throw new Error((data&&data.error)||('D1 task punch failed ('+res.status+'). Refresh JTP and check the session before retrying.'));
@@ -5913,12 +5927,16 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         throw new Error('Unable to reach D1. The punch result is unconfirmed. Refresh JTP and check the current session before retrying.');
       }
       async function d1FastStatusPost(payload,legacyPayload){
-        if(!d1FastPathReady())throw new Error('D1 Job Status is not connected. Refresh JTP; the status change was not sent to Google.');
-        const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/job/status';
-        const options={method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)};
+        if(!d1FastPathReady()){
+          try{await refreshD1Authorization(true)}
+          catch(error){throw new Error('JTP could not reconnect to D1. The status change was not saved. '+String(error&&error.message||error))}
+        }
+        let authRetried=false;
         for(let attempt=0;attempt<2;attempt++){
           let response;
           try{
+            const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/job/status';
+            const options={method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)};
             response=await fetch(url,options);
           }catch(err){
             if(attempt===0)continue;
@@ -5926,7 +5944,12 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           }
           let data={};try{data=await response.json()}catch(ignore){}
           if(response.ok&&data&&data.success)return data;
-          if(response.status===401||response.status===403)throw new Error('D1 Job Status authorization expired. Refresh JTP; the status change was not sent to Google.');
+          if((response.status===401||response.status===403)&&!authRetried){
+            authRetried=true;
+            try{await refreshD1Authorization(true);continue}
+            catch(error){throw new Error('D1 authorization could not be renewed. The status change was not saved. Refresh JTP and check the card before retrying.')}
+          }
+          if(response.status===401||response.status===403)throw new Error('D1 Job Status authorization expired. The status change was not saved. Refresh JTP and check the card before retrying.');
           const error=new Error((data&&data.error)||('Fast status update failed ('+response.status+')'));
           if(response.status>=500&&attempt===0)continue;
           throw error;
