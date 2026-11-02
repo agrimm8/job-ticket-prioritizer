@@ -2740,7 +2740,13 @@
         rows.sort((a,b)=>a.at-b.at);const log=document.getElementById('productivityActivityLog');log.innerHTML=rows.length?rows.map(r=>`<div class="productivity-log-row timesheet-row"><div class="productivity-log-time">${escapeHtml(r.time)}</div><div class="productivity-log-label"><div class="timesheet-entry-kind">${escapeHtml(r.kind)}</div>${escapeHtml(r.label)}</div><div class="timesheet-row-actions">${timesheetRowEditButton(r.type,r.id,r.active)}</div></div>`).join(''):'<div class="completed-metrics-empty">No workday activity recorded for this date.</div>';
         log.querySelectorAll('[data-timesheet-edit-type]').forEach(btn=>btn.addEventListener('click',()=>openTimesheetEntryEditor(btn.dataset.timesheetEditType,btn.dataset.timesheetEditId)))
       }
-      function openProductivityModal(dateKey=workdayKey()){timesheetSelectedDateKey=String(dateKey||workdayKey());renderProductivityModal();document.getElementById('productivityModalBackdrop').classList.add('open')}
+      async function openProductivityModal(dateKey=workdayKey()){
+        timesheetSelectedDateKey=String(dateKey||workdayKey());
+        // Reconcile today's task punch with D1 before calculating the KPI or
+        // listing timesheet activity. This is a single small read on demand.
+        if(timesheetSelectedDateKey===workdayKey())await checkForOrphanPunch();
+        renderProductivityModal();document.getElementById('productivityModalBackdrop').classList.add('open')
+      }
       function openPastTimesheetPicker(){const d=new Date();d.setDate(d.getDate()-1);document.getElementById('pastTimesheetDateInput').value=productivityDateKey(d);document.getElementById('pastTimesheetDateInput').max=workdayKey();document.getElementById('pastTimesheetPickerBackdrop').classList.add('open')}
       function openTimesheetEntryEditor(type,id){
         timesheetEditTarget={type:String(type||''),id:String(id||'')};const fields=document.getElementById('timesheetEntryEditFields');const label=document.getElementById('timesheetEntryEditLabel');
@@ -3441,7 +3447,17 @@
       async function adoptBackendWorkSession(openSession){
         if(!openSession||!openSession.sessionId)return false;const key=sessionRecoveryKey(openSession);const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return false;const restored={...openSession,timerKey:key};applyWorkSessionContext(restored,key);const existing=workSessions.find(s=>String(s.sessionId||'')===String(restored.sessionId||''));if(existing)Object.assign(existing,restored);else workSessions.push(restored);saveActiveWorkSession(restored);const state=ensureTimerState(job);const elapsed=Math.max(0,Math.floor((Date.now()-new Date(restored.punchIn).getTime())/1000));state.committedSeconds=Number.isFinite(elapsed)?elapsed:0;state.running=true;await startTimerInternal(key,true);renderActiveJobBar();renderWorkUtilization();renderNotificationTray();return true
       }
-      function clearBackendClosedActiveSession(){if(!activeWorkSession||!activeWorkSession.sessionId)return;const id=String(activeWorkSession.sessionId||'');const local=workSessions.find(s=>String(s.sessionId||'')===id);if(local&&!local.punchOut){local.punchOut=new Date().toISOString()}saveActiveWorkSession(null);clearTimerSnapshot();if(activeTimerKey){const state=timerState[activeTimerKey];if(state)state.running=false;activeTimerKey=''}stopTimerInterval();renderActiveJobBar();renderWorkUtilization();renderNotificationTray()}
+      function clearBackendClosedActiveSession(){
+        if(activeWorkSession&&activeWorkSession.sessionId){
+          const id=String(activeWorkSession.sessionId);
+          // D1 says this session is closed or absent. Do not invent a Punch Out
+          // timestamp locally, which would keep stale time in the KPI.
+          workSessions=workSessions.filter(session=>String(session.sessionId||'')!==id);
+        }
+        saveActiveWorkSession(null);clearTimerSnapshot();
+        if(activeTimerKey){const state=timerState[activeTimerKey];if(state)state.running=false;activeTimerKey=''}
+        activeWorkSession=null;stopTimerInterval();renderActiveJobBar();renderWorkUtilization();renderNotificationTray()
+      }
       function scheduleOrphanPunchCheck(delay=1000){setTimeout(()=>{checkForOrphanPunch().then(()=>renderNotificationTray()).catch(()=>{})},delay)}
       async function checkForOrphanPunch(){
         if(orphanPunchCheckInFlight)return;orphanPunchCheckInFlight=true;
@@ -3462,7 +3478,14 @@
         }catch(e){}finally{orphanPunchCheckInFlight=false}
       }
       async function reconcileOpenWorkSession(openSession){
-        if(!openSession){saveActiveWorkSession(null);clearTimerSnapshot();return}await adoptBackendWorkSession(openSession)
+        if(!openSession){
+          // The D1 snapshot is authoritative. Remove stale browser-only open
+          // sessions instead of leaving them visible as “12:00 AM–Now”.
+          workSessions=(workSessions||[]).filter(session=>!!session.punchOut||wasWorkSessionRecentlyClosed(session.sessionId));
+          if(activeTimerKey&&timerState[activeTimerKey])timerState[activeTimerKey].running=false;
+          activeWorkSession=null;activeTimerKey='';stopTimerInterval();saveActiveWorkSession(null);clearTimerSnapshot();return
+        }
+        await adoptBackendWorkSession(openSession)
       }
       function renderNotificationTray(){
         const tray=document.getElementById('notificationTray');if(!tray)return;
@@ -5013,6 +5036,9 @@
           }
           refreshStatusMoveViews(oldStatus,newStatus);
           if(jobDetailsTicket&&String(jobDetailsTicket)===String(ticket))renderJobDetailsModal();
+          // Status changes can stop a task timer. Recheck D1 immediately so a
+          // stale browser-only open session cannot take over Work Utilization.
+          await checkForOrphanPunch();
           return true;
         }catch(err){
           Object.assign(job,snapshot);
