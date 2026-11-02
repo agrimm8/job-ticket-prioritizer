@@ -2320,7 +2320,7 @@
     (()=>{
       const root=document.getElementById('job-priority-app'); if(!root||root.dataset.ready) return; root.dataset.ready='1';
       const API_URL='https://script.google.com/macros/s/AKfycbzYSX6Lhyd2mwmYA1Qv1ozEM8_hd0vGndpVwv4lvzy-OUKNkFyElLVmKkfq9sGfMB5PeQ/exec';
-      const D1_API_URL='https://job-ticket-prioritizer.andrew-grimm85.workers.dev';
+      const D1_API_URL='https://jtp-api.andrew-grimm85.workers.dev';
       const PREVIEW_MODE=(()=>{try{const h=String(location.hostname||'').toLowerCase();const deployed=/andrew-grimm85\.workers\.dev$/.test(h);const embedded=window.self!==window.top;const previewHost=/preview|sandbox|usercontent|chatgpt|openai/.test(h);return !deployed&&(embedded||previewHost||location.protocol==='file:')}catch(e){return false}})();
       let clients=[];
       let subclients=[];
