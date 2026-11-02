@@ -570,7 +570,11 @@
     #job-priority-app .job-details-work-panel .job-details-notes-wrap{padding:0}
     #job-priority-app .job-details-action-panel{padding-top:8px;padding-bottom:8px;border-bottom:1px solid light-dark(#e2e2dd,#414141)}
     #job-priority-app .job-details-action-panel .job-details-checklist:empty{display:none}
-    #job-priority-app .job-details-request-panel .job-details-source-body{max-height:360px;font-size:10px;line-height:1.55}
+    #job-priority-app .job-details-request-panel .job-details-source-body{max-height:360px;font-size:12px;line-height:1.6}
+    #job-priority-app .job-details-source{padding:11px 12px;border:1px solid light-dark(#d8d8d3,#454545);border-radius:9px;background:light-dark(#fff,#1f1f1f)}
+    #job-priority-app .job-details-source-head .change-order-source-title{font-size:11px;font-weight:850;line-height:1.4}
+    #job-priority-app .job-details-source-meta{margin-top:3px;font-size:10px;line-height:1.45;color:light-dark(#666,#b8b8b8);opacity:1}
+    #job-priority-app .job-details-source-body{box-sizing:border-box;padding:10px 11px;border:1px solid light-dark(#e3e3de,#3d3d3d);border-radius:7px;background:light-dark(#f8f8f5,#242424);color:light-dark(#252525,#e7e7e7);font-size:11px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:7px;max-height:260px;overflow:auto;opacity:1;user-select:text}
     #job-priority-app .job-details-save-btn[disabled],#job-priority-app .notes-save-btn[disabled]{opacity:.42;cursor:default}
     #job-priority-app .job-details-action-tools{display:flex;gap:5px;align-items:center;align-self:center;flex:none}
     #job-priority-app .job-details-action-tools button{display:inline-flex;align-items:center;justify-content:center;align-self:center;line-height:1.2}
@@ -4137,6 +4141,19 @@
       const pendingChangeOrderCancelTickets=new Set();
       function changeOrderIntakesForJob(job){return (Array.isArray(changeOrderIntakes)?changeOrderIntakes:[]).filter(item=>Number(item.ticketNumber)===Number(job&&job.ticketNumber||0)).sort((a,b)=>Number(a.changeOrderNumber)-Number(b.changeOrderNumber))}
       function pendingChangeOrderIntakeForJob(job){return changeOrderIntakesForJob(job).find(item=>item.status==='Pending')||null}
+      function cleanEmailBodyForDisplay(value){
+        return String(value||'')
+          .replace(/\[([^\]]+)\]\((?:https?:\/\/|mailto:)[^)]+\)/gi,'$1')
+          .replace(/<mailto:[^>]+>/gi,'')
+          .replace(/\bmailto:[^\s<>]+/gi,'')
+          .replace(/<(?:https?:\/\/|www\.)[^>]+>/gi,'')
+          .replace(/\b(?:https?:\/\/|www\.)[^\s<>]+/gi,match=>{const trailing=match.match(/[),.;!?]+$/);return trailing?trailing[0]:''})
+          .split(/\r?\n/)
+          .map(line=>line.replace(/^\s*(?:>\s*){2,}/,'').replace(/[ \t]+$/,''))
+          .join('\n')
+          .replace(/\n{3,}/g,'\n\n')
+          .trim();
+      }
       function normalizeEmailRequestText(value){return String(value||'').replace(/\r\n?/g,'\n').split('\n').map(line=>line.trim()).join('\n').replace(/\n{3,}/g,'\n\n').replace(/[ \t]+/g,' ').trim()}
       function notesDuplicateEmailSource(notes,sources){const normalized=normalizeEmailRequestText(notes);if(!normalized)return false;return (sources||[]).some(source=>normalizeEmailRequestText(source&&source.body)===normalized)}
       function combinedChangeOrderNotes(intake){if(!intake)return '';const parts=[];const manual=String(intake.manualNotes||'').trim();if(manual)parts.push(manual);const sources=changeOrderEmailSourcesForIntake(intake);sources.forEach((source,index)=>{const body=String(source.body||'').trim();const emailNumber=sources.length-index;if(body)parts.push(`Email ${emailNumber}${source.receivedAt?' · '+source.receivedAt:''}:\n${body}`)});return parts.join('\n\n--------------------\n\n')}
@@ -4145,7 +4162,7 @@
       function changeOrderSourceAvailable(source){if(!source||source.sourceDeletedAt||source.available===false)return false;if(source.deleteAfter){const expires=new Date(source.deleteAfter).getTime();if(Number.isFinite(expires)&&expires<=Date.now())return false}return true}
       function changeOrderSourceMarkup(source,index=0,total=1){
         const subject=source.cleanSubject||source.subject||'Email request';const sender=[source.originalSenderName,source.originalSenderEmail].filter(Boolean).join(source.originalSenderName&&source.originalSenderEmail?' · ':'');
-        const body=String(source.body||'').trim();const preview=body.length>700?body.slice(0,700)+'…':body;const number=Math.max(1,Number(total||1)-Number(index||0));
+        const body=cleanEmailBodyForDisplay(source.body);const preview=body.length>700?body.slice(0,700)+'…':body;const number=Math.max(1,Number(total||1)-Number(index||0));
         return `<div class="change-order-source-item"><div class="change-order-source-title">${escapeHtml(total>1?`Email ${number} · ${subject}`:subject)}</div><div class="job-notes-email-source-meta">${escapeHtml(sender)}${source.receivedAt?' · '+escapeHtml(source.receivedAt):''}</div>${preview?`<div class="change-order-source-body">${escapeHtml(preview)}</div>`:''}</div>`;
       }
       function wireChangeOrderSourceActions(holder){}
@@ -4209,8 +4226,8 @@
       function jobDetailsSourceMarkup(source,index=0,total=1,hideEmail=false){
         if(!source)return '';
         const subject=source.cleanSubject||source.subject||'Email request';const senderParts=[];if(source.originalSenderName)senderParts.push(source.originalSenderName);if(!hideEmail&&source.originalSenderEmail)senderParts.push(source.originalSenderEmail);const sender=senderParts.join(' · ');
-        const emailNumber=Math.max(1,Number(total||1)-Number(index||0));const meta=[sender,source.receivedAt||''].filter(Boolean).map(escapeHtml).join(' · ');const body=String(source.body||'').trim();
-        return `<div class="job-details-source"><div class="job-details-source-head"><div class="change-order-source-title">${escapeHtml(total>1?`Email ${emailNumber} · ${subject}`:subject)}</div></div>${meta?`<div class="job-details-source-meta">${meta}</div>`:''}${body?`<div class="job-details-source-body">${escapeHtml(body)}</div>`:''}</div>`;
+        const emailNumber=Math.max(1,Number(total||1)-Number(index||0));const meta=[sender,source.receivedAt||''].filter(Boolean).map(escapeHtml).join(' · ');const body=cleanEmailBodyForDisplay(source.body);
+        return `<div class="job-details-source"><div class="job-details-source-head"><div class="change-order-source-title">${escapeHtml(total>1?`Email ${emailNumber} · ${subject}`:subject)}</div></div>${meta?`<div class="job-details-source-meta">${meta}</div>`:''}${body?`<div class="job-details-source-body" role="document" aria-label="Email message text">${escapeHtml(body)}</div>`:''}</div>`;
       }
       function workloadScoreForJobDetailsSection(job,kind,number=0){
         if(!job)return 0;
