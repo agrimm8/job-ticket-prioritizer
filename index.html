@@ -3273,13 +3273,20 @@
           const localSession={...activeWorkSession};
           const payload={action:'endWorkSession',sessionId:localSession.sessionId};if(punchOutAt)payload.punchOutAt=punchOutAt;
           const data=await punchApiPost(payload);if(!data.success)throw new Error(data.error||'Unable to punch out');
-          const closedAt=String(data.punchOut||punchOutAt||new Date().toISOString());
-          const closedMinutes=Number(data.durationMinutes||0);
+          // D1 returns the canonical saved session. Use its Punch In as well as
+          // Punch Out; browser state can be stale after a rollover or recovery.
+          const d1Session=data.session&&String(data.session.sessionId||'')===String(localSession.sessionId||'')?data.session:null;
+          const closedAt=String((d1Session&&d1Session.punchOut)||data.punchOut||punchOutAt||new Date().toISOString());
+          const serverDuration=d1Session&&d1Session.durationMinutes;
+          const closedMinutes=Number(serverDuration!==undefined&&serverDuration!==null?serverDuration:(data.durationMinutes||0));
+          const canonicalSession={...localSession,...(d1Session||{}),punchOut:closedAt,durationMinutes:closedMinutes};
           let matched=false;
-          workSessions.forEach(session=>{
-            if(String(session.sessionId||'')===String(localSession.sessionId||'')){session.punchOut=closedAt;session.durationMinutes=closedMinutes;matched=true}
+          workSessions=workSessions.map(session=>{
+            if(String(session.sessionId||'')!==String(localSession.sessionId||''))return session;
+            matched=true;
+            return {...session,...canonicalSession};
           });
-          if(!matched)workSessions.push({...localSession,punchOut:closedAt,durationMinutes:closedMinutes});
+          if(!matched)workSessions.push(canonicalSession);
           const accruedJob=jobs.find(job=>Number(job.ticketNumber)===Number(localSession.ticketNumber));
           if(accruedJob&&data.timeAccruedHours!==undefined){
             const totalHours=Math.max(0,Number(data.timeAccruedHours)||0);
@@ -3293,6 +3300,7 @@
           rememberRecentlyClosedWorkSession(localSession.sessionId);
           saveActiveWorkSession(null);clearTimerSnapshot();
           renderActiveJobBar();renderWorkUtilization();renderNotificationTray();
+          if(document.getElementById('productivityModalBackdrop').classList.contains('open'))renderProductivityModal();
           if(jobDetailsTicket&&String(jobDetailsTicket)===String(localSession.ticketNumber||''))renderJobDetailsModal();
           scheduleOrphanPunchCheck(0);
           return true
