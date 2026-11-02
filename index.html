@@ -3395,6 +3395,41 @@
         document.getElementById('openSessionRecoveryDetails').innerHTML=`<strong>${escapeHtml(job.title||job.displayTitle||('Ticket '+session.ticketNumber))}</strong><br>${escapeHtml(set?workSetLabel(set):(session.workDescription||session.workType||'Work Session'))}<br>Punched In: ${escapeHtml(session.punchIn||'Unknown')}`;
         document.getElementById('openSessionRecoveryBackdrop').classList.add('open');
       }
+      async function reconcileOpenPunchForEdit(sessionId){
+        if(!d1FastPathReady()){alert('D1 is not connected. Refresh JTP before editing an open punch.');return}
+        const base=String(d1FastPath.apiUrl||'').replace(/\/+$/,'');
+        try{
+          const response=await fetch(base+'/punch/open',{method:'GET',headers:{Authorization:'Bearer '+d1FastPath.token}});
+          if(!response.ok)throw new Error('D1 open-punch check failed ('+response.status+').');
+          const data=await response.json();if(!data||!data.success)throw new Error(data&&data.error?data.error:'D1 could not confirm the open punch.');
+          const open=data.openWorkSession||null;
+          if(!open){
+            const oldKey=activeWorkSession&&(activeWorkSession.timerKey||activeTimerKey||sessionRecoveryKey(activeWorkSession));
+            if(oldKey&&timerState[oldKey])timerState[oldKey].running=false;
+            workSessions=workSessions.filter(session=>!!session.punchOut);
+            saveActiveWorkSession(null);clearTimerSnapshot();activeWorkSession=null;activeTimerKey='';stopTimerInterval();
+            renderActiveJobBar();renderQueue();renderBoard();renderWorkUtilization();renderNotificationTray();
+            if(jobDetailsTicket)renderJobDetailsModal();if(timeRecordTicket)renderTimeRecordModal();
+            showWorkdaySyncNotice('D1 has no open punch. Cleared the stale timer entry.');
+            return;
+          }
+          const openId=String(open.sessionId||'');
+          workSessions=workSessions.filter(session=>!!session.punchOut||String(session.sessionId||'')===openId);
+          const existing=workSessions.find(session=>String(session.sessionId||'')===openId);
+          if(existing)Object.assign(existing,open);else workSessions.push(open);
+          if(String(sessionId||'')!==openId){
+            const clicked=workSessions.find(session=>String(session.sessionId||'')===String(sessionId||''));
+            if(clicked&&!clicked.punchOut)workSessions=workSessions.filter(session=>String(session.sessionId||'')!==String(sessionId||''));
+          }
+          const activeKey=activeWorkSession&&(activeWorkSession.timerKey||activeTimerKey||sessionRecoveryKey(activeWorkSession));
+          if(activeKey&&activeKey!==sessionRecoveryKey(open)&&timerState[activeKey])timerState[activeKey].running=false;
+          stopTimerInterval();activeTimerKey='';clearTimerSnapshot();
+          activeWorkSession={...open,timerKey:sessionRecoveryKey(open)};saveActiveWorkSession(activeWorkSession);
+          if(jobDetailsTicket)document.getElementById('jobDetailsModalBackdrop').classList.remove('open');
+          if(timeRecordTicket)document.getElementById('timeRecordModalBackdrop').classList.remove('open');
+          showOpenSessionRecovery(open);
+        }catch(error){alert('JTP could not verify this open punch with D1: '+(error&&error.message?error.message:String(error))+' No time record was changed.')}
+      }
       async function adoptBackendWorkSession(openSession){
         if(!openSession||!openSession.sessionId)return false;const key=sessionRecoveryKey(openSession);const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return false;const restored={...openSession,timerKey:key};applyWorkSessionContext(restored,key);const existing=workSessions.find(s=>String(s.sessionId||'')===String(restored.sessionId||''));if(existing)Object.assign(existing,restored);else workSessions.push(restored);saveActiveWorkSession(restored);const state=ensureTimerState(job);const elapsed=Math.max(0,Math.floor((Date.now()-new Date(restored.punchIn).getTime())/1000));state.committedSeconds=Number.isFinite(elapsed)?elapsed:0;state.running=true;await startTimerInternal(key,true);renderActiveJobBar();renderWorkUtilization();renderNotificationTray();return true
       }
@@ -4206,7 +4241,7 @@
         const subtotal=sessions.filter(session=>session.punchOut).reduce((sum,session)=>sum+Number(session.durationMinutes||0),0);const hasActive=sessions.some(session=>!session.punchOut);
         let html=`<details class="job-details-time-group"${hasActive?' open':''}><summary><span>${escapeHtml(label)}</span><span class="job-details-time-group-total">${escapeHtml(formatSessionDuration(subtotal))}</span></summary><div class="job-details-time">`;
         if(!sessions.length)html+='<div class="job-details-time-empty">No recorded time yet.</div>';
-        sessions.forEach(session=>{const active=!session.punchOut;const timeText=active?`${formatSessionDateTime(session.punchIn)} – Active`:`${formatSessionDateTime(session.punchIn)} – ${formatSessionDateTime(session.punchOut)}`;html+=`<div class="job-details-time-row"><div>${escapeHtml(timeText)}</div><div class="job-details-time-duration">${active?'<span class="time-record-active">Currently Punched In</span>':escapeHtml(formatSessionDuration(session.durationMinutes))}</div><div class="job-details-time-actions">${active?'':`<button type="button" data-job-details-edit-punch="${escapeHtml(session.sessionId)}">Edit</button><button type="button" data-job-details-delete-punch="${escapeHtml(session.sessionId)}">Delete</button>`}</div></div>`});
+        sessions.forEach(session=>{const active=!session.punchOut;const timeText=active?`${formatSessionDateTime(session.punchIn)} – Active`:`${formatSessionDateTime(session.punchIn)} – ${formatSessionDateTime(session.punchOut)}`;html+=`<div class="job-details-time-row"><div>${escapeHtml(timeText)}</div><div class="job-details-time-duration">${active?'<span class="time-record-active">Currently Punched In</span>':escapeHtml(formatSessionDuration(session.durationMinutes))}</div><div class="job-details-time-actions">${active?`<button type="button" data-reconcile-open-punch="${escapeHtml(session.sessionId)}" title="Check this open punch against D1">Edit</button>`:`<button type="button" data-job-details-edit-punch="${escapeHtml(session.sessionId)}">Edit</button><button type="button" data-job-details-delete-punch="${escapeHtml(session.sessionId)}">Delete</button>`}</div></div>`});
         html+=`<div class="job-details-time-total"><span>Total Time</span><span>${escapeHtml(formatSessionDuration(subtotal))}</span></div></div></details>`;return html;
       }
       function jobDetailsTimeSummaryMarkup(job,changeOrders){const groups=(changeOrders||[]).map(number=>jobDetailsTimeGroupMarkup(job,'change-order',number)).join('')+jobDetailsTimeGroupMarkup(job,'initial');return `<div class="job-details-time-summary-groups">${groups||'<div class="job-details-time-summary-empty">No recorded sessions yet.</div>'}</div>`}
@@ -4467,6 +4502,7 @@
         holder.querySelectorAll('[data-job-details-due-cancel]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();closeJobDetailsDuePopovers()}));
         holder.querySelectorAll('[data-job-details-due-save]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();saveJobDetailsDueDate(btn)}));
         holder.querySelectorAll('[data-job-details-edit-punch]').forEach(btn=>btn.addEventListener('click',()=>openEditPunchModal(btn.getAttribute('data-job-details-edit-punch'))));
+        holder.querySelectorAll('[data-reconcile-open-punch]').forEach(btn=>btn.addEventListener('click',()=>reconcileOpenPunchForEdit(btn.getAttribute('data-reconcile-open-punch'))));
         holder.querySelectorAll('[data-job-details-delete-punch]').forEach(btn=>btn.addEventListener('click',()=>openDeletePunchModal(btn.getAttribute('data-job-details-delete-punch'))));
         const moveBtn=document.getElementById('jobDetailsMoveColumnBtn'),moveMenu=document.getElementById('jobDetailsMoveColumnMenu');if(moveBtn&&moveMenu){moveBtn.onclick=e=>{e.stopPropagation();toggleBoardMoveMenu(moveBtn,moveMenu)}}
         const invoiceArea=document.getElementById('jobDetailsInvoiceNotes'),invoiceSave=document.getElementById('jobDetailsSaveInvoiceNotesBtn');if(invoiceArea&&invoiceSave){invoiceArea.addEventListener('input',()=>{invoiceSave.disabled=invoiceArea.value===String(invoiceArea.dataset.initialValue||'')});invoiceSave.addEventListener('click',()=>saveJobDetailsInvoiceNotes(job))}
@@ -4618,7 +4654,7 @@
           group.forEach(session=>{
             const active=!session.punchOut;
             const timeText=active?`${formatSessionDateTime(session.punchIn)} – Active`:`${formatSessionDateTime(session.punchIn)} – ${formatSessionDateTime(session.punchOut)}`;
-            html+=`<div class="time-record-session"><div class="time-record-session-time">${escapeHtml(timeText)}</div><div class="time-record-session-duration">${active?'<span class="time-record-active">Currently Punched In</span>':escapeHtml(formatSessionDuration(session.durationMinutes))}</div><div class="time-record-actions">${active?'':`<button class="time-record-edit" type="button" data-edit-punch-session="${escapeHtml(session.sessionId)}">Edit</button><button class="time-record-delete" type="button" data-delete-punch-session="${escapeHtml(session.sessionId)}">Delete</button>`}</div></div>`;
+            html+=`<div class="time-record-session"><div class="time-record-session-time">${escapeHtml(timeText)}</div><div class="time-record-session-duration">${active?'<span class="time-record-active">Currently Punched In</span>':escapeHtml(formatSessionDuration(session.durationMinutes))}</div><div class="time-record-actions">${active?`<button class="time-record-edit" type="button" data-reconcile-open-punch="${escapeHtml(session.sessionId)}" title="Check this open punch against D1">Edit</button>`:`<button class="time-record-edit" type="button" data-edit-punch-session="${escapeHtml(session.sessionId)}">Edit</button><button class="time-record-delete" type="button" data-delete-punch-session="${escapeHtml(session.sessionId)}">Delete</button>`}</div></div>`;
           });
           html+=`<div class="time-record-set-total">${escapeHtml(workSetLabel(set))} Total: ${escapeHtml(formatSessionDuration(subtotal))}</div></section>`;
         });
@@ -4626,11 +4662,12 @@
         if(ungrouped.length){
           const subtotal=ungrouped.filter(s=>s.punchOut).reduce((sum,s)=>sum+Number(s.durationMinutes||0),0);
           html+='<section class="time-record-set"><div class="time-record-set-head"><div class="time-record-set-title">Other / Legacy Sessions</div></div>';
-          ungrouped.forEach(session=>{const active=!session.punchOut;const timeText=active?`${formatSessionDateTime(session.punchIn)} – Active`:`${formatSessionDateTime(session.punchIn)} – ${formatSessionDateTime(session.punchOut)}`;html+=`<div class="time-record-session"><div class="time-record-session-time">${escapeHtml(timeText)}</div><div class="time-record-session-duration">${active?'<span class="time-record-active">Currently Punched In</span>':escapeHtml(formatSessionDuration(session.durationMinutes))}</div><div class="time-record-actions">${active?'':`<button class="time-record-edit" type="button" data-edit-punch-session="${escapeHtml(session.sessionId)}">Edit</button><button class="time-record-delete" type="button" data-delete-punch-session="${escapeHtml(session.sessionId)}">Delete</button>`}</div></div>`});
+          ungrouped.forEach(session=>{const active=!session.punchOut;const timeText=active?`${formatSessionDateTime(session.punchIn)} – Active`:`${formatSessionDateTime(session.punchIn)} – ${formatSessionDateTime(session.punchOut)}`;html+=`<div class="time-record-session"><div class="time-record-session-time">${escapeHtml(timeText)}</div><div class="time-record-session-duration">${active?'<span class="time-record-active">Currently Punched In</span>':escapeHtml(formatSessionDuration(session.durationMinutes))}</div><div class="time-record-actions">${active?`<button class="time-record-edit" type="button" data-reconcile-open-punch="${escapeHtml(session.sessionId)}" title="Check this open punch against D1">Edit</button>`:`<button class="time-record-edit" type="button" data-edit-punch-session="${escapeHtml(session.sessionId)}">Edit</button><button class="time-record-delete" type="button" data-delete-punch-session="${escapeHtml(session.sessionId)}">Delete</button>`}</div></div>`});
           html+=`<div class="time-record-set-total">Other Total: ${escapeHtml(formatSessionDuration(subtotal))}</div></section>`;
         }
         body.innerHTML=html;
         body.querySelectorAll('[data-edit-punch-session]').forEach(btn=>btn.addEventListener('click',()=>openEditPunchModal(btn.getAttribute('data-edit-punch-session'))));
+        body.querySelectorAll('[data-reconcile-open-punch]').forEach(btn=>btn.addEventListener('click',()=>reconcileOpenPunchForEdit(btn.getAttribute('data-reconcile-open-punch'))));
         body.querySelectorAll('[data-delete-punch-session]').forEach(btn=>btn.addEventListener('click',()=>openDeletePunchModal(btn.getAttribute('data-delete-punch-session'))));
       }
       function openTimeRecordModal(ticket){
