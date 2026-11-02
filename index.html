@@ -2740,13 +2740,7 @@
         rows.sort((a,b)=>a.at-b.at);const log=document.getElementById('productivityActivityLog');log.innerHTML=rows.length?rows.map(r=>`<div class="productivity-log-row timesheet-row"><div class="productivity-log-time">${escapeHtml(r.time)}</div><div class="productivity-log-label"><div class="timesheet-entry-kind">${escapeHtml(r.kind)}</div>${escapeHtml(r.label)}</div><div class="timesheet-row-actions">${timesheetRowEditButton(r.type,r.id,r.active)}</div></div>`).join(''):'<div class="completed-metrics-empty">No workday activity recorded for this date.</div>';
         log.querySelectorAll('[data-timesheet-edit-type]').forEach(btn=>btn.addEventListener('click',()=>openTimesheetEntryEditor(btn.dataset.timesheetEditType,btn.dataset.timesheetEditId)))
       }
-      async function openProductivityModal(dateKey=workdayKey()){
-        timesheetSelectedDateKey=String(dateKey||workdayKey());
-        // Reconcile today's task punch with D1 before calculating the KPI or
-        // listing timesheet activity. This is a single small read on demand.
-        if(timesheetSelectedDateKey===workdayKey())await checkForOrphanPunch(true);
-        renderProductivityModal();document.getElementById('productivityModalBackdrop').classList.add('open')
-      }
+      function openProductivityModal(dateKey=workdayKey()){timesheetSelectedDateKey=String(dateKey||workdayKey());renderProductivityModal();document.getElementById('productivityModalBackdrop').classList.add('open')}
       function openPastTimesheetPicker(){const d=new Date();d.setDate(d.getDate()-1);document.getElementById('pastTimesheetDateInput').value=productivityDateKey(d);document.getElementById('pastTimesheetDateInput').max=workdayKey();document.getElementById('pastTimesheetPickerBackdrop').classList.add('open')}
       function openTimesheetEntryEditor(type,id){
         timesheetEditTarget={type:String(type||''),id:String(id||'')};const fields=document.getElementById('timesheetEntryEditFields');const label=document.getElementById('timesheetEntryEditLabel');
@@ -3447,26 +3441,13 @@
       async function adoptBackendWorkSession(openSession){
         if(!openSession||!openSession.sessionId)return false;const key=sessionRecoveryKey(openSession);const job=jobs.find(j=>timerKeyFor(j)===key);if(!job)return false;const restored={...openSession,timerKey:key};applyWorkSessionContext(restored,key);const existing=workSessions.find(s=>String(s.sessionId||'')===String(restored.sessionId||''));if(existing)Object.assign(existing,restored);else workSessions.push(restored);saveActiveWorkSession(restored);const state=ensureTimerState(job);const elapsed=Math.max(0,Math.floor((Date.now()-new Date(restored.punchIn).getTime())/1000));state.committedSeconds=Number.isFinite(elapsed)?elapsed:0;state.running=true;await startTimerInternal(key,true);renderActiveJobBar();renderWorkUtilization();renderNotificationTray();return true
       }
-      function clearBackendClosedActiveSession(){
-        if(activeWorkSession&&activeWorkSession.sessionId){
-          const id=String(activeWorkSession.sessionId);
-          // D1 says this session is closed or absent. Do not invent a Punch Out
-          // timestamp locally, which would keep stale time in the KPI.
-          workSessions=workSessions.filter(session=>String(session.sessionId||'')!==id);
-        }
-        saveActiveWorkSession(null);clearTimerSnapshot();
-        if(activeTimerKey){const state=timerState[activeTimerKey];if(state)state.running=false;activeTimerKey=''}
-        activeWorkSession=null;stopTimerInterval();renderActiveJobBar();renderWorkUtilization();renderNotificationTray()
-      }
+      function clearBackendClosedActiveSession(){if(!activeWorkSession||!activeWorkSession.sessionId)return;const id=String(activeWorkSession.sessionId||'');const local=workSessions.find(s=>String(s.sessionId||'')===id);if(local&&!local.punchOut){local.punchOut=new Date().toISOString()}saveActiveWorkSession(null);clearTimerSnapshot();if(activeTimerKey){const state=timerState[activeTimerKey];if(state)state.running=false;activeTimerKey=''}stopTimerInterval();renderActiveJobBar();renderWorkUtilization();renderNotificationTray()}
       function scheduleOrphanPunchCheck(delay=1000){setTimeout(()=>{checkForOrphanPunch().then(()=>renderNotificationTray()).catch(()=>{})},delay)}
-      async function checkForOrphanPunch(refreshAuth=false){
+      async function checkForOrphanPunch(){
         if(orphanPunchCheckInFlight)return;orphanPunchCheckInFlight=true;
         try{
           let data=null;
-          if(!d1FastPathReady()){
-            if(!refreshAuth)return;
-            await refreshD1Authorization(true);
-          }
+          if(!d1FastPathReady())return;
           const base=String(d1FastPath.apiUrl||'').replace(/\/+$/,'');
           const res=await fetch(base+'/punch/open',{method:'GET',headers:{Authorization:'Bearer '+d1FastPath.token}});
           if(!res.ok)throw new Error('D1 active punch check failed ('+res.status+').');
@@ -3481,14 +3462,7 @@
         }catch(e){}finally{orphanPunchCheckInFlight=false}
       }
       async function reconcileOpenWorkSession(openSession){
-        if(!openSession){
-          // The D1 snapshot is authoritative. Remove stale browser-only open
-          // sessions instead of leaving them visible as “12:00 AM–Now”.
-          workSessions=(workSessions||[]).filter(session=>!!session.punchOut||wasWorkSessionRecentlyClosed(session.sessionId));
-          if(activeTimerKey&&timerState[activeTimerKey])timerState[activeTimerKey].running=false;
-          activeWorkSession=null;activeTimerKey='';stopTimerInterval();saveActiveWorkSession(null);clearTimerSnapshot();return
-        }
-        await adoptBackendWorkSession(openSession)
+        if(!openSession){saveActiveWorkSession(null);clearTimerSnapshot();return}await adoptBackendWorkSession(openSession)
       }
       function renderNotificationTray(){
         const tray=document.getElementById('notificationTray');if(!tray)return;
@@ -5039,9 +5013,6 @@
           }
           refreshStatusMoveViews(oldStatus,newStatus);
           if(jobDetailsTicket&&String(jobDetailsTicket)===String(ticket))renderJobDetailsModal();
-          // Status changes can stop a task timer. Recheck D1 immediately so a
-          // stale browser-only open session cannot take over Work Utilization.
-          await checkForOrphanPunch(true);
           return true;
         }catch(err){
           Object.assign(job,snapshot);
@@ -5901,25 +5872,14 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         throw new Error('Unable to reach D1. The metrics change is unconfirmed. Refresh JTP and check the job before retrying.');
       }
       async function d1FastPunchFetch(path,payload){
-        // A cached D1 token may be absent or expired after a long-lived tab.
-        // Renew it on demand before refusing a user-requested punch action.
-        if(!d1FastPathReady()){
-          try{await refreshD1Authorization(true)}
-          catch(error){throw new Error('JTP could not reconnect to D1. The punch was not sent anywhere. '+String(error&&error.message||error))}
-        }
-        let refreshed=false;
+        if(!d1FastPathReady())throw new Error('D1 task punch is not connected. Refresh JTP; the punch was not sent to Google.');
+        const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+path;
+        const options={method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)};
         for(let attempt=0;attempt<2;attempt++){
           let res;
-          const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+path;
-          const options={method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)};
           try{res=await fetch(url,options)}catch(err){if(attempt===0)continue;throw new Error('Unable to reach D1. The punch result is unconfirmed. Refresh JTP and check the current session before retrying.')}
           let data={};try{data=await res.json()}catch(ignore){}
           if(res.ok&&data&&data.success)return data;
-          if((res.status===401||res.status===403)&&!refreshed){
-            refreshed=true;
-            try{await refreshD1Authorization(true);continue}
-            catch(error){throw new Error('D1 authorization could not be renewed. The punch was not saved. Refresh JTP and check the session before retrying.')}
-          }
           if(res.status===401||res.status===403)throw new Error('D1 task punch authorization expired. Refresh JTP and check the session before retrying.');
           if(res.status>=500&&attempt===0)continue;
           throw new Error((data&&data.error)||('D1 task punch failed ('+res.status+'). Refresh JTP and check the session before retrying.'));
@@ -5927,16 +5887,12 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         throw new Error('Unable to reach D1. The punch result is unconfirmed. Refresh JTP and check the current session before retrying.');
       }
       async function d1FastStatusPost(payload,legacyPayload){
-        if(!d1FastPathReady()){
-          try{await refreshD1Authorization(true)}
-          catch(error){throw new Error('JTP could not reconnect to D1. The status change was not saved. '+String(error&&error.message||error))}
-        }
-        let authRetried=false;
+        if(!d1FastPathReady())throw new Error('D1 Job Status is not connected. Refresh JTP; the status change was not sent to Google.');
+        const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/job/status';
+        const options={method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)};
         for(let attempt=0;attempt<2;attempt++){
           let response;
           try{
-            const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+'/job/status';
-            const options={method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+d1FastPath.token},body:JSON.stringify(payload)};
             response=await fetch(url,options);
           }catch(err){
             if(attempt===0)continue;
@@ -5944,12 +5900,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           }
           let data={};try{data=await response.json()}catch(ignore){}
           if(response.ok&&data&&data.success)return data;
-          if((response.status===401||response.status===403)&&!authRetried){
-            authRetried=true;
-            try{await refreshD1Authorization(true);continue}
-            catch(error){throw new Error('D1 authorization could not be renewed. The status change was not saved. Refresh JTP and check the card before retrying.')}
-          }
-          if(response.status===401||response.status===403)throw new Error('D1 Job Status authorization expired. The status change was not saved. Refresh JTP and check the card before retrying.');
+          if(response.status===401||response.status===403)throw new Error('D1 Job Status authorization expired. Refresh JTP; the status change was not sent to Google.');
           const error=new Error((data&&data.error)||('Fast status update failed ('+response.status+')'));
           if(response.status>=500&&attempt===0)continue;
           throw error;
