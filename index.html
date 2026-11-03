@@ -2320,7 +2320,7 @@
     (()=>{
       const root=document.getElementById('job-priority-app'); if(!root||root.dataset.ready) return; root.dataset.ready='1';
       const API_URL='https://script.google.com/macros/s/AKfycbzYSX6Lhyd2mwmYA1Qv1ozEM8_hd0vGndpVwv4lvzy-OUKNkFyElLVmKkfq9sGfMB5PeQ/exec';
-      const D1_API_URL='https://job-ticket-prioritizer.andrew-grimm85.workers.dev';
+      const D1_API_URL='https://jtp-api.andrew-grimm85.workers.dev';
       const PREVIEW_MODE=(()=>{try{const h=String(location.hostname||'').toLowerCase();const deployed=/andrew-grimm85\.workers\.dev$/.test(h);const embedded=window.self!==window.top;const previewHost=/preview|sandbox|usercontent|chatgpt|openai/.test(h);return !deployed&&(embedded||previewHost||location.protocol==='file:')}catch(e){return false}})();
       let clients=[];
       let subclients=[];
@@ -6370,18 +6370,37 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       async function warmBoardFromD1(loadId){
         if(PREVIEW_MODE||backendReady||boardBootstrapDataArrived)return false;
         try{
-          const cached=readCachedD1BoardAuth();
+          let cached=readCachedD1BoardAuth();
+          // A prior HTML version cached the page host as the API address. Reject that cache.
+          if(cached){
+            try{if(new URL(cached.apiUrl).origin!==new URL(D1_API_URL).origin)cached=null}catch(ignore){cached=null}
+          }
           if(cached)d1FastPath=Object.assign({enabled:true},cached);
-          else await refreshD1Authorization(true);
-          if(!d1FastPathReady())return false;
+          else{
+            try{localStorage.removeItem(D1_BOARD_SESSION_CACHE_KEY)}catch(ignore){}
+            await refreshD1Authorization(true);
+          }
+          if(!d1FastPathReady())throw new Error('D1 authorization did not produce a usable session.');
           loadD1EmailSources().catch(error=>console.warn('D1 email source hydration failed:',error));
           loadD1Overhead().catch(error=>console.warn('D1 Monthly Overhead hydration failed:',error));
-          const auth=d1FastPath;const url=String(auth.apiUrl).replace(/\/+$/,'')+'/board/snapshot';const response=await fetch(url,{method:'GET',headers:{'Authorization':'Bearer '+auth.token}});if(response.status===401||response.status===403){try{localStorage.removeItem(D1_BOARD_SESSION_CACHE_KEY)}catch(ignore){}return false}if(!response.ok)return false;const data=await response.json();
-          if(!data||!data.success||!Array.isArray(data.jobs)||loadId!==boardStartupLoadId||backendReady||boardBootstrapDataArrived)return false;
+          let auth=d1FastPath;
+          let url=String(auth.apiUrl).replace(/\/+$/,'')+'/board/snapshot';
+          let response=await fetch(url,{method:'GET',headers:{'Authorization':'Bearer '+auth.token},cache:'no-store'});
+          if(response.status===401||response.status===403){
+            try{localStorage.removeItem(D1_BOARD_SESSION_CACHE_KEY)}catch(ignore){}
+            await refreshD1Authorization(true);
+            auth=d1FastPath;
+            url=String(auth.apiUrl).replace(/\/+$/,'')+'/board/snapshot';
+            response=await fetch(url,{method:'GET',headers:{'Authorization':'Bearer '+auth.token},cache:'no-store'});
+          }
+          let data={};try{data=await response.json()}catch(ignore){}
+          if(!response.ok||!data||!data.success){throw new Error((data&&data.error)||('D1 board snapshot request failed ('+response.status+').'))}
+          if(!Array.isArray(data.jobs))throw new Error('D1 returned a board snapshot without its job list.');
+          if(loadId!==boardStartupLoadId||backendReady||boardBootstrapDataArrived)return false;
           jobs=data.jobs;statusHistory=Array.isArray(data.statusHistory)?data.statusHistory:statusHistory;workdayPunches=Array.isArray(data.workdayPunches)?data.workdayPunches:workdayPunches;if(Array.isArray(data.adminSessions)){adminSessions=data.adminSessions;activeAdminSession=data.openAdminSession||null;d1AdminSessionsLoaded=data.adminSessionsReady===true;d1AdminSnapshotLoaded=true}if(data.autoWorkday)autoWorkdayConfig=data.autoWorkday;workSessions=Array.isArray(data.workSessions)?data.workSessions:workSessions;workSets=Array.isArray(data.workSets)?data.workSets:workSets;clients=Array.isArray(data.clients)?data.clients:clients;subclients=Array.isArray(data.subclients)?data.subclients:subclients;changeOrderIntakes=Array.isArray(data.changeOrderIntakes)?data.changeOrderIntakes:changeOrderIntakes;jobFinancials=Array.isArray(data.jobFinancials)?data.jobFinancials:jobFinancials;if(Array.isArray(data.holidayCalendar)){holidayCalendar=data.holidayCalendar;d1HolidayCalendarLoaded=true}if(Array.isArray(data.recentEmailSources)){recentEmailSources=data.recentEmailSources;d1EmailSourcesLoaded=true}if(Array.isArray(data.changeOrderEmailSources)){changeOrderEmailSources=data.changeOrderEmailSources;d1EmailSourcesLoaded=true}d1JobDetailsCacheReady=data.jobDetailsCacheReady===true;Object.keys(clientNotes).forEach(k=>delete clientNotes[k]);Object.keys(clientPricingNotes).forEach(k=>delete clientPricingNotes[k]);Object.keys(clientAssociatedEmails).forEach(k=>delete clientAssociatedEmails[k]);clients.forEach(c=>{const key=clientNotesKey(c.id);clientNotes[key]=String(c.notes||'');clientPricingNotes[key]=String(c.pricingNotes||'');clientAssociatedEmails[key]=String(c.associatedEmails||'')});subclients.forEach(s=>{const key=clientNotesKey(s.parentClientId,s.id);clientNotes[key]=String(s.notes||'');clientPricingNotes[key]=String(s.pricingNotes||'');clientAssociatedEmails[key]=String(s.associatedEmails||'')});boardSnapshotAccruedHours=data.accruedHoursByTicket||{};overdueHistory=Array.isArray(data.overdueHistory)?data.overdueHistory:[];await reconcileOpenWorkSession(data.openWorkSession||null);d1OpenWorkSessionLoaded=true;d1BoardSnapshotLoaded=true;boardWarmRender=true;boardWarmActive=true;const board=document.getElementById('mainBoard');if(board){board.classList.add('is-warming');board.setAttribute('aria-busy','true')}
           try{renderWarmBoardColumns();renderWorkUtilization()}finally{boardWarmRender=false}
           setBackendStatus(false,'Showing the fast D1 board while live data finishes loading.');return true;
-        }catch(ignore){return false}
+        }catch(error){console.error('D1 board snapshot load failed:',error);throw error}
       }
       function setD1BoardStatus(text){const label=document.getElementById('backendText');const dots=[document.getElementById('backendDot'),document.getElementById('backendMenuDot')].filter(Boolean);const btn=document.getElementById('appMenuBtn');if(label)label.textContent='D1 Ready';if(btn){btn.title=String(text||'D1 board is ready.');btn.setAttribute('aria-label','Job Ticket Prioritizer. D1 board ready.')}dots.forEach(dot=>{dot.style.background='#1f7a4d';dot.style.boxShadow='0 0 0 3px rgba(31,122,77,.14)'})}
       function activateD1Board(){boardWarmActive=false;legacyBootstrapReady=d1AdminSessionsLoaded&&d1OpenWorkSessionLoaded;const board=document.getElementById('mainBoard');if(board){board.classList.remove('is-warming');board.removeAttribute('aria-busy')}renderQueue();renderBoard();renderWorkUtilization();refreshMotivatorMenuGateLabels();if(jobDetailsTicket)renderJobDetailsModal();setD1BoardStatus('D1 board is ready.')}
