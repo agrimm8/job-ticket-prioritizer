@@ -1676,17 +1676,17 @@
           <div class="kpi-label">Jobs Completed</div>
           <div><span class="kpi-value" id="completedKpiCurrent">—</span><span class="kpi-unit">this month</span></div>
           <div class="kpi-comparison" id="completedKpiPrevious">Last month: —</div>
-          <div class="annual-revenue-pace" aria-label="Annual gross revenue monthly and daily pace">
-            <label class="annual-revenue-target-label" for="annualRevenueGoalSelect">Annual Gross Goal <span id="annualRevenueGoalYear"></span>
-              <select id="annualRevenueGoalSelect" aria-label="Annual gross revenue goal">
+          <div class="annual-revenue-pace" aria-label="Annual job net monthly and daily pace">
+            <label class="annual-revenue-target-label" for="annualRevenueGoalSelect">Annual Job Net Goal <span id="annualRevenueGoalYear"></span>
+              <select id="annualRevenueGoalSelect" aria-label="Annual job net goal">
                 <option value="">Choose target</option>
                 <option value="10000">$10,000</option><option value="20000">$20,000</option><option value="30000">$30,000</option><option value="40000">$40,000</option><option value="50000">$50,000</option><option value="60000">$60,000</option><option value="70000">$70,000</option><option value="80000">$80,000</option><option value="90000">$90,000</option><option value="100000">$100,000</option>
               </select>
             </label>
             <div class="annual-revenue-pace-copy"><span id="annualRevenueMonthlyPace">Monthly goal: —</span><strong id="annualRevenueMonthProgress">—</strong></div>
-            <div class="annual-revenue-pace-track" id="annualRevenueMonthTrack" role="progressbar" aria-label="This month's gross revenue toward the monthly goal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="annualRevenueMonthFill"></span></div>
+            <div class="annual-revenue-pace-track" id="annualRevenueMonthTrack" role="progressbar" aria-label="This month's net from completed jobs toward the monthly goal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="annualRevenueMonthFill"></span></div>
             <div class="annual-revenue-pace-copy"><span id="annualRevenueDailyPace">Daily pace: —</span><strong id="annualRevenueTodayProgress">—</strong></div>
-            <div class="annual-revenue-pace-track" id="annualRevenuePaceTrack" role="progressbar" aria-label="Today's gross revenue toward the daily pace" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="annualRevenuePaceFill"></span></div>
+            <div class="annual-revenue-pace-track" id="annualRevenuePaceTrack" role="progressbar" aria-label="Today's net from completed jobs toward the daily pace" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="annualRevenuePaceFill"></span></div>
           </div>
           <div class="completed-kpi-bottom"><a class="kpi-link" id="viewCompletedJobsBtn">View Completed Jobs</a><div class="financial-dashboard compact-financial-dashboard"><div class="financial-dashboard-item"><span class="financial-dashboard-label" id="monthlyNetProfitLabel">Net Profit</span><span class="financial-dashboard-value zero" id="monthlyNetProfitValue">$0.00</span></div><div class="financial-dashboard-item"><span class="financial-dashboard-label">Potential</span><span class="financial-dashboard-value zero" id="potentialProjectProfitValue">$0.00</span></div></div></div>
         </div>
@@ -2190,11 +2190,11 @@
     </div>
     <div class="timer-modal-backdrop" id="revenueCalendarBackdrop" role="dialog" aria-modal="true" aria-labelledby="revenueCalendarTitle">
       <div class="timer-modal revenue-calendar-modal">
-        <div class="revenue-calendar-heading"><div><h3 id="revenueCalendarTitle">Revenue Calendar</h3><p class="muted" style="margin-top:4px">Gross income is credited on the date a job is first marked Completed.</p></div><button class="job-search-close" id="closeRevenueCalendarBtn" type="button" aria-label="Close Revenue Calendar" title="Close">×</button></div>
+        <div class="revenue-calendar-heading"><div><h3 id="revenueCalendarTitle">Completed Job Net Calendar</h3><p class="muted" style="margin-top:4px">Each job contributes income minus its job expenses, credited on the date it was first marked Completed. General overhead is not subtracted.</p></div><button class="job-search-close" id="closeRevenueCalendarBtn" type="button" aria-label="Close Revenue Calendar" title="Close">×</button></div>
         <div class="revenue-calendar-month-nav"><button class="secondary" id="revenueCalendarPreviousBtn" type="button" aria-label="Previous month">‹</button><strong id="revenueCalendarMonthLabel">—</strong><button class="secondary" id="revenueCalendarNextBtn" type="button" aria-label="Next month">›</button><span class="revenue-calendar-total" id="revenueCalendarMonthTotal"></span></div>
         <div class="revenue-calendar-grid" id="revenueCalendarGrid" role="grid"></div>
         <div class="revenue-calendar-day-details" id="revenueCalendarDayDetails" aria-live="polite"></div>
-        <div class="revenue-calendar-legacy-note">Older completed jobs are initialized from the income currently on file because their original completion-time amounts weren’t recorded. New completions are saved as fixed snapshots.</div>
+        <div class="revenue-calendar-legacy-note">Job net uses the current income and expense entries for jobs first marked Completed on each date. Editing a job’s financial entries updates its net total. General overhead is not included.</div>
         <div class="actions"><button class="secondary" id="closeRevenueCalendarFooterBtn" type="button">Close</button></div>
       </div>
     </div>
@@ -2846,20 +2846,20 @@
         }
         const todayKey=localDateKey(new Date());
         const included=cached.filter(entry=>!revenueSnapshotIsExcluded(entry));
-        const grossThisMonth=included.reduce((sum,entry)=>sum+Number(entry.grossIncome||0),0);
-        const grossToday=included.filter(entry=>String(entry.revenueDate||'')===todayKey).reduce((sum,entry)=>sum+Number(entry.grossIncome||0),0);
-        const monthPercent=Math.min(100,Math.max(0,monthlyTarget?grossThisMonth/monthlyTarget*100:0));
-        const dailyPercent=Math.min(100,Math.max(0,dailyTarget?grossToday/dailyTarget*100:0));
+        const jobNetThisMonth=included.reduce((sum,entry)=>sum+Number(entry.netAmount||0),0);
+        const jobNetToday=included.filter(entry=>String(entry.revenueDate||'')===todayKey).reduce((sum,entry)=>sum+Number(entry.netAmount||0),0);
+        const monthPercent=Math.min(100,Math.max(0,monthlyTarget?jobNetThisMonth/monthlyTarget*100:0));
+        const dailyPercent=Math.min(100,Math.max(0,dailyTarget?jobNetToday/dailyTarget*100:0));
         monthlyEl.textContent='Monthly goal: '+formatCurrency(monthlyTarget);
-        monthProgressEl.textContent=formatCurrency(grossThisMonth)+' MTD';
+        monthProgressEl.textContent=formatCurrency(jobNetThisMonth)+' MTD';
         monthFill.style.width=monthPercent.toFixed(1)+'%';
         monthTrack.setAttribute('aria-valuenow',String(Math.round(monthPercent)));
-        monthTrack.setAttribute('aria-valuetext',formatCurrency(grossThisMonth)+' month to date of '+formatCurrency(monthlyTarget)+' monthly goal');
+        monthTrack.setAttribute('aria-valuetext',formatCurrency(jobNetThisMonth)+' month to date of '+formatCurrency(monthlyTarget)+' monthly goal');
         dailyEl.textContent='Daily pace: '+formatCurrency(dailyTarget)+' per weekday';
-        todayEl.textContent=formatCurrency(grossToday)+' today';
+        todayEl.textContent=formatCurrency(jobNetToday)+' today';
         fill.style.width=dailyPercent.toFixed(1)+'%';
         track.setAttribute('aria-valuenow',String(Math.round(dailyPercent)));
-        track.setAttribute('aria-valuetext',formatCurrency(grossToday)+' completed today of '+formatCurrency(dailyTarget)+' daily pace');
+        track.setAttribute('aria-valuetext',formatCurrency(jobNetToday)+' completed today of '+formatCurrency(dailyTarget)+' daily pace');
       }
       function revenueSnapshotIsExcluded(entry){
         const job=jobs.find(item=>String(item.ticketNumber||'')===String(entry&&entry.ticketNumber||''));
@@ -2899,13 +2899,9 @@
       function upsertRevenueCompletionSnapshot(snapshot,job){
         if(!snapshot||!snapshot.revenueDate)return;
         const monthKey=String(snapshot.revenueDate).slice(0,7);
-        if(!Array.isArray(revenueSnapshotsByMonth[monthKey])){loadRevenueCalendarMonth(monthKey,{force:true}).catch(()=>{});return}
-        const item={...snapshot,title:job&&(job.displayTitle||job.title||job.description)||('Ticket '+snapshot.ticketNumber),excluded:job?job.excludeFromCompletedMetrics===true:false};
-        const rows=revenueSnapshotsByMonth[monthKey];
-        const index=rows.findIndex(row=>String(row.ticketNumber||'')===String(item.ticketNumber||''));
-        if(index>=0)rows[index]={...rows[index],...item};else rows.push(item);
-        renderAnnualRevenuePaceKpi();
-        if(revenueCalendarMonthKey===monthKey&&document.getElementById('revenueCalendarBackdrop').classList.contains('open'))renderRevenueCalendar();
+        // The status response only carries the gross snapshot. Reload the calendar
+        // so the KPI receives the current income-minus-expenses net from D1.
+        loadRevenueCalendarMonth(monthKey,{force:true}).catch(()=>{});
       }
       function moneyCompact(value){return new Intl.NumberFormat(undefined,{style:'currency',currency:'USD',maximumFractionDigits:0}).format(Number(value)||0)}
       function revenueCalendarMonthDate(monthKey){const [year,month]=String(monthKey||'').split('-').map(Number);return new Date(year,month-1,1)}
@@ -2982,8 +2978,8 @@
           total.textContent='';grid.innerHTML='<div class="muted" style="grid-column:1/-1;padding:18px;text-align:center">'+escapeHtml(revenueCalendarErrors[key]||'Loading revenue history…')+'</div>';details.textContent='Revenue records are loading.';return;
         }
         const included=entries.filter(entry=>!revenueSnapshotIsExcluded(entry));
-        const totalGross=included.reduce((sum,entry)=>sum+Number(entry.grossIncome||0),0);
-        total.textContent='Month gross: '+formatCurrency(totalGross);
+        const totalJobNet=included.reduce((sum,entry)=>sum+Number(entry.netAmount||0),0);
+        total.textContent='Month net: '+formatCurrency(totalJobNet);
         const byDate=new Map();
         included.forEach(entry=>{const date=String(entry.revenueDate||'');if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;const rows=byDate.get(date)||[];rows.push(entry);byDate.set(date,rows)});
         const first=revenueCalendarMonthDate(key);const year=first.getFullYear(),month=first.getMonth();const firstOffset=first.getDay();const days=new Date(year,month+1,0).getDate();
@@ -2991,7 +2987,7 @@
         let cells=weekdayLabels.map(day=>`<div class="revenue-calendar-weekday" role="columnheader">${day}</div>`).join('');
         for(let i=0;i<firstOffset;i++)cells+='<div class="revenue-calendar-blank" aria-hidden="true"></div>';
         for(let day=1;day<=days;day++){
-          const date=key+'-'+String(day).padStart(2,'0');const dayEntries=byDate.get(date)||[];const amount=dayEntries.reduce((sum,entry)=>sum+Number(entry.grossIncome||0),0);const selected=date===revenueCalendarSelectedDate;
+          const date=key+'-'+String(day).padStart(2,'0');const dayEntries=byDate.get(date)||[];const amount=dayEntries.reduce((sum,entry)=>sum+Number(entry.netAmount||0),0);const selected=date===revenueCalendarSelectedDate;
           const amountMarkup=dayEntries.length?`<span class="revenue-calendar-day-total">${escapeHtml(moneyCompact(amount))}</span><span class="revenue-calendar-day-count">${dayEntries.length} job${dayEntries.length===1?'':'s'}</span>`:'';
           cells+=`<button class="revenue-calendar-day${dayEntries.length?' has-revenue':''}${selected?' selected':''}" type="button" role="gridcell" data-revenue-calendar-date="${date}" aria-label="${escapeHtml(formatDate(date))}${dayEntries.length?', '+escapeHtml(formatCurrency(amount))+' from '+dayEntries.length+' jobs':''}"><span class="revenue-calendar-day-number">${day}</span>${amountMarkup}</button>`;
         }
@@ -3000,9 +2996,9 @@
         grid.querySelectorAll('[data-revenue-calendar-date]').forEach(button=>button.addEventListener('click',()=>{revenueCalendarSelectedDate=button.dataset.revenueCalendarDate||'';renderRevenueCalendar()}));
         const selectedEntries=included.filter(entry=>String(entry.revenueDate||'')===revenueCalendarSelectedDate);
         const selectedLabel=revenueCalendarSelectedDate?formatDate(revenueCalendarSelectedDate):'Choose a day';
-        if(!selectedEntries.length){details.innerHTML=`<div class="revenue-calendar-detail-head"><span>${escapeHtml(selectedLabel)}</span><span>$0.00 gross</span></div><div class="muted">No completed revenue recorded for this day.</div>`;return}
-        const selectedTotal=selectedEntries.reduce((sum,entry)=>sum+Number(entry.grossIncome||0),0);
-        details.innerHTML=`<div class="revenue-calendar-detail-head"><span>${escapeHtml(selectedLabel)}</span><span>${escapeHtml(formatCurrency(selectedTotal))} gross</span></div>`+selectedEntries.map(entry=>`<div class="revenue-calendar-entry"><div><div class="revenue-calendar-entry-title">#${escapeHtml(String(entry.ticketNumber||''))} · ${escapeHtml(entry.title||('Ticket '+entry.ticketNumber))}</div><div class="revenue-calendar-entry-meta">${entry.captureSource==='legacy-current-income-backfill'?'Historical backfill':'Completion snapshot'} · ${revenueSnapshotIsExcluded(entry)?'Excluded from metrics':''}</div></div><div class="revenue-calendar-entry-amount">${escapeHtml(formatCurrency(entry.grossIncome))}</div></div>`).join('');
+        if(!selectedEntries.length){details.innerHTML=`<div class="revenue-calendar-detail-head"><span>${escapeHtml(selectedLabel)}</span><span>$0.00 net</span></div><div class="muted">No completed revenue recorded for this day.</div>`;return}
+        const selectedTotal=selectedEntries.reduce((sum,entry)=>sum+Number(entry.netAmount||0),0);
+        details.innerHTML=`<div class="revenue-calendar-detail-head"><span>${escapeHtml(selectedLabel)}</span><span>${escapeHtml(formatCurrency(selectedTotal))} net</span></div>`+selectedEntries.map(entry=>`<div class="revenue-calendar-entry"><div><div class="revenue-calendar-entry-title">#${escapeHtml(String(entry.ticketNumber||''))} · ${escapeHtml(entry.title||('Ticket '+entry.ticketNumber))}</div><div class="revenue-calendar-entry-meta">${entry.captureSource==='legacy-current-income-backfill'?'Historical completion date':'Completion date record'} · ${revenueSnapshotIsExcluded(entry)?'Excluded from metrics':''}</div></div><div class="revenue-calendar-entry-amount">${escapeHtml(formatCurrency(entry.netAmount))}</div></div>`).join('');
       }
       function completedMetricsReasonLabel(value){
         const reason=String(value||'').trim();
@@ -6940,6 +6936,12 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           jobFinancials=jobFinancials.filter(entry=>String(entry.ticketNumber||'')!==ticket);
           (data.entries||entries).forEach(entry=>jobFinancials.push({...entry,ticketNumber:Number(ticket)}));
           jobFinancialsOriginDraft={income:entries.filter(entry=>entry.type==='Income'),expense:entries.filter(entry=>entry.type==='Expense')};
+          const changedJob=jobs.find(item=>String(item.ticketNumber||'')===ticket);
+          if(changedJob&&changedJob.status==='Completed'){
+            const monthsToRefresh=new Set([currentMonthKey()]);
+            if(revenueCalendarMonthKey)monthsToRefresh.add(revenueCalendarMonthKey);
+            monthsToRefresh.forEach(month=>loadRevenueCalendarMonth(month,{force:true}).catch(()=>{}));
+          }
           if(closeAfterSave){
             document.getElementById('jobFinancialsModalBackdrop').classList.remove('open');jobFinancialsTicket='';jobFinancialsOriginTicket='';jobFinancialsViewTicket='';jobFinancialsOriginDraft=null;clientNotesReturnToFinancial=false;renderQueue();renderBoard();returnFromFinancialsToJobDetails();
           }
