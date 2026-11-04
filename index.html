@@ -2688,7 +2688,7 @@
         const punchOuts=punches.filter(p=>p.eventType==='PUNCH_OUT').map(p=>new Date(p.timestamp)).filter(d=>!Number.isNaN(d.getTime())).sort((a,b)=>a-b);
         let start=null,end=null;
         if(isToday&&autoWorkdayConfig.enabled&&weekday){start=timelineDayBoundary(key,autoWorkdayConfig.startHour,autoWorkdayConfig.startMinute);end=timelineDayBoundary(key,autoWorkdayConfig.endHour,autoWorkdayConfig.endMinute);if(end<=start)end=timelineMidnightAfter(key)}
-        else if(punchIns.length){start=punchIns[0];if(punchOuts.length)end=punchOuts[punchOuts.length-1];else end=isToday?now:timelineMidnightAfter(key)}
+        else if(punchIns.length){start=punchIns[0];if(isToday&&workdayStateAtTime(key,now)!=='OFF')end=now;else if(punchOuts.length)end=punchOuts[punchOuts.length-1];else end=isToday?now:timelineMidnightAfter(key)}
         else if(!isToday&&punches.length){start=new Date(punches[0].timestamp);end=punchOuts.length?punchOuts[punchOuts.length-1]:timelineMidnightAfter(key)}
         if(start&&end&&end<start)end=start;return {start,end,isToday}
       }
@@ -6144,12 +6144,17 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       }
       async function schedulerApi(path,{method='GET',body=null}={}){
         if(PREVIEW_MODE)throw new Error('Live Job Scheduler access is disabled in Preview Mode.');
-        if(!d1FastPathReady())throw new Error('Job Scheduler is not connected yet. Refresh JTP and try again.');
-        const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+path;
-        const options={method,headers:{'Authorization':'Bearer '+d1FastPath.token}};
-        if(body!==null){options.headers['Content-Type']='application/json';options.body=JSON.stringify(body)}
-        const res=await fetch(url,options);let data={};try{data=await res.json()}catch(ignore){}
-        if(!res.ok||!data.success){if(res.status===401||res.status===403)throw new Error('Job Scheduler authorization expired. Refresh JTP and try again.');throw new Error(data.error||('Job Scheduler request failed ('+res.status+')'))}
+        if(!d1FastPathReady())await refreshD1Authorization(true);
+        const request=async()=>{
+          const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+path;
+          const options={method,headers:{'Authorization':'Bearer '+d1FastPath.token}};
+          if(body!==null){options.headers['Content-Type']='application/json';options.body=JSON.stringify(body)}
+          return fetch(url,options)
+        };
+        let res=await request();
+        if(res.status===401||res.status===403){await refreshD1Authorization(true);res=await request()}
+        let data={};try{data=await res.json()}catch(ignore){}
+        if(!res.ok||!data.success)throw new Error(data.error||('Job Scheduler request failed ('+res.status+')'));
         return data
       }
       async function loadD1EmailSources(){
@@ -6163,6 +6168,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           recentEmailSources=Array.isArray(data.recentEmailSources)?data.recentEmailSources:[];
           changeOrderEmailSources=Array.isArray(data.changeOrderEmailSources)?data.changeOrderEmailSources:[];
           d1EmailSourcesLoaded=true;
+          if(emailQueueLoaded)emailQueue=await reconcileD1CreatedEmailQueue(emailQueue);
           renderEmailQueue();
           if(jobDetailsTicket)renderJobDetailsModal();
           if(changeOrderModalTicket)renderChangeOrderModal();
@@ -6245,7 +6251,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         }
       }
 
-      const EMAIL_INTAKE_ACTIONS=new Set(['getEmailQueueUpdates','attachEmailQueueToInitialRequest','dismissEmailQueue','getEmailAttachment','getEmailAttachmentsZip','scanEmailInbox']);
+      const EMAIL_INTAKE_ACTIONS=new Set(['getEmailQueueUpdates','attachEmailQueueToInitialRequest','markD1CreatedEmailProcessed','dismissEmailQueue','getEmailAttachment','getEmailAttachmentsZip','scanEmailInbox']);
       async function apiPost(payload){if(PREVIEW_MODE)throw new Error('Live backend access is disabled in Preview Mode.');const action=String(payload&&payload.action||'');if(!EMAIL_INTAKE_ACTIONS.has(action))throw new Error('This action is no longer allowed to use Google. Refresh JTP and use the D1-backed control.');const restore=beginAutomaticButtonFeedback(payload);try{const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});if(!res.ok)throw new Error('Email intake request failed');return await res.json()}finally{if(restore)restore()}}
       function changeOrderRefreshSignatureForTicket(ticket){
         const ticketText=String(ticket||'');
@@ -6310,6 +6316,17 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           attachmentCount:Array.isArray(item.attachments)?item.attachments.length:0
         })));
       }
+      async function reconcileD1CreatedEmailQueue(items){
+        const queue=Array.isArray(items)?items:[];
+        if(!d1EmailSourcesLoaded||!recentEmailSources.length)return queue;
+        const linked=new Map(recentEmailSources.filter(source=>source&&source.queueId&&Number(source.ticketNumber)>0).map(source=>[String(source.queueId),Number(source.ticketNumber)]));
+        const matched=queue.filter(item=>linked.has(String(item.queueId||'')));
+        for(const item of matched){
+          try{const result=await apiPost({action:'markD1CreatedEmailProcessed',queueId:String(item.queueId),ticketNumber:linked.get(String(item.queueId))});if(!result||!result.success)throw new Error(result&&result.error||'Mark-processed request failed')}
+          catch(error){console.warn('Email queue cleanup will retry next time:',error)}
+        }
+        return queue.filter(item=>!linked.has(String(item.queueId||'')));
+      }
       async function refreshEmailQueue(){
         if(emailQueueRefreshBusy)return;
         emailQueueRefreshBusy=true;
@@ -6318,7 +6335,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           const wasLoaded=emailQueueLoaded;emailQueueLoading=true;renderEmailQueue();
           const data=await apiPost({action:'getEmailQueueUpdates'});
           if(!data.success)return;
-          const nextQueue=data.emailQueue||[];
+          const nextQueue=await reconcileD1CreatedEmailQueue(data.emailQueue||[]);
           const after=emailQueueRefreshSignature(nextQueue);
           emailQueue=nextQueue;emailQueueLoaded=true;
           if(before!==after||!wasLoaded)renderEmailQueue();
@@ -7366,7 +7383,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           if(emailDraftQueueId)payload.queueId=emailDraftQueueId;
           const data=await d1FastCreateJobPost(payload);
           if(!data.success)throw new Error(data.error||'Unable to create job'); jobs.push(data.job);
-          if(pendingScheduledIntakeId){try{const scheduleData=await schedulerApi('/scheduler/intake/complete',{method:'POST',body:{intakeId:pendingScheduledIntakeId,ticketNumber:data.job.ticketNumber}});scheduledIntake=scheduleData.intake||[]}catch(syncErr){console.warn('Scheduled intake completion sync failed:',syncErr);alert('The ticket was created, but JTP could not clear the scheduled intake item. Refresh JTP, then skip that duplicate intake item.')}}if(emailDraftQueueId){const source=emailQueueItem(emailDraftQueueId);if(source)recentEmailSources.unshift({...source,ticketNumber:data.job.ticketNumber,deleteAfter:data.deleteAfter||''});emailQueue=emailQueue.filter(item=>String(item.queueId||'')!==String(emailDraftQueueId))}clearEmailDraftState();clearScheduledDraftState();renderEmailQueue(); renderQueue(); renderBoard(); document.getElementById('jobForm').reset(); document.getElementById('dueOverrideCheck').checked=false; document.getElementById('dueOverrideDate').value=''; syncDueOverrideUI(); document.getElementById('clientModal').classList.remove('open'); document.getElementById('subclientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; document.getElementById('clientIdAlert').style.display='none'; document.getElementById('clientIdAlert').textContent=''; document.getElementById('newSubclientName').value=''; document.getElementById('newSubclientId').value=''; document.getElementById('subclientIdAlert').style.display='none'; document.getElementById('subclientIdAlert').textContent=''; populateClients(); syncNextId(); document.getElementById('ticketPreview').style.display='none'; document.getElementById('jobNumberWrap').style.display='none'; document.getElementById('newJobModalBackdrop').classList.remove('open');
+          if(pendingScheduledIntakeId){try{const scheduleData=await schedulerApi('/scheduler/intake/complete',{method:'POST',body:{intakeId:pendingScheduledIntakeId,ticketNumber:data.job.ticketNumber}});scheduledIntake=scheduleData.intake||[]}catch(syncErr){console.warn('Scheduled intake completion sync failed:',syncErr);alert('The ticket was created, but JTP could not clear the scheduled intake item. Refresh JTP, then skip that duplicate intake item.')}}let emailQueueCompletionWarning='';if(emailDraftQueueId){const queueId=String(emailDraftQueueId);try{const marked=await apiPost({action:'markD1CreatedEmailProcessed',queueId,ticketNumber:Number(data.job.ticketNumber)});if(!marked||!marked.success)throw new Error(marked&&marked.error||'Email queue did not confirm completion')}catch(markError){console.warn('D1 ticket was created, but email intake completion needs a retry:',markError);emailQueueCompletionWarning=`Ticket ${data.job.ticketNumber} was created successfully in D1, but its email item could not be marked complete. Do not create the ticket again. JTP will retry clearing the existing item when it refreshes Job Intake.`}const source=emailQueueItem(queueId);if(source)recentEmailSources.unshift({...source,ticketNumber:data.job.ticketNumber,deleteAfter:data.deleteAfter||''});emailQueue=emailQueue.filter(item=>String(item.queueId||'')!==queueId)}clearEmailDraftState();clearScheduledDraftState();renderEmailQueue(); renderQueue(); renderBoard(); document.getElementById('jobForm').reset(); document.getElementById('dueOverrideCheck').checked=false; document.getElementById('dueOverrideDate').value=''; syncDueOverrideUI(); document.getElementById('clientModal').classList.remove('open'); document.getElementById('subclientModal').classList.remove('open'); document.getElementById('newClientName').value=''; document.getElementById('newClientId').value=''; document.getElementById('clientIdAlert').style.display='none'; document.getElementById('clientIdAlert').textContent=''; document.getElementById('newSubclientName').value=''; document.getElementById('newSubclientId').value=''; document.getElementById('subclientIdAlert').style.display='none'; document.getElementById('subclientIdAlert').textContent=''; populateClients(); syncNextId(); document.getElementById('ticketPreview').style.display='none'; document.getElementById('jobNumberWrap').style.display='none'; document.getElementById('newJobModalBackdrop').classList.remove('open');if(emailQueueCompletionWarning)alert(emailQueueCompletionWarning);
         }catch(err){alert(err.message)}finally{if(createBtn){createBtn.classList.remove('is-loading');createBtn.innerHTML=originalCreateHtml;validateJobNumber()}}
       });
       setInterval(()=>{if(completedTimerKey)renderNotificationTray()},30000);
