@@ -6251,7 +6251,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         }
       }
 
-      const EMAIL_INTAKE_ACTIONS=new Set(['getEmailQueueUpdates','attachEmailQueueToInitialRequest','markD1CreatedEmailProcessed','dismissEmailQueue','getEmailAttachment','getEmailAttachmentsZip','scanEmailInbox']);
+      const EMAIL_INTAKE_ACTIONS=new Set(['getEmailQueueUpdates','markD1CreatedEmailProcessed','dismissEmailQueue','getEmailAttachment','getEmailAttachmentsZip','scanEmailInbox']);
       async function apiPost(payload){if(PREVIEW_MODE)throw new Error('Live backend access is disabled in Preview Mode.');const action=String(payload&&payload.action||'');if(!EMAIL_INTAKE_ACTIONS.has(action))throw new Error('This action is no longer allowed to use Google. Refresh JTP and use the D1-backed control.');const restore=beginAutomaticButtonFeedback(payload);try{const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});if(!res.ok)throw new Error('Email intake request failed');return await res.json()}finally{if(restore)restore()}}
       function changeOrderRefreshSignatureForTicket(ticket){
         const ticketText=String(ticket||'');
@@ -6259,6 +6259,16 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         const intakeIds=new Set(intakes.map(item=>item.id));
         const sources=changeOrderEmailSources.filter(item=>intakeIds.has(String(item.changeOrderIntakeId||''))).map(item=>({id:String(item.queueId||item.messageId||''),intakeId:String(item.changeOrderIntakeId||''),body:String(item.body||''),subject:String(item.cleanSubject||item.subject||''),attachments:Array.isArray(item.attachments)?item.attachments.map(att=>[String(att.name||''),Number(att.size||0),String(att.kind||'')]):[],deleted:String(item.sourceDeletedAt||'')}));
         return JSON.stringify({intakes,sources});
+      }
+
+      async function refreshD1ChangeOrderDataForTicket(ticket){
+        const ticketNumber=Number(ticket||0);if(!ticketNumber||!d1FastPathReady())return false;
+        const data=await d1FastChangeOrderUpdatesGet(ticketNumber);if(!data||!data.success)return false;
+        const refreshedIntakes=Array.isArray(data.changeOrderIntakes)?data.changeOrderIntakes:[];
+        const currentIntakeIds=new Set([...changeOrderIntakes.filter(item=>Number(item.ticketNumber||0)===ticketNumber).map(item=>String(item.changeOrderIntakeId||'')),...refreshedIntakes.map(item=>String(item.changeOrderIntakeId||''))]);
+        changeOrderIntakes=[...changeOrderIntakes.filter(item=>Number(item.ticketNumber||0)!==ticketNumber),...refreshedIntakes];
+        changeOrderEmailSources=[...changeOrderEmailSources.filter(item=>Number(item.ticketNumber||0)!==ticketNumber&&!currentIntakeIds.has(String(item.changeOrderIntakeId||''))),...(Array.isArray(data.changeOrderEmailSources)?data.changeOrderEmailSources:[])];
+        return true;
       }
       function jobDetailsHasUnsavedEditsForRefresh(){
         if(jobDetailsClientEditing||jobDetailsFinancialsDirty)return true;
@@ -6564,7 +6574,26 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         }else{recentSection.style.display='none';recentRows.innerHTML=''}
       }
       function openEmailAttachInitialModal(queueId){const item=emailQueueItem(queueId);if(!item)return;emailAttachQueueId=String(queueId);const select=document.getElementById('emailAttachInitialJobSelect');const active=jobs.filter(job=>String(job.status||'')!=='Completed').slice().sort((a,b)=>Number(b.ticketNumber||0)-Number(a.ticketNumber||0));select.innerHTML=active.map(job=>`<option value="${escapeHtml(String(job.ticketNumber||''))}">${escapeHtml(job.title||job.displayTitle||('Ticket '+job.ticketNumber))}</option>`).join('');const matched=active.filter(job=>String(job.primaryClientId||'')===String(item.matchedPrimaryClientId||'')&&String(job.secondaryClientId||'')===String(item.matchedSecondaryClientId||''));if(matched.length)select.value=String(matched[0].ticketNumber||'');const sender=[item.originalSenderName,item.originalSenderEmail].filter(Boolean).join(' · ');document.getElementById('emailAttachInitialModalMeta').textContent=(item.cleanSubject||item.subject||'Email')+(sender?' · '+sender:'');document.getElementById('emailQueueModalBackdrop').classList.remove('open');document.getElementById('emailAttachInitialModalBackdrop').classList.add('open')}
-      async function attachEmailToInitialRequest(){const queueId=String(emailAttachQueueId||'');const ticketNumber=Number(document.getElementById('emailAttachInitialJobSelect').value||0);if(!queueId||!ticketNumber)return;const btn=document.getElementById('emailAttachInitialSaveBtn');btn.disabled=true;btn.textContent='Attaching…';try{const data=await apiPost({action:'attachEmailQueueToInitialRequest',queueId,ticketNumber});if(!data.success)throw new Error(data.error||'Unable to attach email');const item=emailQueueItem(queueId);const source=data.source||({...item,ticketNumber,deleteAfter:data.deleteAfter||''});if(source){const existing=recentEmailSources.findIndex(x=>String(x.queueId||'')===queueId);if(existing>=0)recentEmailSources[existing]=source;else recentEmailSources.push(source)}emailQueue=emailQueue.filter(x=>String(x.queueId||'')!==queueId);emailAttachQueueId='';document.getElementById('emailAttachInitialModalBackdrop').classList.remove('open');renderEmailQueue();if(jobDetailsTicket&&String(jobDetailsTicket)===String(ticketNumber))renderJobDetailsModal();renderQueue();renderBoard()}catch(err){alert(err.message)}finally{btn.disabled=false;btn.textContent='Attach Email'}}
+      async function attachEmailToInitialRequest(){
+        const queueId=String(emailAttachQueueId||'');
+        const ticketNumber=Number(document.getElementById('emailAttachInitialJobSelect').value||0);
+        if(!queueId||!ticketNumber)return;
+        const btn=document.getElementById('emailAttachInitialSaveBtn');btn.disabled=true;btn.textContent='Attaching…';
+        try{
+          const item=emailQueueItem(queueId);if(!item)throw new Error('That email is no longer in Job Intake. Refresh the intake list and try again.');
+          const emailSource={queueId,gmailPermalink:String(item.gmailPermalink||''),receivedAt:String(item.receivedAt||''),originalSenderName:String(item.originalSenderName||''),originalSenderEmail:String(item.originalSenderEmail||''),subject:String(item.subject||''),cleanSubject:String(item.cleanSubject||''),body:String(item.body||''),attachments:Array.isArray(item.attachments)?item.attachments:[]};
+          const saved=await d1FastWritePost('/email/attach-initial',{queueId,ticketNumber,emailSource},'Email attachment');
+          try{await apiPost({action:'markD1CreatedEmailProcessed',queueId,ticketNumber})}
+          catch(markError){throw new Error('The email was saved to D1, but Job Intake could not be updated yet. The attachment is safe; refresh Job Intake and retry this action to finish it. '+String(markError&&markError.message||markError))}
+          const source=saved.emailSource||({...emailSource,ticketNumber,sourceType:'initial'});
+          const existing=recentEmailSources.findIndex(x=>String(x.queueId||'')===queueId);if(existing>=0)recentEmailSources[existing]=source;else recentEmailSources.push(source);
+          d1EmailSourcesLoaded=true;
+          emailQueue=emailQueue.filter(x=>String(x.queueId||'')!==queueId);emailAttachQueueId='';
+          document.getElementById('emailAttachInitialModalBackdrop').classList.remove('open');renderEmailQueue();
+          if(jobDetailsTicket&&String(jobDetailsTicket)===String(ticketNumber))renderJobDetailsModal();
+          renderQueue();renderBoard();
+        }catch(err){alert(err.message)}finally{btn.disabled=false;btn.textContent='Attach Email'}
+      }
       function clearEmailDraftState(){emailDraftQueueId='';const panel=document.getElementById('emailDraftPanel');if(panel)panel.style.display='none';const notes=document.getElementById('emailDraftJobNotes');if(notes)notes.value='';const attachments=document.getElementById('emailDraftAttachments');if(attachments)attachments.innerHTML=''}
       function loadEmailIntoNewJob(queueId){
         const item=emailQueueItem(queueId);if(!item)return;clearScheduledDraftState();emailDraftQueueId=String(queueId);
@@ -6928,7 +6957,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('closeEmailQueueBtn').addEventListener('click',()=>document.getElementById('emailQueueModalBackdrop').classList.remove('open'));
       document.getElementById('emailAttachInitialCancelBtn').addEventListener('click',()=>{emailAttachQueueId='';document.getElementById('emailAttachInitialModalBackdrop').classList.remove('open');renderEmailQueue();document.getElementById('emailQueueModalBackdrop').classList.add('open')});
       document.getElementById('emailAttachInitialSaveBtn').addEventListener('click',attachEmailToInitialRequest);
-      document.getElementById('scanEmailInboxBtn').addEventListener('click',async()=>{const btn=document.getElementById('scanEmailInboxBtn');btn.disabled=true;btn.textContent='Checking…';try{const data=await apiPost({action:'scanEmailInbox'});if(!data.success)throw new Error(data.error||'Unable to check email inbox');emailQueue=data.emailQueue||[];emailQueueLoaded=true;recentEmailSources=data.recentEmailSources||recentEmailSources;d1EmailSourcesLoaded=true;changeOrderIntakes=data.changeOrderIntakes||changeOrderIntakes;changeOrderEmailSources=data.changeOrderEmailSources||changeOrderEmailSources;emailIntakeConfigured=true;renderEmailQueue();if(changeOrderModalTicket)renderChangeOrderModal();if(jobDetailsTicket)renderJobDetailsModal();if(jobNotesTicket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(jobNotesTicket));if(job)renderJobNotesChangeOrders(job)}}catch(err){alert(err.message)}finally{btn.disabled=false;btn.textContent='Check Inbox Now'}});
+      document.getElementById('scanEmailInboxBtn').addEventListener('click',async()=>{const btn=document.getElementById('scanEmailInboxBtn');btn.disabled=true;btn.textContent='Checking…';try{const data=await apiPost({action:'scanEmailInbox'});if(!data.success)throw new Error(data.error||'Unable to check email inbox');emailQueue=data.emailQueue||[];emailQueueLoaded=true;emailIntakeConfigured=true;d1EmailSourcesLoaded=false;await loadD1EmailSources();const tickets=[jobDetailsTicket,changeOrderModalTicket,jobNotesTicket].filter((ticket,index,list)=>ticket&&list.indexOf(ticket)===index);for(const ticket of tickets)await refreshD1ChangeOrderDataForTicket(ticket);renderEmailQueue();if(changeOrderModalTicket)renderChangeOrderModal();if(jobDetailsTicket)renderJobDetailsModal();if(jobNotesTicket){const job=jobs.find(j=>String(j.ticketNumber||'')===String(jobNotesTicket));if(job)renderJobNotesChangeOrders(job)}}catch(err){alert(err.message)}finally{btn.disabled=false;btn.textContent='Check Inbox Now'}});
       document.getElementById('backToEmailQueueBtn').addEventListener('click',()=>{document.getElementById('newJobModalBackdrop').classList.remove('open');renderEmailQueue();document.getElementById('emailQueueModalBackdrop').classList.add('open')});
       document.getElementById('clearEmailDraftNotes').addEventListener('click',()=>{document.getElementById('emailDraftJobNotes').value=''});
       document.getElementById('addIncomeFinancialRowBtn').addEventListener('click',()=>addFinancialRow('Income'));
