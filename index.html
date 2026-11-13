@@ -6416,7 +6416,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       }
       function applyWarmBoardInteractionLimits(){
         if(!boardWarmActive)return;const board=document.getElementById('mainBoard');if(!board)return;
-        board.querySelectorAll('button').forEach(btn=>{if(btn.matches('[data-menu-ticket],[data-move-ticket],[data-job-details-ticket],[data-workload-score-toggle]'))return;btn.disabled=true;btn.title='Available after D1 data finishes loading.'});
+        board.querySelectorAll('button').forEach(btn=>{if(btn.matches('[data-menu-ticket],[data-move-ticket],[data-job-details-ticket],[data-workload-score-toggle],#addPersonalTaskBtn,#openTaskArchiveBtn'))return;btn.disabled=true;btn.title='Available after D1 data finishes loading.'});
         board.querySelectorAll('a').forEach(link=>{link.setAttribute('aria-disabled','true');link.tabIndex=-1});
       }
       function readCachedD1BoardAuth(){
