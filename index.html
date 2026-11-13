@@ -39,6 +39,28 @@
     #job-priority-app .due-attention-item-meta{font-size:8.5px;line-height:1.25;margin-top:3px;opacity:.64}
     #job-priority-app .due-attention-item.is-overdue .due-attention-item-meta{color:light-dark(#a52620,#ff8b82);opacity:1;font-weight:750}
     #job-priority-app .due-attention-empty{font-size:10px;opacity:.6;padding:8px 0}
+    #job-priority-app .personal-task-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    #job-priority-app .personal-task-head .kpi-label{margin-bottom:5px}
+    #job-priority-app .personal-task-archive-link{border:0;background:transparent;color:inherit;text-decoration:underline;opacity:.68;font-size:9px;font-weight:750;padding:2px 0;min-height:20px}
+    #job-priority-app .personal-task-add{display:flex;gap:6px;margin:2px 0 7px}
+    #job-priority-app .personal-task-add input{min-width:0;flex:1;height:31px;padding:5px 8px;border:1px solid light-dark(#c9c9c4,#484848);border-radius:7px;background:light-dark(#fff,#202020);color:inherit;font:inherit;font-size:10px}
+    #job-priority-app .personal-task-add button{min-height:31px;padding:5px 10px;font-size:10px}
+    #job-priority-app .personal-task-list{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-right:2px}
+    #job-priority-app .personal-task-row{display:flex;align-items:flex-start;gap:8px;padding:8px 2px;border-top:1px solid light-dark(#ecece8,#383838);font-size:11px;line-height:1.35;overflow-wrap:anywhere}
+    #job-priority-app .personal-task-row input{width:15px;height:15px;flex:0 0 auto;margin:0;accent-color:#218653;cursor:pointer}
+    #job-priority-app .personal-task-row.is-saving{opacity:.55}
+    #job-priority-app .personal-task-error{color:#b42318;font-size:9px;line-height:1.3;margin-top:3px;min-height:0}
+    #job-priority-app .task-archive-modal{width:min(720px,94vw);max-height:86vh;display:flex;flex-direction:column}
+    #job-priority-app .task-archive-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+    #job-priority-app .task-archive-head h3{margin:0}
+    #job-priority-app .task-archive-tools{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;font-size:10px}
+    #job-priority-app .task-archive-table-wrap{overflow:auto;min-height:0}
+    #job-priority-app .task-archive-table{width:100%;border-collapse:collapse;font-size:11px}
+    #job-priority-app .task-archive-table th,#job-priority-app .task-archive-table td{padding:8px 7px;border-bottom:1px solid light-dark(#e5e5e1,#3d3d3d);text-align:left;vertical-align:top}
+    #job-priority-app .task-archive-table th button{border:0;background:transparent;color:inherit;font:inherit;font-weight:800;padding:0;text-decoration:underline;cursor:pointer}
+    #job-priority-app .task-archive-pagination{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:10px;font-size:10px}
+    #job-priority-app .task-archive-pagination button{min-height:28px;padding:4px 9px;font-size:10px}
+    @media(max-width:700px){#job-priority-app .task-archive-table{min-width:540px}}
     @media(max-width:700px){#job-priority-app .due-attention-kpi-card{height:280px;max-height:calc(100dvh - 125px)}}
     #job-priority-app .kpi-link{display:inline-block;margin-top:6px;font-size:9px;color:inherit;text-decoration:underline;cursor:pointer;opacity:.72}
     #job-priority-app .utilization-kpi-card{cursor:pointer;transition:border-color .15s,box-shadow .15s;text-align:left}
@@ -1667,10 +1689,11 @@
 
 <div class="board-shell" id="mainBoard">
       <div class="kpi-strip" id="kpiStrip">
-        <section class="kpi-card due-attention-kpi-card" aria-labelledby="dueAttentionTitle">
-          <div class="kpi-label" id="dueAttentionTitle">Overdue &amp; Due Today</div>
-          <div class="due-attention-counts" id="dueAttentionCounts"></div>
-          <div class="due-attention-list" id="dueAttentionList" aria-live="polite"></div>
+        <section class="kpi-card due-attention-kpi-card personal-task-card" aria-labelledby="personalTasksTitle">
+          <div class="personal-task-head"><div class="kpi-label" id="personalTasksTitle">Quick Tasks</div><button type="button" class="personal-task-archive-link" id="openTaskArchiveBtn">Archive</button></div>
+          <form class="personal-task-add" id="personalTaskForm"><input id="personalTaskInput" type="text" maxlength="500" placeholder="Add a task or reminder…" aria-label="New personal task"><button class="primary" type="submit">Add</button></form>
+          <div class="personal-task-list" id="personalTaskList" aria-live="polite"><div class="due-attention-empty">Loading your tasks…</div></div>
+          <div class="personal-task-error" id="personalTaskError" role="status"></div>
         </section>
         <div class="kpi-card completed-kpi-card">
           <div class="kpi-label">Jobs Completed</div>
@@ -2267,6 +2290,14 @@
         <div class="job-search-results" id="jobSearchResults"><div class="job-search-empty">Enter a job number, description, or client name.</div></div>
       </div>
     </div>
+    <div class="timer-modal-backdrop" id="taskArchiveModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="taskArchiveTitle">
+      <div class="timer-modal task-archive-modal">
+        <div class="task-archive-head"><div><h3 id="taskArchiveTitle">Completed Tasks</h3><p class="meta">Completed tasks are kept here with their created and completed dates.</p></div><button class="job-search-close" id="closeTaskArchiveBtn" type="button" aria-label="Close task archive" title="Close">×</button></div>
+        <div class="task-archive-tools"><span id="taskArchiveSummary">Loading tasks…</span><span>25 tasks per page</span></div>
+        <div class="task-archive-table-wrap" id="taskArchiveTableWrap"></div>
+        <div class="task-archive-pagination"><button class="secondary" id="taskArchivePreviousBtn" type="button">Previous</button><span id="taskArchivePageLabel">Page 1</span><button class="secondary" id="taskArchiveNextBtn" type="button">Next</button></div>
+      </div>
+    </div>
     <div class="timer-modal-backdrop" id="archivedJobsModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="archivedJobsModalTitle">
       <div class="timer-modal archived-jobs-modal">
         <div class="archived-jobs-head">
@@ -2326,6 +2357,13 @@
       let subclients=[];
       let nextId=1564;
       let jobs=[];
+      let personalTasks=[];
+      let taskArchivePage=1;
+      let taskArchiveSort='completed';
+      let taskArchiveDirection='desc';
+      let taskArchiveTotal=0;
+      let taskArchiveEntries=[];
+      let taskArchiveLoading=false;
       let statusHistory=[];
       let overdueHistory=[];
       let workSessions=[];
@@ -5047,6 +5085,17 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         try{const data=await d1FastArchivePost({archiveAll:true});if(!data.success)throw new Error(data.error||'Unable to archive completed jobs');const set=new Set((data.archivedTickets||[]).map(String));if(data.noChange)visible.forEach(job=>set.add(String(job.ticketNumber||'')));jobs.forEach(job=>{if(set.has(String(job.ticketNumber||'')))job.archived=true});renderBoard();if(document.getElementById('archivedJobsModalBackdrop').classList.contains('open'))renderArchivedJobs();showJobFolderToast(`${Number(data.count||set.size)} Job${Number(data.count||set.size)===1?'':'s'} Archived`)}
         catch(err){alert('Completed jobs could not be archived: '+err.message)}finally{btn.disabled=false;btn.innerHTML=old}
       }
+      function formatPersonalTaskDate(value){if(!value)return '—';const date=new Date(value);return Number.isNaN(date.getTime())?String(value):new Intl.DateTimeFormat('en-US',{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(date)}
+      function renderPersonalTasks(){const list=document.getElementById('personalTaskList');if(!list)return;if(!personalTasks.length){list.innerHTML='<div class="due-attention-empty">No active tasks. Add a quick reminder above.</div>';return}list.innerHTML=personalTasks.map(task=>`<label class="personal-task-row" data-task-row="${escapeHtml(task.id)}"><input type="checkbox" data-complete-task="${escapeHtml(task.id)}" aria-label="Complete task"><span>${escapeHtml(task.text)}</span></label>`).join('')}
+      function setPersonalTaskError(message=''){const el=document.getElementById('personalTaskError');if(el)el.textContent=String(message||'')}
+      async function personalTasksRequest(path,method='GET',payload=null){if(!d1FastPathReady())throw new Error('Quick Tasks are not connected to D1. Refresh JTP and try again.');const url=String(d1FastPath.apiUrl||'').replace(/\/+$/,'')+path;const options={method,headers:{'Authorization':'Bearer '+d1FastPath.token}};if(payload){options.headers['Content-Type']='application/json';options.body=JSON.stringify(payload)}for(let attempt=0;attempt<2;attempt++){let response;try{response=await fetch(url,options)}catch(err){if(attempt===0)continue;throw new Error('Unable to reach D1. The task change was not confirmed.')}let data={};try{data=await response.json()}catch(ignore){}if(response.ok&&data&&data.success)return data;if(response.status===401||response.status===403)throw new Error('The D1 connection expired. Refresh JTP and try again.');if(response.status>=500&&attempt===0)continue;throw new Error((data&&data.error)||('Quick Task request failed ('+response.status+').'))}throw new Error('Unable to confirm the task change. Refresh JTP and check the task before retrying.')}
+      async function loadPersonalTasks(){try{const data=await personalTasksRequest('/tasks');personalTasks=Array.isArray(data.tasks)?data.tasks:[];renderPersonalTasks();setPersonalTaskError('')}catch(err){const list=document.getElementById('personalTaskList');if(list)list.innerHTML='<div class="due-attention-empty">Tasks could not load. Refresh JTP to try again.</div>';setPersonalTaskError(err.message)}}
+      async function addPersonalTask(event){event.preventDefault();const input=document.getElementById('personalTaskInput');const text=String(input.value||'').trim();if(!text)return;const btn=document.querySelector('#personalTaskForm button[type="submit"]');btn.disabled=true;setPersonalTaskError('');try{const id=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():('task-'+Date.now()+'-'+Math.random().toString(36).slice(2));const data=await personalTasksRequest('/tasks','POST',{mutation:'create',taskId:id,text});personalTasks.unshift(data.task);input.value='';renderPersonalTasks()}catch(err){setPersonalTaskError(err.message)}finally{btn.disabled=false;input.focus()}}
+      async function completePersonalTask(taskId,checkbox){const task=personalTasks.find(item=>String(item.id)===String(taskId));if(!task)return;const row=checkbox.closest('[data-task-row]');if(row)row.classList.add('is-saving');checkbox.disabled=true;setPersonalTaskError('');try{await personalTasksRequest('/tasks/complete','POST',{taskId:String(taskId)});personalTasks=personalTasks.filter(item=>String(item.id)!==String(taskId));renderPersonalTasks()}catch(err){checkbox.checked=false;checkbox.disabled=false;if(row)row.classList.remove('is-saving');setPersonalTaskError(err.message)}}
+      function openTaskArchive(){taskArchivePage=1;taskArchiveSort='completed';taskArchiveDirection='desc';document.getElementById('taskArchiveModalBackdrop').classList.add('open');loadTaskArchive()}
+      async function loadTaskArchive(){if(taskArchiveLoading)return;taskArchiveLoading=true;document.getElementById('taskArchiveSummary').textContent='Loading tasks…';document.getElementById('taskArchiveTableWrap').innerHTML='';try{const q=new URLSearchParams({page:String(taskArchivePage),sort:taskArchiveSort,direction:taskArchiveDirection});const data=await personalTasksRequest('/tasks/archive?'+q.toString());taskArchiveEntries=Array.isArray(data.tasks)?data.tasks:[];taskArchiveTotal=Number(data.total||0);renderTaskArchive()}catch(err){document.getElementById('taskArchiveSummary').textContent=err.message;document.getElementById('taskArchiveTableWrap').innerHTML=''}finally{taskArchiveLoading=false}}
+      function renderTaskArchive(){const totalPages=Math.max(1,Math.ceil(taskArchiveTotal/25));document.getElementById('taskArchiveSummary').textContent=taskArchiveTotal?`${taskArchiveTotal} completed task${taskArchiveTotal===1?'':'s'}`:'No completed tasks yet.';document.getElementById('taskArchivePageLabel').textContent=`Page ${taskArchivePage} of ${totalPages}`;document.getElementById('taskArchivePreviousBtn').disabled=taskArchivePage<=1;document.getElementById('taskArchiveNextBtn').disabled=taskArchivePage>=totalPages;if(!taskArchiveEntries.length){document.getElementById('taskArchiveTableWrap').innerHTML='<div class="due-attention-empty">No archived tasks on this page.</div>';return}const arrow=dir=>dir==='asc'?' ↑':' ↓';document.getElementById('taskArchiveTableWrap').innerHTML=`<table class="task-archive-table"><thead><tr><th>Task</th><th><button type="button" data-task-archive-sort="created">Created${taskArchiveSort==='created'?arrow(taskArchiveDirection):''}</button></th><th><button type="button" data-task-archive-sort="completed">Completed${taskArchiveSort==='completed'?arrow(taskArchiveDirection):''}</button></th></tr></thead><tbody>${taskArchiveEntries.map(task=>`<tr><td>${escapeHtml(task.text)}</td><td>${escapeHtml(formatPersonalTaskDate(task.createdAt))}</td><td>${escapeHtml(formatPersonalTaskDate(task.completedAt))}</td></tr>`).join('')}</tbody></table>`}
+      function closeTaskArchive(){document.getElementById('taskArchiveModalBackdrop').classList.remove('open')}
       function renderDueAttentionSummary(){
         const list=document.getElementById('dueAttentionList');
         const counts=document.getElementById('dueAttentionCounts');
@@ -5078,7 +5127,6 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
         }).join('');
       }
       function renderBoard(){
-        renderDueAttentionSummary();
         renderKpis();
         renderFinancialDashboard();
         renderOrphanPunchBanner();
@@ -6453,6 +6501,7 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
           refreshEmailQueue().catch(error=>console.warn('Email intake refresh failed:',error));
           loadD1EmailSources().catch(error=>console.warn('D1 email source hydration failed:',error));
           loadD1Overhead().catch(error=>console.warn('D1 Monthly Overhead hydration failed:',error));
+          loadPersonalTasks();
         }catch(err){
           if(loadId!==boardStartupLoadId)return;
           backendReady=false;legacyBootstrapReady=false;
@@ -6951,6 +7000,15 @@ They will remain available through Search and can be unarchived there.`);if(!ok)
       document.getElementById('archivedJobsBtn').addEventListener('click',e=>{e.stopPropagation();closeTopToolbarMenus();openArchivedJobs()});
       document.getElementById('closeArchivedJobsBtn').addEventListener('click',closeArchivedJobs);
       document.getElementById('archivedJobsModalBackdrop').addEventListener('click',e=>{if(e.target===e.currentTarget)closeArchivedJobs()});
+      document.getElementById('personalTaskForm').addEventListener('submit',addPersonalTask);
+      document.getElementById('personalTaskList').addEventListener('change',e=>{const checkbox=e.target.closest('[data-complete-task]');if(checkbox&&checkbox.checked)completePersonalTask(checkbox.dataset.completeTask,checkbox)});
+      document.getElementById('openTaskArchiveBtn').addEventListener('click',openTaskArchive);
+      document.getElementById('closeTaskArchiveBtn').addEventListener('click',closeTaskArchive);
+      document.getElementById('taskArchiveModalBackdrop').addEventListener('click',e=>{if(e.target===e.currentTarget)closeTaskArchive()});
+      document.getElementById('taskArchiveTableWrap').addEventListener('click',e=>{const button=e.target.closest('[data-task-archive-sort]');if(!button)return;const sort=button.dataset.taskArchiveSort;if(taskArchiveSort===sort)taskArchiveDirection=taskArchiveDirection==='desc'?'asc':'desc';else{taskArchiveSort=sort;taskArchiveDirection='desc'}taskArchivePage=1;loadTaskArchive()});
+      document.getElementById('taskArchivePreviousBtn').addEventListener('click',()=>{if(taskArchivePage>1){taskArchivePage--;loadTaskArchive()}});
+      document.getElementById('taskArchiveNextBtn').addEventListener('click',()=>{if(taskArchivePage<Math.ceil(taskArchiveTotal/25)){taskArchivePage++;loadTaskArchive()}});
+
       document.getElementById('jobSearchInput').addEventListener('input',renderJobSearchResults);
       document.getElementById('clearJobSearchBtn').addEventListener('click',()=>{const input=document.getElementById('jobSearchInput');input.value='';renderJobSearchResults();input.focus()});
       document.querySelectorAll('[data-job-search-filter]').forEach(btn=>btn.addEventListener('click',()=>{jobSearchFilter=btn.getAttribute('data-job-search-filter')||'all';renderJobSearchResults()}));
