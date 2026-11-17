@@ -4066,7 +4066,7 @@
         target.innerHTML='<div class="job-search-grid">'+matches.map(jobSearchCardMarkup).join('')+'</div>';bindJobSearchResultActions();
       }
       function openJobSearch(){document.getElementById('jobSearchModalBackdrop').classList.add('open');renderJobSearchResults();setTimeout(()=>document.getElementById('jobSearchInput').focus(),0)}
-      function closeJobSearch(){document.getElementById('jobSearchModalBackdrop').classList.remove('open')}
+      function closeJobSearch(){document.getElementById('jobSearchModalBackdrop').classList.remove('open');const input=document.getElementById('jobSearchInput');if(input){input.value='';renderJobSearchResults()}}
       function locateJobOnBoard(ticket){
         closeJobSearch();let found=null;document.querySelectorAll('[data-board-ticket]').forEach(el=>{if(!found&&String(el.dataset.boardTicket||'')===String(ticket||''))found=el});
         if(!found){alert('That job is not currently visible on the board.');return}
